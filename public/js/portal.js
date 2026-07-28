@@ -13,6 +13,11 @@
         body.classList.add('is-ready');
     });
 
+    window.addEventListener('pageshow', () => {
+        body.classList.remove('is-navigating');
+        cleanupModalBackdrops();
+    });
+
     if (localStorage.getItem('portal.sidebar.collapsed') === 'true') {
         body.classList.add('sidebar-collapsed');
         sidebar?.classList.add('is-collapsed');
@@ -222,10 +227,21 @@
         const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
         const confirmButton = modalElement.querySelector('[data-confirm-pdf-upload]');
 
+        if (confirmButton) {
+            confirmButton.disabled = false;
+            confirmButton.removeAttribute('aria-busy');
+        }
+
         confirmButton?.addEventListener('click', () => {
             form.dataset.previewConfirmed = 'true';
+            confirmButton.disabled = true;
+            confirmButton.setAttribute('aria-busy', 'true');
             modal.hide();
-            form.requestSubmit();
+
+            modalElement.addEventListener('hidden.bs.modal', () => {
+                cleanupModalBackdrops();
+                form.requestSubmit();
+            }, { once: true });
         }, { once: true });
 
         modalElement.addEventListener('hidden.bs.modal', () => {
@@ -242,6 +258,17 @@
         }, { once: true });
 
         modal.show();
+    }
+
+    function cleanupModalBackdrops() {
+        if (document.querySelector('.modal.show')) {
+            return;
+        }
+
+        document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove());
+        body.classList.remove('modal-open');
+        body.style.removeProperty('overflow');
+        body.style.removeProperty('padding-right');
     }
 
     function setPreviewText(root, selector, value) {
