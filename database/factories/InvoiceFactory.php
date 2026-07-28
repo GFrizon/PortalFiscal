@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\InvoiceDocumentType;
+use App\Enums\InvoicePaymentMethod;
 use App\Models\BusinessUnit;
 use App\Models\Invoice;
 use App\Models\User;
@@ -29,6 +30,14 @@ class InvoiceFactory extends Factory
             'recipient_legal_name' => fake()->company(),
             'due_date' => now()->addDays(15),
             'arrival_date' => now(),
+            'payment_method' => InvoicePaymentMethod::Boleto,
+            'payment_installments' => [
+                [
+                    'number' => 1,
+                    'due_date' => now()->addDays(15)->format('Y-m-d'),
+                    'amount' => 100.00,
+                ],
+            ],
             'sent_at' => now(),
             'user_notes' => null,
             'fiscal_notes' => null,

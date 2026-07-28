@@ -227,9 +227,10 @@ class NavigationAuditTest extends TestCase
                 'document_type' => 'nf',
                 'purchase_order_number' => 'OC123456',
                 'arrival_date' => null,
-                'due_date' => null,
+                'payment_method' => 'boleto',
+                'payment_installments_count' => null,
             ])
-            ->assertSessionHasErrors(['purchase_order_number', 'arrival_date', 'due_date']);
+            ->assertSessionHasErrors(['purchase_order_number', 'arrival_date', 'payment_installments_count']);
 
         $this->assertDatabaseCount('invoices', 0);
     }
@@ -280,6 +281,73 @@ class NavigationAuditTest extends TestCase
         $this->assertDatabaseMissing('purchase_order_checks', [
             'invoice_id' => $invoice->id,
         ]);
+    }
+
+    public function test_boleto_upload_requires_installments_and_stores_payment_terms(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => 'PDF simulado',
+                'cnpjs' => ['12345678000195'],
+                'issuer_cnpj' => '12345678000195',
+                'recipient_cnpj' => null,
+                'invoice_number' => '123456',
+                'issuer_legal_name' => null,
+                'recipient_legal_name' => null,
+                'error' => null,
+            ]);
+            $mock->shouldReceive('normalizeCnpj')->andReturnUsing(fn (string $cnpj) => preg_replace('/\D/', '', $cnpj) ?? '');
+        });
+
+        $this->actingAs($user)
+            ->post(route('invoices.store'), [
+                'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf',
+                'purchase_order_number' => '123456',
+                'arrival_date' => now()->format('Y-m-d'),
+                'payment_method' => 'boleto',
+                'payment_installments_count' => 2,
+                'payment_installments' => [
+                    ['due_date' => '2026-08-10', 'amount' => '100,50'],
+                    ['due_date' => '2026-09-10', 'amount' => '200.75'],
+                ],
+            ])
+            ->assertRedirect();
+
+        $invoice = Invoice::query()->where('submitted_by', $user->id)->firstOrFail();
+
+        $this->assertSame('boleto', $invoice->payment_method->value);
+        $this->assertSame('2026-09-10', $invoice->due_date?->format('Y-m-d'));
+        $this->assertSame(100.50, (float) $invoice->payment_installments[0]['amount']);
+        $this->assertSame(200.75, (float) $invoice->payment_installments[1]['amount']);
+    }
+
+    public function test_deposit_or_boleto_requires_all_installment_fields(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('invoices.store'), [
+                'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf',
+                'purchase_order_number' => '123456',
+                'arrival_date' => now()->format('Y-m-d'),
+                'payment_method' => 'deposit',
+                'payment_installments_count' => 2,
+                'payment_installments' => [
+                    ['due_date' => '2026-08-10', 'amount' => '100'],
+                ],
+            ])
+            ->assertSessionHasErrors(['payment_installments_count']);
+
+        $this->assertDatabaseCount('invoices', 0);
     }
 
     public function test_user_can_delete_invoice_that_was_not_launched_and_pdf_is_removed(): void

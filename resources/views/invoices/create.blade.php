@@ -5,6 +5,12 @@
 @section('page_subtitle', 'Envie o PDF e informe os dados de acompanhamento')
 
 @section('content')
+    @php
+        $oldPaymentMethod = old('payment_method', 'anticipated');
+        $oldInstallmentCount = (int) old('payment_installments_count', max(1, count(old('payment_installments', []))));
+        $oldInstallments = old('payment_installments', []);
+    @endphp
+
     <div class="section-toolbar mb-3">
         <div>
             <div class="eyebrow">Importacao</div>
@@ -65,8 +71,35 @@
                 <input class="form-control" id="arrival_date" type="date" name="arrival_date" value="{{ old('arrival_date', now()->format('Y-m-d')) }}" required>
             </div>
             <div class="col-12 col-md-3">
-                <label class="form-label" for="due_date">Data de vencimento</label>
-                <input class="form-control" id="due_date" type="date" name="due_date" value="{{ old('due_date') }}" required>
+                <label class="form-label" for="payment_method">Vencimento</label>
+                <select class="form-select" id="payment_method" name="payment_method" required data-payment-method>
+                    <option value="anticipated" @selected($oldPaymentMethod === 'anticipated')>Antecipado</option>
+                    <option value="deposit" @selected($oldPaymentMethod === 'deposit')>Deposito</option>
+                    <option value="boleto" @selected($oldPaymentMethod === 'boleto')>Boleto</option>
+                </select>
+            </div>
+            <div class="col-12 payment-installments-area" data-payment-installments-area>
+                <div class="installment-toolbar">
+                    <div>
+                        <label class="form-label" for="payment_installments_count">Parcelas</label>
+                        <input class="form-control" id="payment_installments_count" type="number" name="payment_installments_count" min="1" max="36" value="{{ old('payment_installments_count', $oldInstallmentCount) }}" data-installments-count>
+                    </div>
+                </div>
+                <div class="installments-grid" data-installments-grid>
+                    @for($index = 0; $index < max(1, $oldInstallmentCount); $index++)
+                        <div class="installment-row" data-installment-row>
+                            <div class="installment-number">#{{ $index + 1 }}</div>
+                            <div>
+                                <label class="form-label" for="payment_installments_{{ $index }}_due_date">Vencimento</label>
+                                <input class="form-control" id="payment_installments_{{ $index }}_due_date" type="date" name="payment_installments[{{ $index }}][due_date]" value="{{ $oldInstallments[$index]['due_date'] ?? '' }}" data-installment-due-date>
+                            </div>
+                            <div>
+                                <label class="form-label" for="payment_installments_{{ $index }}_amount">Valor</label>
+                                <input class="form-control" id="payment_installments_{{ $index }}_amount" name="payment_installments[{{ $index }}][amount]" value="{{ $oldInstallments[$index]['amount'] ?? '' }}" inputmode="decimal" data-installment-amount>
+                            </div>
+                        </div>
+                    @endfor
+                </div>
             </div>
             <div class="col-12">
                 <label class="form-label" for="user_notes">Observacoes</label>
@@ -120,7 +153,7 @@
                                 </div>
                                 <div>
                                     <span>Vencimento</span>
-                                    <strong data-preview-due-date>-</strong>
+                                    <strong data-preview-payment>-</strong>
                                 </div>
                             </div>
                             <div class="note-box mt-3">

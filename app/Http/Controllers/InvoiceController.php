@@ -140,8 +140,10 @@ class InvoiceController extends Controller
                     'issuer_legal_name' => $extracted['issuer_legal_name'],
                     'recipient_cnpj' => $extracted['recipient_cnpj'],
                     'recipient_legal_name' => $extracted['recipient_legal_name'],
-                    'due_date' => $request->date('due_date'),
                     'arrival_date' => $request->date('arrival_date'),
+                    'payment_method' => $request->string('payment_method')->toString(),
+                    'payment_installments' => $this->paymentInstallments($request),
+                    'due_date' => $this->paymentDueDate($request),
                     'sent_at' => now(),
                     'user_notes' => $request->string('user_notes')->toString() ?: null,
                     'pdf_path' => $storedPdf['path'],
@@ -250,5 +252,34 @@ class InvoiceController extends Controller
         return redirect()
             ->route('invoices.index')
             ->with('success', 'Nota '.$protocol.' excluida com sucesso.');
+    }
+
+    private function paymentInstallments(StoreInvoiceRequest $request): ?array
+    {
+        if ($request->string('payment_method')->toString() === 'anticipated') {
+            return null;
+        }
+
+        return collect($request->input('payment_installments', []))
+            ->map(fn (array $installment, int $index): array => [
+                'number' => $index + 1,
+                'due_date' => $installment['due_date'] ?? null,
+                'amount' => isset($installment['amount']) ? round((float) $installment['amount'], 2) : null,
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function paymentDueDate(StoreInvoiceRequest $request): ?string
+    {
+        if ($request->string('payment_method')->toString() === 'anticipated') {
+            return null;
+        }
+
+        return collect($request->input('payment_installments', []))
+            ->pluck('due_date')
+            ->filter()
+            ->sort()
+            ->last();
     }
 }

@@ -134,6 +134,62 @@
         syncReferenceLabel();
     });
 
+    document.querySelectorAll('[data-payment-method]').forEach((select) => {
+        const form = select.closest('form');
+        const area = form?.querySelector('[data-payment-installments-area]');
+        const countInput = form?.querySelector('[data-installments-count]');
+        const grid = form?.querySelector('[data-installments-grid]');
+
+        const syncInstallments = () => {
+            if (! area || ! countInput || ! grid) {
+                return;
+            }
+
+            const requiresInstallments = select.value !== 'anticipated';
+            area.hidden = ! requiresInstallments;
+            countInput.disabled = ! requiresInstallments;
+            countInput.required = requiresInstallments;
+
+            const count = Math.max(1, Math.min(36, Number.parseInt(countInput.value || '1', 10) || 1));
+            countInput.value = String(count);
+
+            while (grid.children.length < count) {
+                grid.appendChild(createInstallmentRow(grid.children.length));
+            }
+
+            while (grid.children.length > count) {
+                grid.lastElementChild?.remove();
+            }
+
+            grid.querySelectorAll('[data-installment-row]').forEach((row, index) => {
+                row.querySelector('.installment-number').textContent = `#${index + 1}`;
+
+                const dueDate = row.querySelector('[data-installment-due-date]');
+                const amount = row.querySelector('[data-installment-amount]');
+
+                if (dueDate) {
+                    dueDate.name = `payment_installments[${index}][due_date]`;
+                    dueDate.id = `payment_installments_${index}_due_date`;
+                    dueDate.disabled = ! requiresInstallments;
+                    dueDate.required = requiresInstallments;
+                    row.querySelector('label[for$="_due_date"]')?.setAttribute('for', dueDate.id);
+                }
+
+                if (amount) {
+                    amount.name = `payment_installments[${index}][amount]`;
+                    amount.id = `payment_installments_${index}_amount`;
+                    amount.disabled = ! requiresInstallments;
+                    amount.required = requiresInstallments;
+                    row.querySelector('label[for$="_amount"]')?.setAttribute('for', amount.id);
+                }
+            });
+        };
+
+        select.addEventListener('change', syncInstallments);
+        countInput?.addEventListener('input', syncInstallments);
+        syncInstallments();
+    });
+
     function openPdfPreview(form, file) {
         const modalElement = document.getElementById('pdfPreviewModal');
         const frame = modalElement?.querySelector('[data-pdf-preview-frame]');
@@ -157,7 +213,7 @@
         setPreviewText(modalElement, '[data-preview-reference-label]', form.querySelector('[name="document_type"]')?.value === 'cte' ? 'Nota Fiscal' : 'Ordem');
         setPreviewText(modalElement, '[data-preview-purchase-order]', form.querySelector('[name="purchase_order_number"]')?.value || '-');
         setPreviewText(modalElement, '[data-preview-arrival-date]', formatDate(form.querySelector('[name="arrival_date"]')?.value));
-        setPreviewText(modalElement, '[data-preview-due-date]', formatDate(form.querySelector('[name="due_date"]')?.value));
+        setPreviewText(modalElement, '[data-preview-payment]', formatPayment(form));
         setPreviewText(modalElement, '[data-preview-notes]', form.querySelector('[name="user_notes"]')?.value || '-');
 
         const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
@@ -224,5 +280,37 @@
         }
 
         return `${day}/${month}/${year}`;
+    }
+
+    function createInstallmentRow(index) {
+        const row = document.createElement('div');
+        row.className = 'installment-row';
+        row.dataset.installmentRow = '';
+        row.innerHTML = `
+            <div class="installment-number">#${index + 1}</div>
+            <div>
+                <label class="form-label" for="payment_installments_${index}_due_date">Vencimento</label>
+                <input class="form-control" id="payment_installments_${index}_due_date" type="date" name="payment_installments[${index}][due_date]" data-installment-due-date>
+            </div>
+            <div>
+                <label class="form-label" for="payment_installments_${index}_amount">Valor</label>
+                <input class="form-control" id="payment_installments_${index}_amount" name="payment_installments[${index}][amount]" inputmode="decimal" data-installment-amount>
+            </div>
+        `;
+
+        return row;
+    }
+
+    function formatPayment(form) {
+        const method = form.querySelector('[name="payment_method"]')?.value || 'anticipated';
+
+        if (method === 'anticipated') {
+            return 'Antecipado';
+        }
+
+        const label = method === 'boleto' ? 'Boleto' : 'Deposito';
+        const count = form.querySelector('[name="payment_installments_count"]')?.value || '1';
+
+        return `${label} - ${count} parcela${count === '1' ? '' : 's'}`;
     }
 })();

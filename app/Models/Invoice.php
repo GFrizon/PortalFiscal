@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\InvoiceStatus;
 use App\Enums\InvoiceDocumentType;
+use App\Enums\InvoicePaymentMethod;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,6 +30,8 @@ class Invoice extends Model
         'recipient_legal_name',
         'due_date',
         'arrival_date',
+        'payment_method',
+        'payment_installments',
         'sent_at',
         'user_notes',
         'fiscal_notes',
@@ -49,6 +52,8 @@ class Invoice extends Model
         return [
             'due_date' => 'date',
             'arrival_date' => 'date',
+            'payment_method' => InvoicePaymentMethod::class,
+            'payment_installments' => 'array',
             'sent_at' => 'datetime',
             'launched_at' => 'datetime',
             'pdf_optimized' => 'boolean',

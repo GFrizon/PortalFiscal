@@ -6,6 +6,7 @@
 
 @section('content')
     @php($documentType = $invoice->document_type ?? \App\Enums\InvoiceDocumentType::Nf)
+    @php($paymentMethod = $invoice->payment_method ?? \App\Enums\InvoicePaymentMethod::Anticipated)
 
     <div class="invoice-detail-page">
         <div class="section-toolbar mb-3">
@@ -90,7 +91,7 @@
                         <dt>Chegada</dt>
                         <dd>{{ $invoice->arrival_date?->format('d/m/Y') ?? '-' }}</dd>
                         <dt>Vencimento</dt>
-                        <dd>{{ $invoice->due_date?->format('d/m/Y') ?? '-' }}</dd>
+                        <dd>{{ $paymentMethod->label() }}</dd>
                         <dt>Emitente</dt>
                         <dd>{{ $invoice->issuer_cnpj ?? '-' }}</dd>
                         <dt>Destinatario</dt>
@@ -100,6 +101,21 @@
                         <dt>Lancamento</dt>
                         <dd>{{ $invoice->launched_at?->format('d/m/Y H:i') ?? '-' }}</dd>
                     </dl>
+
+                    @if($paymentMethod->requiresInstallments())
+                        <div class="payment-installments-summary mt-3">
+                            @foreach($invoice->payment_installments ?? [] as $installment)
+                                <div>
+                                    <span>Parcela {{ $installment['number'] ?? $loop->iteration }}</span>
+                                    <strong>
+                                        {{ filled($installment['due_date'] ?? null) ? \Illuminate\Support\Carbon::parse($installment['due_date'])->format('d/m/Y') : '-' }}
+                                        -
+                                        {{ isset($installment['amount']) ? 'R$ '.number_format((float) $installment['amount'], 2, ',', '.') : '-' }}
+                                    </strong>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
 
                     <div class="note-box mt-3">
                         <div class="note-title">
