@@ -2962,3 +2962,32 @@ textarea.form-control {
     height: 36px;
     align-self: end;
 }
+
+.upload-form {
+    width: 100%;
+    max-width: none;
+}
+
+.invoice-create-page .upload-form {
+    max-width: none !important;
+}
+
+.invoice-create-page .upload-form textarea {
+    min-height: 92px;
+}
+
+.upload-form .payment-installments-area .installments-grid {
+    grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+}
+
+@media (min-width: 1400px) {
+    .upload-form .payment-installments-area .installments-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1800px) {
+    .upload-form .payment-installments-area .installments-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}

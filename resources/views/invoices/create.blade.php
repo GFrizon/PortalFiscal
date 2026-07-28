@@ -11,6 +11,7 @@
         $oldInstallments = old('payment_installments', []);
     @endphp
 
+    <div class="invoice-create-page">
     <div class="section-toolbar mb-3">
         <div>
             <div class="eyebrow">Importacao</div>
@@ -178,5 +179,6 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 @endsection
