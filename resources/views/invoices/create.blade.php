@@ -23,6 +23,7 @@
         </a>
     </div>
 
+    <div class="invoice-create-grid">
     <form method="POST" action="{{ route('invoices.store') }}" enctype="multipart/form-data" class="panel form-panel upload-form" data-pdf-preview-form>
         @csrf
         <div class="panel-header">
@@ -123,66 +124,54 @@
         </div>
     </form>
 
-    <div class="modal fade" id="pdfPreviewModal" tabindex="-1" aria-labelledby="pdfPreviewModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content preview-modal">
-                <div class="modal-header">
+    <aside class="panel upload-preview-panel" data-inline-pdf-preview hidden>
+        <div class="panel-header">
+            <div>
+                <div class="eyebrow">Conferencia</div>
+                <h2 class="panel-title">Preview antes de salvar</h2>
+            </div>
+            <span class="soft-chip">
+                <i class="bi bi-eye" aria-hidden="true"></i>
+                Confira o PDF
+            </span>
+        </div>
+        <div class="preview-layout preview-layout-inline">
+            <div class="preview-frame-shell">
+                <iframe class="preview-frame" title="Preview do PDF selecionado" data-pdf-preview-frame></iframe>
+            </div>
+            <div class="preview-summary">
+                <div class="summary-card-grid">
                     <div>
-                        <div class="eyebrow">Confirmacao de envio</div>
-                        <h2 class="modal-title fs-6" id="pdfPreviewModalLabel">Conferir nota antes de anexar</h2>
+                        <span>Arquivo</span>
+                        <strong data-preview-file-name>-</strong>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="preview-layout">
-                        <div class="preview-frame-shell">
-                            <iframe class="preview-frame" title="Preview do PDF selecionado" data-pdf-preview-frame></iframe>
-                        </div>
-                        <div class="preview-summary">
-                            <div class="summary-card-grid">
-                                <div>
-                                    <span>Arquivo</span>
-                                    <strong data-preview-file-name>-</strong>
-                                </div>
-                                <div>
-                                    <span>Tamanho</span>
-                                    <strong data-preview-file-size>-</strong>
-                                </div>
-                                <div>
-                                    <span data-preview-reference-label>Ordem</span>
-                                    <strong data-preview-purchase-order>-</strong>
-                                </div>
-                                <div>
-                                    <span>Chegada</span>
-                                    <strong data-preview-arrival-date>-</strong>
-                                </div>
-                                <div>
-                                    <span>Vencimento</span>
-                                    <strong data-preview-payment>-</strong>
-                                </div>
-                            </div>
-                            <div class="note-box mt-3">
-                                <div class="note-title">
-                                    <i class="bi bi-chat-left-text" aria-hidden="true"></i>
-                                    Observacoes
-                                </div>
-                                <div class="text-body" data-preview-notes>-</div>
-                            </div>
-                        </div>
+                    <div>
+                        <span>Tamanho</span>
+                        <strong data-preview-file-size>-</strong>
+                    </div>
+                    <div>
+                        <span data-preview-reference-label>Ordem</span>
+                        <strong data-preview-purchase-order>-</strong>
+                    </div>
+                    <div>
+                        <span>Chegada</span>
+                        <strong data-preview-arrival-date>-</strong>
+                    </div>
+                    <div>
+                        <span>Vencimento</span>
+                        <strong data-preview-payment>-</strong>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-pencil" aria-hidden="true"></i>
-                        Revisar
-                    </button>
-                    <button type="button" class="btn btn-primary" data-confirm-pdf-upload>
-                        <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
-                        Confirmar envio
-                    </button>
+                <div class="note-box mt-3">
+                    <div class="note-title">
+                        <i class="bi bi-chat-left-text" aria-hidden="true"></i>
+                        Observacoes
+                    </div>
+                    <div class="text-body" data-preview-notes>-</div>
                 </div>
             </div>
         </div>
+    </aside>
     </div>
     </div>
 @endsection

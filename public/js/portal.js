@@ -15,7 +15,6 @@
 
     window.addEventListener('pageshow', () => {
         body.classList.remove('is-navigating');
-        cleanupModalBackdrops();
     });
 
     if (localStorage.getItem('portal.sidebar.collapsed') === 'true') {
@@ -63,22 +62,6 @@
 
     document.querySelectorAll('form').forEach((form) => {
         form.addEventListener('submit', (event) => {
-            if (form.matches('[data-pdf-preview-form]') && form.dataset.previewConfirmed !== 'true') {
-                if (! form.checkValidity()) {
-                    return;
-                }
-
-                const fileInput = form.querySelector('input[type="file"][name="pdf"]');
-                const file = fileInput?.files?.[0];
-
-                if (file && window.bootstrap) {
-                    event.preventDefault();
-                    openPdfPreview(form, file);
-
-                    return;
-                }
-            }
-
             const message = event.submitter?.dataset.confirm || form.dataset.confirm;
 
             if (message && ! confirm(message)) {
@@ -107,6 +90,7 @@
 
     document.querySelectorAll('[data-file-input]').forEach((input) => {
         const target = document.querySelector(input.dataset.fileTarget);
+        const form = input.closest('form');
 
         input.addEventListener('change', () => {
             if (! target) {
@@ -114,7 +98,18 @@
             }
 
             target.textContent = input.files?.[0]?.name || 'Nenhum arquivo selecionado.';
+            updateInlinePdfPreview(form, input.files?.[0] || null);
         });
+    });
+
+    document.querySelectorAll('[data-pdf-preview-form]').forEach((form) => {
+        const refreshPreview = () => {
+            const file = form.querySelector('input[type="file"][name="pdf"]')?.files?.[0] || null;
+            updateInlinePdfPreview(form, file);
+        };
+
+        form.addEventListener('input', refreshPreview);
+        form.addEventListener('change', refreshPreview);
     });
 
     document.querySelectorAll('[data-digits-only]').forEach((input) => {
@@ -198,88 +193,48 @@
 
     document.querySelectorAll('[data-installment-amount]').forEach(bindCurrencyInput);
 
-    function openPdfPreview(form, file) {
-        const modalElement = document.getElementById('pdfPreviewModal');
-        const frame = modalElement?.querySelector('[data-pdf-preview-frame]');
+    function updateInlinePdfPreview(form, file) {
+        const preview = document.querySelector('[data-inline-pdf-preview]');
+        const frame = preview?.querySelector('[data-pdf-preview-frame]');
 
-        if (! modalElement || ! frame) {
-            form.dataset.previewConfirmed = 'true';
-            form.requestSubmit();
-
+        if (! form || ! preview || ! frame) {
             return;
         }
 
-        if (currentPreviewUrl) {
-            URL.revokeObjectURL(currentPreviewUrl);
-        }
-
-        currentPreviewUrl = URL.createObjectURL(file);
-        frame.src = currentPreviewUrl;
-
-        setPreviewText(modalElement, '[data-preview-file-name]', file.name);
-        setPreviewText(modalElement, '[data-preview-file-size]', formatBytes(file.size));
-        setPreviewText(modalElement, '[data-preview-reference-label]', form.querySelector('[name="document_type"]')?.value === 'cte' ? 'Nota Fiscal' : 'Ordem');
-        setPreviewText(modalElement, '[data-preview-purchase-order]', form.querySelector('[name="purchase_order_number"]')?.value || '-');
-        setPreviewText(modalElement, '[data-preview-arrival-date]', formatDate(form.querySelector('[name="arrival_date"]')?.value));
-        setPreviewText(modalElement, '[data-preview-payment]', formatPayment(form));
-        setPreviewText(modalElement, '[data-preview-notes]', form.querySelector('[name="user_notes"]')?.value || '-');
-
-        const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
-        const confirmButton = modalElement.querySelector('[data-confirm-pdf-upload]');
-
-        if (confirmButton) {
-            confirmButton.disabled = false;
-            confirmButton.removeAttribute('aria-busy');
-        }
-
-        confirmButton?.addEventListener('click', () => {
-            if (! form.checkValidity()) {
-                modal.hide();
-                cleanupModalBackdrops();
-                form.reportValidity();
-
-                return;
-            }
-
-            form.dataset.previewConfirmed = 'true';
-            confirmButton.disabled = true;
-            confirmButton.setAttribute('aria-busy', 'true');
-            modal.hide();
-            modalElement.classList.remove('show');
-            modalElement.style.display = 'none';
-            modalElement.setAttribute('aria-hidden', 'true');
-            modalElement.removeAttribute('aria-modal');
-            modalElement.removeAttribute('role');
-            cleanupModalBackdrops(true);
-
-            HTMLFormElement.prototype.submit.call(form);
-        }, { once: true });
-
-        modalElement.addEventListener('hidden.bs.modal', () => {
-            if (form.dataset.previewConfirmed === 'true') {
-                return;
-            }
-
+        if (! file) {
+            preview.hidden = true;
+            delete preview.dataset.fileSignature;
             frame.removeAttribute('src');
 
             if (currentPreviewUrl) {
                 URL.revokeObjectURL(currentPreviewUrl);
                 currentPreviewUrl = null;
             }
-        }, { once: true });
 
-        modal.show();
-    }
-
-    function cleanupModalBackdrops(force = false) {
-        if (! force && document.querySelector('.modal.show')) {
             return;
         }
 
-        document.querySelectorAll('.modal-backdrop').forEach((backdrop) => backdrop.remove());
-        body.classList.remove('modal-open');
-        body.style.removeProperty('overflow');
-        body.style.removeProperty('padding-right');
+        const fileSignature = `${file.name}:${file.size}:${file.lastModified}`;
+
+        if (preview.dataset.fileSignature !== fileSignature) {
+            if (currentPreviewUrl) {
+                URL.revokeObjectURL(currentPreviewUrl);
+            }
+
+            currentPreviewUrl = URL.createObjectURL(file);
+            frame.src = currentPreviewUrl;
+            preview.dataset.fileSignature = fileSignature;
+        }
+
+        preview.hidden = false;
+
+        setPreviewText(preview, '[data-preview-file-name]', file.name);
+        setPreviewText(preview, '[data-preview-file-size]', formatBytes(file.size));
+        setPreviewText(preview, '[data-preview-reference-label]', form.querySelector('[name="document_type"]')?.value === 'cte' ? 'Nota Fiscal' : 'Ordem');
+        setPreviewText(preview, '[data-preview-purchase-order]', form.querySelector('[name="purchase_order_number"]')?.value || '-');
+        setPreviewText(preview, '[data-preview-arrival-date]', formatDate(form.querySelector('[name="arrival_date"]')?.value));
+        setPreviewText(preview, '[data-preview-payment]', formatPayment(form));
+        setPreviewText(preview, '[data-preview-notes]', form.querySelector('[name="user_notes"]')?.value || '-');
     }
 
     function setPreviewText(root, selector, value) {

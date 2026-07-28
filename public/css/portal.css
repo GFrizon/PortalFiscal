@@ -3024,6 +3024,13 @@ textarea.form-control {
     max-width: none;
 }
 
+.invoice-create-grid {
+    display: grid;
+    grid-template-columns: minmax(560px, .95fr) minmax(420px, .7fr);
+    gap: 14px;
+    align-items: start;
+}
+
 .invoice-create-page .upload-form {
     max-width: none !important;
 }
@@ -3032,8 +3039,47 @@ textarea.form-control {
     min-height: 92px;
 }
 
+.upload-preview-panel {
+    position: sticky;
+    top: calc(var(--topbar-height) + 16px);
+    min-height: 420px;
+}
+
+.upload-preview-panel[hidden] {
+    display: none !important;
+}
+
+.upload-preview-panel .panel-header {
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.upload-preview-panel .preview-layout-inline {
+    grid-template-columns: 1fr;
+    padding-top: 14px;
+}
+
+.upload-preview-panel .preview-frame-shell,
+.upload-preview-panel .preview-frame {
+    min-height: min(58vh, 560px);
+}
+
+.upload-preview-panel .preview-summary .summary-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .upload-form .payment-installments-area .installments-grid {
     grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+}
+
+@media (max-width: 1199.98px) {
+    .invoice-create-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .upload-preview-panel {
+        position: static;
+    }
 }
 
 @media (min-width: 1400px) {
