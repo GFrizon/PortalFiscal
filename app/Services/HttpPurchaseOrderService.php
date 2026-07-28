@@ -54,7 +54,7 @@ class HttpPurchaseOrderService
 
         return [
             'exists' => (bool) ($data['exists'] ?? false),
-            'status' => $data['status'] ?? null,
+            'status' => $this->normalizeStatus((string) ($data['status'] ?? '')),
             'supplier_cnpj' => $this->normalizeCnpj((string) ($data['supplier_cnpj'] ?? '')),
             'supplier_name' => $this->cleanNullableString($data['supplier_name'] ?? null),
             'business_unit_id' => null,
@@ -74,6 +74,20 @@ class HttpPurchaseOrderService
         $normalized = preg_replace('/\D/', '', $cnpj) ?: '';
 
         return $normalized !== '' ? $normalized : null;
+    }
+
+    private function normalizeStatus(string $status): ?string
+    {
+        $normalized = mb_strtolower(trim($status));
+
+        return match (true) {
+            $normalized === '' => null,
+            in_array($normalized, ['l', 'liq', 'liquidado', 'liquidada'], true) => 'liquidada',
+            in_array($normalized, ['a', 'aberto', 'aberta'], true) => 'aberta',
+            str_contains($normalized, 'cancel') || in_array($normalized, ['c', 'can', '9'], true) => 'cancelada',
+            in_array($normalized, ['p', 'pendente', 'pendencia'], true) => 'pendente',
+            default => $normalized,
+        };
     }
 
     private function cleanNullableString(mixed $value): ?string

@@ -18,8 +18,8 @@ class StoreInvoiceRequest extends FormRequest
 
         return [
             'pdf' => ['required', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'max:'.$maxUploadKb],
-            'purchase_order_number' => ['nullable', 'string', 'max:80'],
-            'due_date' => ['nullable', 'date'],
+            'purchase_order_number' => ['required', 'digits_between:1,80'],
+            'due_date' => ['required', 'date'],
             'arrival_date' => ['required', 'date'],
             'user_notes' => ['nullable', 'string', 'max:5000'],
         ];

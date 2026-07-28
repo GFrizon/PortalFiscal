@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Invoice;
 use App\Models\User;
+use App\Enums\InvoiceStatus;
 
 class InvoicePolicy
 {
@@ -24,6 +25,15 @@ class InvoicePolicy
 
     public function update(User $user, Invoice $invoice): bool
     {
+        return $user->isAdmin() || $user->isFiscal() || $invoice->submitted_by === $user->id;
+    }
+
+    public function delete(User $user, Invoice $invoice): bool
+    {
+        if ($invoice->status === InvoiceStatus::Launched) {
+            return false;
+        }
+
         return $user->isAdmin() || $user->isFiscal() || $invoice->submitted_by === $user->id;
     }
 

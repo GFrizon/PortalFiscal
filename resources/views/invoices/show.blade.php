@@ -20,6 +20,16 @@
                 <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
                 Anexar
             </a>
+            @can('delete', $invoice)
+                <form method="POST" action="{{ route('invoices.destroy', $invoice) }}" class="d-inline" data-confirm="Excluir esta nota e remover o PDF anexado?">
+                    @csrf
+                    @method('DELETE')
+                    <button class="btn btn-outline-danger" type="submit">
+                        <i class="bi bi-trash" aria-hidden="true"></i>
+                        Excluir
+                    </button>
+                </form>
+            @endcan
         </div>
     </div>
 

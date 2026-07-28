@@ -19,7 +19,7 @@ class InvoiceFactory extends Factory
             'protocol' => 'NF-'.now()->format('Y').'-'.str_pad((string) fake()->unique()->numberBetween(1, 999999), 6, '0', STR_PAD_LEFT),
             'submitted_by' => User::factory(),
             'business_unit_id' => BusinessUnit::factory(),
-            'purchase_order_number' => fake()->numerify('OC######'),
+            'purchase_order_number' => fake()->numerify('######'),
             'invoice_number' => fake()->numerify('########'),
             'issuer_cnpj' => fake()->numerify('##############'),
             'issuer_legal_name' => fake()->company(),

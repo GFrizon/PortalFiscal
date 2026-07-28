@@ -51,7 +51,7 @@
             </div>
             <div class="col-12 col-md-4">
                 <label class="form-label" for="purchase_order_number">Ordem de compra</label>
-                <input class="form-control" id="purchase_order_number" name="purchase_order_number" value="{{ old('purchase_order_number') }}">
+                <input class="form-control" id="purchase_order_number" name="purchase_order_number" value="{{ old('purchase_order_number') }}" inputmode="numeric" pattern="[0-9]*" required data-digits-only>
             </div>
             <div class="col-12 col-md-4">
                 <label class="form-label" for="arrival_date">Data de chegada</label>
@@ -59,7 +59,7 @@
             </div>
             <div class="col-12 col-md-4">
                 <label class="form-label" for="due_date">Data de vencimento</label>
-                <input class="form-control" id="due_date" type="date" name="due_date" value="{{ old('due_date') }}">
+                <input class="form-control" id="due_date" type="date" name="due_date" value="{{ old('due_date') }}" required>
             </div>
             <div class="col-12">
                 <label class="form-label" for="user_notes">Observacoes</label>

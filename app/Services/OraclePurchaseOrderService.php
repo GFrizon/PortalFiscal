@@ -159,7 +159,10 @@ class OraclePurchaseOrderService
 
         return match (true) {
             $normalized === '' => null,
+            in_array($normalized, ['l', 'liq', 'liquidado', 'liquidada'], true) => 'liquidada',
+            in_array($normalized, ['a', 'aberto', 'aberta'], true) => 'aberta',
             str_contains($normalized, 'cancel') || in_array($normalized, ['c', 'can', '9'], true) => 'cancelada',
+            in_array($normalized, ['p', 'pendente', 'pendencia'], true) => 'pendente',
             default => $normalized,
         };
     }

@@ -59,6 +59,10 @@
     document.querySelectorAll('form').forEach((form) => {
         form.addEventListener('submit', (event) => {
             if (form.matches('[data-pdf-preview-form]') && form.dataset.previewConfirmed !== 'true') {
+                if (! form.checkValidity()) {
+                    return;
+                }
+
                 const fileInput = form.querySelector('input[type="file"][name="pdf"]');
                 const file = fileInput?.files?.[0];
 
@@ -105,6 +109,12 @@
             }
 
             target.textContent = input.files?.[0]?.name || 'Nenhum arquivo selecionado.';
+        });
+    });
+
+    document.querySelectorAll('[data-digits-only]').forEach((input) => {
+        input.addEventListener('input', () => {
+            input.value = input.value.replace(/\D/g, '');
         });
     });
 

@@ -190,7 +190,7 @@ class NavigationAuditTest extends TestCase
         $this->actingAs($user)
             ->post(route('invoices.store'), [
                 'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
-                'purchase_order_number' => 'OC123456',
+                'purchase_order_number' => '123456',
                 'arrival_date' => now()->format('Y-m-d'),
                 'due_date' => now()->addDays(10)->format('Y-m-d'),
                 'user_notes' => 'Nota enviada em teste.',
@@ -200,7 +200,7 @@ class NavigationAuditTest extends TestCase
         $this->assertDatabaseHas('invoices', [
             'submitted_by' => $user->id,
             'business_unit_id' => $unit->id,
-            'purchase_order_number' => 'OC123456',
+            'purchase_order_number' => '123456',
             'status' => 'awaiting_review',
         ]);
 
@@ -210,6 +210,72 @@ class NavigationAuditTest extends TestCase
         $this->assertNotNull($invoice->pdf_sha256);
         $this->assertSame($invoice->original_file_size, $invoice->file_size);
         $this->assertFalse($invoice->pdf_optimized);
+        Storage::disk('local')->assertExists($invoice->pdf_path);
+    }
+
+    public function test_invoice_upload_requires_tracking_fields_and_numeric_purchase_order(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('invoices.store'), [
+                'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
+                'purchase_order_number' => 'OC123456',
+                'arrival_date' => null,
+                'due_date' => null,
+            ])
+            ->assertSessionHasErrors(['purchase_order_number', 'arrival_date', 'due_date']);
+
+        $this->assertDatabaseCount('invoices', 0);
+    }
+
+    public function test_user_can_delete_invoice_that_was_not_launched_and_pdf_is_removed(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => 'awaiting_review',
+            'pdf_path' => 'notas/teste/nota.pdf',
+        ]);
+
+        Storage::disk('local')->put($invoice->pdf_path, 'PDF fake');
+
+        $this->actingAs($user)
+            ->delete(route('invoices.destroy', $invoice))
+            ->assertRedirect(route('invoices.index'));
+
+        $this->assertDatabaseMissing('invoices', [
+            'id' => $invoice->id,
+        ]);
+
+        Storage::disk('local')->assertMissing($invoice->pdf_path);
+    }
+
+    public function test_launched_invoice_cannot_be_deleted(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => 'launched',
+            'pdf_path' => 'notas/teste/lancada.pdf',
+        ]);
+
+        Storage::disk('local')->put($invoice->pdf_path, 'PDF fake');
+
+        $this->actingAs($user)
+            ->delete(route('invoices.destroy', $invoice))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+        ]);
+
         Storage::disk('local')->assertExists($invoice->pdf_path);
     }
 
@@ -231,13 +297,14 @@ class NavigationAuditTest extends TestCase
                 'recipient_legal_name' => null,
                 'error' => null,
             ]);
+            $mock->shouldReceive('normalizeCnpj')->andReturnUsing(fn (string $cnpj) => preg_replace('/\D/', '', $cnpj) ?? '');
         });
 
         foreach ([1, 2] as $attempt) {
             $this->actingAs($user)
                 ->post(route('invoices.store'), [
                     'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
-                    'purchase_order_number' => null,
+                    'purchase_order_number' => '12345'.$attempt,
                     'arrival_date' => now()->format('Y-m-d'),
                     'due_date' => now()->addDays(10)->format('Y-m-d'),
                     'user_notes' => 'Envio '.$attempt,
@@ -285,7 +352,7 @@ class NavigationAuditTest extends TestCase
                 'amount' => null,
                 'raw_response' => [
                     'source' => 'oci8_missing',
-                    'number' => 'OC123456',
+                    'number' => '123456',
                 ],
             ]);
         });
@@ -293,7 +360,7 @@ class NavigationAuditTest extends TestCase
         $this->actingAs($user)
             ->post(route('invoices.store'), [
                 'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
-                'purchase_order_number' => 'OC123456',
+                'purchase_order_number' => '123456',
                 'arrival_date' => now()->format('Y-m-d'),
                 'due_date' => now()->addDays(10)->format('Y-m-d'),
                 'user_notes' => null,
@@ -427,18 +494,18 @@ class NavigationAuditTest extends TestCase
         $user = User::factory()->create();
         $invoice = Invoice::factory()->create([
             'submitted_by' => $user->id,
-            'purchase_order_number' => 'OC123456',
+            'purchase_order_number' => '123456',
         ]);
 
         $invoice->purchaseOrderCheck()->create([
-            'purchase_order_number' => 'OC123456',
+            'purchase_order_number' => '123456',
             'exists' => true,
             'status' => 'aberta',
             'supplier_cnpj' => '12345678000195',
             'supplier_name' => 'Fornecedor CIGAM',
             'amount' => 1500.00,
             'raw_response' => [
-                'purchase_order_number' => 'OC123456',
+                'purchase_order_number' => '123456',
                 'supplier_code' => 'FOR001',
             ],
         ]);

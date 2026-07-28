@@ -231,4 +231,22 @@ class InvoiceController extends Controller
             'businessUnits' => BusinessUnit::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
+
+    public function destroy(Invoice $invoice, PdfStorageService $pdfStorageService): RedirectResponse
+    {
+        $this->authorize('delete', $invoice);
+
+        $pdfPath = $invoice->pdf_path;
+        $protocol = $invoice->protocol;
+
+        DB::transaction(function () use ($invoice): void {
+            $invoice->delete();
+        });
+
+        $pdfStorageService->deleteIfExists($pdfPath);
+
+        return redirect()
+            ->route('invoices.index')
+            ->with('success', 'Nota '.$protocol.' excluida com sucesso.');
+    }
 }

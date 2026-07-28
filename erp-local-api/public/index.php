@@ -212,7 +212,7 @@ function normalizeRow(array $row, string $number, string $source): array
 
     return [
         'exists' => true,
-        'status' => cleanNullableString($lower['status'] ?? null),
+        'status' => normalizeStatus((string) ($lower['status'] ?? '')),
         'supplier_cnpj' => normalizeCnpj((string) ($lower['supplier_cnpj'] ?? '')),
         'supplier_name' => cleanNullableString($lower['supplier_name'] ?? null),
         'business_unit_id' => null,
@@ -221,6 +221,7 @@ function normalizeRow(array $row, string $number, string $source): array
             'source' => $source,
             'number' => $number,
             'purchase_order_number' => cleanNullableString($lower['purchase_order_number'] ?? null),
+            'erp_status' => cleanNullableString($lower['status'] ?? null),
         ],
     ];
 }
@@ -326,6 +327,20 @@ function normalizeAmount(mixed $amount): ?float
     }
 
     return (float) str_replace(',', '.', (string) $amount);
+}
+
+function normalizeStatus(string $status): ?string
+{
+    $normalized = strtolower(trim($status));
+
+    return match (true) {
+        $normalized === '' => null,
+        in_array($normalized, ['l', 'liq', 'liquidado', 'liquidada'], true) => 'liquidada',
+        in_array($normalized, ['a', 'aberto', 'aberta'], true) => 'aberta',
+        in_array($normalized, ['c', 'can', 'cancelado', 'cancelada', '9'], true) => 'cancelada',
+        in_array($normalized, ['p', 'pendente', 'pendencia'], true) => 'pendente',
+        default => $normalized,
+    };
 }
 
 function cleanNullableString(mixed $value): ?string
