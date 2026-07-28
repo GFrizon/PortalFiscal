@@ -72,6 +72,43 @@ start-api.bat
 curl -X POST http://127.0.0.1:8088/api/local/purchase-orders/check -H "Authorization: Bearer SEU_TOKEN" -H "Content-Type: application/json" -d "{\"purchase_order_number\":\"103635\"}"
 ```
 
+Ou, com a API ja aberta em outro terminal:
+
+```bat
+test-api.bat
+```
+
+Tambem da para testar via PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File check-api.ps1
+```
+
+## Rodar como servico no Windows
+
+O jeito mais simples e estavel no Windows Server e usar NSSM.
+
+1. Baixe o NSSM e coloque `nssm.exe` na mesma pasta da API ou em uma pasta do PATH.
+2. Abra o PowerShell como Administrador.
+3. Rode:
+
+```powershell
+cd C:\PortalFiscal\erp-local-api
+powershell -ExecutionPolicy Bypass -File install-service-nssm.ps1 -PhpPath "C:\php\php.exe" -Port 8088
+```
+
+Se `php` ja estiver no PATH:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File install-service-nssm.ps1 -PhpPath "php" -Port 8088
+```
+
+Depois disso o servico fica como:
+
+```text
+PortalFiscalErpApi
+```
+
 ## Ligar no portal do cPanel
 
 No `.env` do portal:
