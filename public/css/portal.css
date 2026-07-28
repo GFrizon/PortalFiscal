@@ -2990,7 +2990,7 @@ textarea.form-control {
 }
 
 .payment-installments-area .installment-row {
-    grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: 34px minmax(150px, 1fr) minmax(130px, .85fr);
     gap: 7px;
     padding: 7px;
     background: #fff;
@@ -3069,7 +3069,7 @@ textarea.form-control {
 }
 
 .upload-form .payment-installments-area .installments-grid {
-    grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(390px, 1fr));
 }
 
 @media (max-width: 1199.98px) {
@@ -3084,12 +3084,12 @@ textarea.form-control {
 
 @media (min-width: 1400px) {
     .upload-form .payment-installments-area .installments-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
-@media (min-width: 1800px) {
+@media (max-width: 575.98px) {
     .upload-form .payment-installments-area .installments-grid {
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-template-columns: 1fr;
     }
 }
