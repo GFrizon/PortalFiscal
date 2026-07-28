@@ -181,6 +181,7 @@
                     amount.disabled = ! requiresInstallments;
                     amount.required = requiresInstallments;
                     row.querySelector('label[for$="_amount"]')?.setAttribute('for', amount.id);
+                    bindCurrencyInput(amount);
                 }
             });
         };
@@ -189,6 +190,8 @@
         countInput?.addEventListener('change', syncInstallments);
         syncInstallments();
     });
+
+    document.querySelectorAll('[data-installment-amount]').forEach(bindCurrencyInput);
 
     function openPdfPreview(form, file) {
         const modalElement = document.getElementById('pdfPreviewModal');
@@ -299,6 +302,32 @@
         `;
 
         return row;
+    }
+
+    function bindCurrencyInput(input) {
+        if (input.dataset.currencyBound === 'true') {
+            return;
+        }
+
+        input.dataset.currencyBound = 'true';
+        input.addEventListener('input', () => {
+            input.value = formatCurrencyDigits(input.value);
+        });
+    }
+
+    function formatCurrencyDigits(value) {
+        const digits = value.replace(/\D/g, '');
+
+        if (! digits) {
+            return '';
+        }
+
+        const amount = Number.parseInt(digits, 10) / 100;
+
+        return amount.toLocaleString('pt-BR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
     }
 
     function formatPayment(form) {
