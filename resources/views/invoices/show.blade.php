@@ -53,7 +53,7 @@
                             </a>
                         </div>
                     </div>
-                    <iframe src="{{ route('invoices.pdf.show', $invoice) }}" class="pdf-frame"></iframe>
+                    <iframe src="{{ route('invoices.pdf.show', $invoice) }}#toolbar=1&navpanes=0&zoom=page-fit" class="pdf-frame"></iframe>
                 </div>
             </div>
 
