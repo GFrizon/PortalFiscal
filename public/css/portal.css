@@ -2577,3 +2577,55 @@ textarea.form-control {
         flex: 1;
     }
 }
+
+/* Invoice detail: one page scroll, no nested scrollbars. */
+.app-sidebar {
+    height: 100vh;
+    overflow: hidden;
+}
+
+.sidebar-nav {
+    overflow: visible;
+}
+
+.invoice-detail-page .invoice-workspace {
+    grid-template-columns: minmax(700px, 1.35fr) minmax(430px, .65fr);
+    align-items: start;
+}
+
+.invoice-detail-page .review-column {
+    position: static;
+    top: auto;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0 !important;
+    scrollbar-width: auto;
+}
+
+.invoice-detail-page .pdf-panel {
+    overflow: visible;
+}
+
+.invoice-detail-page .pdf-frame {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 1180px;
+    aspect-ratio: 1 / 1.42;
+}
+
+@media (max-width: 1399.98px) {
+    .invoice-detail-page .invoice-workspace {
+        grid-template-columns: 1fr;
+    }
+
+    .invoice-detail-page .pdf-frame {
+        min-height: 960px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .invoice-detail-page .pdf-frame {
+        min-height: 720px;
+    }
+}
