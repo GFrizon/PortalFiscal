@@ -2629,3 +2629,65 @@ textarea.form-control {
         min-height: 720px;
     }
 }
+
+/* Invoice detail final layout: desktop works as a split review screen. */
+@media (min-width: 1200px) {
+    .invoice-detail-page {
+        height: calc(100vh - var(--topbar-height) - 52px);
+        min-height: 680px;
+        overflow: hidden;
+    }
+
+    .invoice-detail-page .section-toolbar {
+        margin-bottom: 12px !important;
+    }
+
+    .invoice-detail-page .invoice-workspace {
+        height: calc(100% - 58px);
+        min-height: 0;
+        grid-template-columns: minmax(760px, 1fr) minmax(430px, 500px);
+        gap: 14px;
+        overflow: hidden;
+    }
+
+    .invoice-detail-page .pdf-panel {
+        height: 100%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .invoice-detail-page .pdf-panel .panel-header {
+        flex: 0 0 auto;
+    }
+
+    .invoice-detail-page .pdf-frame {
+        flex: 1 1 auto;
+        height: 100% !important;
+        min-height: 0 !important;
+        aspect-ratio: auto;
+    }
+
+    .invoice-detail-page .review-column {
+        height: 100%;
+        min-height: 0;
+        overflow-y: auto;
+        padding-right: 4px !important;
+        scrollbar-width: thin;
+    }
+
+    .invoice-detail-page .review-column .panel:last-child {
+        margin-bottom: 0;
+    }
+}
+
+@media (min-width: 992px) {
+    .app-sidebar {
+        max-height: 100vh;
+    }
+
+    .sidebar-nav {
+        overflow: visible;
+    }
+}
