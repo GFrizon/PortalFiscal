@@ -122,8 +122,9 @@
                 <thead>
                 <tr>
                     <th>Protocolo</th>
+                    <th>Tipo</th>
                     <th>Nota</th>
-                    <th>Ordem</th>
+                    <th>Referencia</th>
                     <th>Unidade</th>
                     <th>Usuario</th>
                     <th>Chegada</th>
@@ -135,6 +136,7 @@
                 @forelse($invoices as $invoice)
                     <tr>
                         <td><span class="protocol-code">{{ $invoice->protocol }}</span></td>
+                        <td>{{ $invoice->document_type->label() }}</td>
                         <td>{{ $invoice->invoice_number ?? '-' }}</td>
                         <td>{{ $invoice->purchase_order_number ?? '-' }}</td>
                         <td>
@@ -154,7 +156,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="empty-state">Nenhuma nota nesta pasta.</td>
+                        <td colspan="9" class="empty-state">Nenhuma nota nesta pasta.</td>
                     </tr>
                 @endforelse
                 </tbody>

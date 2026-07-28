@@ -190,6 +190,7 @@ class NavigationAuditTest extends TestCase
         $this->actingAs($user)
             ->post(route('invoices.store'), [
                 'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf',
                 'purchase_order_number' => '123456',
                 'arrival_date' => now()->format('Y-m-d'),
                 'due_date' => now()->addDays(10)->format('Y-m-d'),
@@ -200,6 +201,7 @@ class NavigationAuditTest extends TestCase
         $this->assertDatabaseHas('invoices', [
             'submitted_by' => $user->id,
             'business_unit_id' => $unit->id,
+            'document_type' => 'nf',
             'purchase_order_number' => '123456',
             'status' => 'awaiting_review',
         ]);
@@ -222,6 +224,7 @@ class NavigationAuditTest extends TestCase
         $this->actingAs($user)
             ->post(route('invoices.store'), [
                 'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf',
                 'purchase_order_number' => 'OC123456',
                 'arrival_date' => null,
                 'due_date' => null,
@@ -229,6 +232,54 @@ class NavigationAuditTest extends TestCase
             ->assertSessionHasErrors(['purchase_order_number', 'arrival_date', 'due_date']);
 
         $this->assertDatabaseCount('invoices', 0);
+    }
+
+    public function test_cte_upload_requires_invoice_reference_and_skips_purchase_order_lookup(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => 'PDF CTE simulado',
+                'cnpjs' => ['12345678000195'],
+                'issuer_cnpj' => '12345678000195',
+                'recipient_cnpj' => null,
+                'invoice_number' => '777888',
+                'issuer_legal_name' => null,
+                'recipient_legal_name' => null,
+                'error' => null,
+            ]);
+        });
+
+        $this->mock(PurchaseOrderService::class, function ($mock): void {
+            $mock->shouldNotReceive('find');
+        });
+
+        $this->actingAs($user)
+            ->post(route('invoices.store'), [
+                'pdf' => UploadedFile::fake()->create('cte.pdf', 100, 'application/pdf'),
+                'document_type' => 'cte',
+                'purchase_order_number' => '31426',
+                'arrival_date' => now()->format('Y-m-d'),
+                'due_date' => now()->addDays(10)->format('Y-m-d'),
+                'user_notes' => 'CTE vinculado a NF.',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('invoices', [
+            'submitted_by' => $user->id,
+            'document_type' => 'cte',
+            'purchase_order_number' => '31426',
+        ]);
+
+        $invoice = Invoice::query()->where('submitted_by', $user->id)->firstOrFail();
+
+        $this->assertDatabaseMissing('purchase_order_checks', [
+            'invoice_id' => $invoice->id,
+        ]);
     }
 
     public function test_user_can_delete_invoice_that_was_not_launched_and_pdf_is_removed(): void
@@ -350,6 +401,7 @@ class NavigationAuditTest extends TestCase
             $this->actingAs($user)
                 ->post(route('invoices.store'), [
                     'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
+                    'document_type' => 'nf',
                     'purchase_order_number' => '12345'.$attempt,
                     'arrival_date' => now()->format('Y-m-d'),
                     'due_date' => now()->addDays(10)->format('Y-m-d'),
@@ -406,6 +458,7 @@ class NavigationAuditTest extends TestCase
         $this->actingAs($user)
             ->post(route('invoices.store'), [
                 'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf',
                 'purchase_order_number' => '123456',
                 'arrival_date' => now()->format('Y-m-d'),
                 'due_date' => now()->addDays(10)->format('Y-m-d'),

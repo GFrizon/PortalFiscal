@@ -36,7 +36,7 @@
                 <strong>{{ $invoice->invoice_number ?? '-' }}</strong>
             </div>
             <div>
-                <span>Ordem</span>
+                <span>{{ $invoice->document_type->referenceLabel() }}</span>
                 <strong>{{ $invoice->purchase_order_number ?? '-' }}</strong>
             </div>
             <div>

@@ -73,7 +73,7 @@
                             <strong>{{ $invoice->invoice_number ?? '-' }}</strong>
                         </div>
                         <div>
-                            <span>Ordem</span>
+                            <span>{{ $invoice->document_type->referenceLabel() }}</span>
                             <strong>{{ $invoice->purchase_order_number ?? '-' }}</strong>
                         </div>
                     </div>
@@ -81,6 +81,8 @@
                     <dl class="details-grid mb-0">
                         <dt>Unidade</dt>
                         <dd>{{ $invoice->businessUnit?->name ?? 'Nao identificada' }}</dd>
+                        <dt>Tipo</dt>
+                        <dd>{{ $invoice->document_type->label() }}</dd>
                         <dt>Enviado por</dt>
                         <dd>{{ $invoice->submitter?->name }}</dd>
                         <dt>Chegada</dt>
@@ -120,7 +122,7 @@
                     @endif
                 </div>
 
-                @if($invoice->purchaseOrderCheck)
+                @if($invoice->document_type === \App\Enums\InvoiceDocumentType::Nf && $invoice->purchaseOrderCheck)
                     <div class="panel mb-3">
                         <div class="po-summary mb-0">
                             <div class="po-summary-header">

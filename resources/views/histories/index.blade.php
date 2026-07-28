@@ -71,7 +71,7 @@
                 <tr>
                     <th>Protocolo</th>
                     <th>Nota</th>
-                    <th>Ordem</th>
+                    <th>Referencia</th>
                     <th>Unidade</th>
                     <th>Status</th>
                     <th>Ultima acao</th>

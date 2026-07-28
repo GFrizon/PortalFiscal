@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\InvoiceDocumentType;
 use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,7 @@ class Invoice extends Model
         'protocol',
         'submitted_by',
         'business_unit_id',
+        'document_type',
         'purchase_order_number',
         'invoice_number',
         'issuer_cnpj',
@@ -51,6 +53,7 @@ class Invoice extends Model
             'launched_at' => 'datetime',
             'pdf_optimized' => 'boolean',
             'pdf_processed_at' => 'datetime',
+            'document_type' => InvoiceDocumentType::class,
             'status' => InvoiceStatus::class,
         ];
     }

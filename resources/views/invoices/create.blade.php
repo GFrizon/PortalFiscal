@@ -49,15 +49,22 @@
             <div class="col-12">
                 <div class="form-section-label">Acompanhamento</div>
             </div>
-            <div class="col-12 col-md-4">
-                <label class="form-label" for="purchase_order_number">Ordem de compra</label>
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="document_type">Tipo de documento</label>
+                <select class="form-select" id="document_type" name="document_type" required data-document-type-select>
+                    <option value="nf" @selected(old('document_type', 'nf') === 'nf')>NF</option>
+                    <option value="cte" @selected(old('document_type') === 'cte')>CTE</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label" for="purchase_order_number" data-reference-label>Ordem de compra</label>
                 <input class="form-control" id="purchase_order_number" name="purchase_order_number" value="{{ old('purchase_order_number') }}" inputmode="numeric" pattern="[0-9]*" required data-digits-only>
             </div>
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
                 <label class="form-label" for="arrival_date">Data de chegada</label>
                 <input class="form-control" id="arrival_date" type="date" name="arrival_date" value="{{ old('arrival_date', now()->format('Y-m-d')) }}" required>
             </div>
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
                 <label class="form-label" for="due_date">Data de vencimento</label>
                 <input class="form-control" id="due_date" type="date" name="due_date" value="{{ old('due_date') }}" required>
             </div>
@@ -104,7 +111,7 @@
                                     <strong data-preview-file-size>-</strong>
                                 </div>
                                 <div>
-                                    <span>Ordem</span>
+                                    <span data-preview-reference-label>Ordem</span>
                                     <strong data-preview-purchase-order>-</strong>
                                 </div>
                                 <div>

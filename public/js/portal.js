@@ -118,6 +118,22 @@
         });
     });
 
+    document.querySelectorAll('[data-document-type-select]').forEach((select) => {
+        const form = select.closest('form');
+        const label = form?.querySelector('[data-reference-label]');
+
+        const syncReferenceLabel = () => {
+            if (! label) {
+                return;
+            }
+
+            label.textContent = select.value === 'cte' ? 'Nota Fiscal' : 'Ordem de compra';
+        };
+
+        select.addEventListener('change', syncReferenceLabel);
+        syncReferenceLabel();
+    });
+
     function openPdfPreview(form, file) {
         const modalElement = document.getElementById('pdfPreviewModal');
         const frame = modalElement?.querySelector('[data-pdf-preview-frame]');
@@ -138,6 +154,7 @@
 
         setPreviewText(modalElement, '[data-preview-file-name]', file.name);
         setPreviewText(modalElement, '[data-preview-file-size]', formatBytes(file.size));
+        setPreviewText(modalElement, '[data-preview-reference-label]', form.querySelector('[name="document_type"]')?.value === 'cte' ? 'Nota Fiscal' : 'Ordem');
         setPreviewText(modalElement, '[data-preview-purchase-order]', form.querySelector('[name="purchase_order_number"]')?.value || '-');
         setPreviewText(modalElement, '[data-preview-arrival-date]', formatDate(form.querySelector('[name="arrival_date"]')?.value));
         setPreviewText(modalElement, '[data-preview-due-date]', formatDate(form.querySelector('[name="due_date"]')?.value));

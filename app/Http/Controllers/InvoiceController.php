@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\AlertLevel;
 use App\Enums\AlertType;
+use App\Enums\InvoiceDocumentType;
 use App\Enums\InvoiceStatus;
 use App\Http\Requests\Invoice\StoreInvoiceRequest;
 use App\Models\BusinessUnit;
@@ -132,6 +133,7 @@ class InvoiceController extends Controller
                     'protocol' => $invoiceService->nextProtocol(),
                     'submitted_by' => $request->user()->id,
                     'business_unit_id' => $businessUnit?->id,
+                    'document_type' => $request->string('document_type')->toString(),
                     'purchase_order_number' => $request->string('purchase_order_number')->toString() ?: null,
                     'invoice_number' => $extracted['invoice_number'],
                     'issuer_cnpj' => $extracted['issuer_cnpj'],
@@ -174,7 +176,7 @@ class InvoiceController extends Controller
                     $alertService->create($invoice, AlertType::BusinessUnitNotIdentified, 'Unidade de negocio nao identificada pelo CNPJ do destinatario.', AlertLevel::Warning);
                 }
 
-                if ($invoice->purchase_order_number) {
+                if ($invoice->document_type === InvoiceDocumentType::Nf && $invoice->purchase_order_number) {
                     $purchaseOrder = $purchaseOrderService->find($invoice->purchase_order_number);
                     $invoice->purchaseOrderCheck()->create($purchaseOrder + [
                         'purchase_order_number' => $invoice->purchase_order_number,
