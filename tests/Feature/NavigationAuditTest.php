@@ -255,6 +255,52 @@ class NavigationAuditTest extends TestCase
         Storage::disk('local')->assertMissing($invoice->pdf_path);
     }
 
+    public function test_admin_can_delete_invoice_that_was_not_launched(): void
+    {
+        Storage::fake('local');
+
+        $admin = User::factory()->admin()->create();
+        $invoice = Invoice::factory()->create([
+            'status' => 'pending',
+            'pdf_path' => 'notas/teste/admin-delete.pdf',
+        ]);
+
+        Storage::disk('local')->put($invoice->pdf_path, 'PDF fake');
+
+        $this->actingAs($admin)
+            ->delete(route('invoices.destroy', $invoice))
+            ->assertRedirect(route('invoices.index'));
+
+        $this->assertDatabaseMissing('invoices', [
+            'id' => $invoice->id,
+        ]);
+
+        Storage::disk('local')->assertMissing($invoice->pdf_path);
+    }
+
+    public function test_fiscal_cannot_delete_invoice(): void
+    {
+        Storage::fake('local');
+
+        $fiscal = User::factory()->fiscal()->create();
+        $invoice = Invoice::factory()->create([
+            'status' => 'awaiting_review',
+            'pdf_path' => 'notas/teste/fiscal-blocked.pdf',
+        ]);
+
+        Storage::disk('local')->put($invoice->pdf_path, 'PDF fake');
+
+        $this->actingAs($fiscal)
+            ->delete(route('invoices.destroy', $invoice))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+        ]);
+
+        Storage::disk('local')->assertExists($invoice->pdf_path);
+    }
+
     public function test_launched_invoice_cannot_be_deleted(): void
     {
         Storage::fake('local');

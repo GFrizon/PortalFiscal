@@ -38,7 +38,6 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::patch('invoices/{invoice}/unit', [FiscalReviewController::class, 'updateUnit'])->name('invoices.unit.update');
         Route::post('invoices/{invoice}/mark-as-pending', [FiscalReviewController::class, 'markAsPending'])->name('invoices.mark-as-pending');
         Route::post('invoices/{invoice}/mark-as-launched', [FiscalReviewController::class, 'markAsLaunched'])->name('invoices.mark-as-launched');
-        Route::post('invoices/{invoice}/cancel', [FiscalReviewController::class, 'cancel'])->name('invoices.cancel');
         Route::post('invoices/{invoice}/alerts/{alert}/resolve', [FiscalReviewController::class, 'resolveAlert'])->name('invoices.alerts.resolve');
         Route::get('invoices/{invoice}/pdf', [PdfController::class, 'show'])->name('invoices.pdf.show');
         Route::get('invoices/{invoice}/pdf/download', [PdfController::class, 'download'])->name('invoices.pdf.download');

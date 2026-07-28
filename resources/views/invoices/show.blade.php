@@ -231,10 +231,6 @@
                                             <i class="bi bi-check2-circle" aria-hidden="true"></i>
                                             Lancar
                                         </button>
-                                        <button class="btn btn-outline-danger" type="submit" formaction="{{ route('invoices.cancel', $invoice) }}" data-confirm="Cancelar esta nota?">
-                                            <i class="bi bi-x-octagon" aria-hidden="true"></i>
-                                            Cancelar
-                                        </button>
                                     </div>
                                 </form>
                             @endif

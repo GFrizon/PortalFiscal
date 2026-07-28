@@ -81,15 +81,6 @@ class FiscalReviewController extends Controller
             ->with('success', 'Nota marcada como lancada com sucesso.');
     }
 
-    public function cancel(FiscalStatusRequest $request, Invoice $invoice, InvoiceHistoryService $historyService): RedirectResponse
-    {
-        if (blank($request->string('fiscal_notes')->toString())) {
-            return back()->withErrors(['fiscal_notes' => 'Informe o motivo do cancelamento.']);
-        }
-
-        return $this->changeStatus($request, $invoice, $historyService, InvoiceStatus::Cancelled, 'Nota cancelada');
-    }
-
     public function resolveAlert(
         FiscalStatusRequest $request,
         Invoice $invoice,

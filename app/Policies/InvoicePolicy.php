@@ -34,7 +34,7 @@ class InvoicePolicy
             return false;
         }
 
-        return $user->isAdmin() || $user->isFiscal() || $invoice->submitted_by === $user->id;
+        return $user->isAdmin() || ($user->isRegularUser() && $invoice->submitted_by === $user->id);
     }
 
     public function review(User $user, Invoice $invoice): bool
