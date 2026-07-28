@@ -233,15 +233,22 @@
         }
 
         confirmButton?.addEventListener('click', () => {
+            if (! form.checkValidity()) {
+                modal.hide();
+                cleanupModalBackdrops();
+                form.reportValidity();
+
+                return;
+            }
+
             form.dataset.previewConfirmed = 'true';
             confirmButton.disabled = true;
             confirmButton.setAttribute('aria-busy', 'true');
+            body.classList.add('is-navigating');
             modal.hide();
+            cleanupModalBackdrops();
 
-            modalElement.addEventListener('hidden.bs.modal', () => {
-                cleanupModalBackdrops();
-                form.requestSubmit();
-            }, { once: true });
+            HTMLFormElement.prototype.submit.call(form);
         }, { once: true });
 
         modalElement.addEventListener('hidden.bs.modal', () => {
