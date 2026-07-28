@@ -244,9 +244,13 @@
             form.dataset.previewConfirmed = 'true';
             confirmButton.disabled = true;
             confirmButton.setAttribute('aria-busy', 'true');
-            body.classList.add('is-navigating');
             modal.hide();
-            cleanupModalBackdrops();
+            modalElement.classList.remove('show');
+            modalElement.style.display = 'none';
+            modalElement.setAttribute('aria-hidden', 'true');
+            modalElement.removeAttribute('aria-modal');
+            modalElement.removeAttribute('role');
+            cleanupModalBackdrops(true);
 
             HTMLFormElement.prototype.submit.call(form);
         }, { once: true });
@@ -267,8 +271,8 @@
         modal.show();
     }
 
-    function cleanupModalBackdrops() {
-        if (document.querySelector('.modal.show')) {
+    function cleanupModalBackdrops(force = false) {
+        if (! force && document.querySelector('.modal.show')) {
             return;
         }
 

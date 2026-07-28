@@ -264,7 +264,7 @@ class InvoiceController extends Controller
             ->map(fn (array $installment, int $index): array => [
                 'number' => $index + 1,
                 'due_date' => $installment['due_date'] ?? null,
-                'amount' => isset($installment['amount']) ? round((float) $installment['amount'], 2) : null,
+                'amount' => isset($installment['amount']) ? round($this->decimalAmount($installment['amount']), 2) : null,
             ])
             ->values()
             ->all();
@@ -281,5 +281,16 @@ class InvoiceController extends Controller
             ->filter()
             ->sort()
             ->last();
+    }
+
+    private function decimalAmount(mixed $amount): float
+    {
+        $amount = trim((string) $amount);
+
+        if (str_contains($amount, ',')) {
+            $amount = str_replace(['.', ','], ['', '.'], $amount);
+        }
+
+        return (float) $amount;
     }
 }

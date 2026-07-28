@@ -2,7 +2,8 @@
 <html lang="pt-BR">
 <head>
     @php
-        $assetVersion = file_exists(public_path('css/portal.css')) ? filemtime(public_path('css/portal.css')) : time();
+        $cssVersion = file_exists(public_path('css/portal.css')) ? filemtime(public_path('css/portal.css')) : time();
+        $jsVersion = file_exists(public_path('js/portal.js')) ? filemtime(public_path('js/portal.js')) : time();
     @endphp
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,7 +15,7 @@
     <meta name="theme-color" content="#213f78">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="{{ asset('css/portal.css') }}?v={{ $assetVersion }}" rel="stylesheet">
+    <link href="{{ asset('css/portal.css') }}?v={{ $cssVersion }}" rel="stylesheet">
 </head>
 <body>
 @php
@@ -176,6 +177,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ asset('js/portal.js') }}?v={{ $assetVersion }}"></script>
+<script src="{{ asset('js/portal.js') }}?v={{ $jsVersion }}"></script>
 </body>
 </html>
