@@ -23,7 +23,7 @@ class StoreInvoiceRequest extends FormRequest
             'purchase_order_number' => ['required', 'digits_between:1,80'],
             'arrival_date' => ['required', 'date'],
             'payment_method' => ['required', Rule::in(['anticipated', 'deposit', 'boleto'])],
-            'payment_installments_count' => ['required_unless:payment_method,anticipated', 'nullable', 'integer', 'min:1', 'max:36'],
+            'payment_installments_count' => ['required_unless:payment_method,anticipated', 'nullable', 'integer', 'min:1', 'max:12'],
             'payment_installments' => ['required_unless:payment_method,anticipated', 'nullable', 'array'],
             'payment_installments.*.due_date' => ['required_unless:payment_method,anticipated', 'nullable', 'date'],
             'payment_installments.*.amount' => ['required_unless:payment_method,anticipated', 'nullable', 'numeric', 'min:0.01'],

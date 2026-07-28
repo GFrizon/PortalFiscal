@@ -7,7 +7,7 @@
 @section('content')
     @php
         $oldPaymentMethod = old('payment_method', 'anticipated');
-        $oldInstallmentCount = (int) old('payment_installments_count', max(1, count(old('payment_installments', []))));
+        $oldInstallmentCount = min(12, max(1, (int) old('payment_installments_count', max(1, count(old('payment_installments', []))))));
         $oldInstallments = old('payment_installments', []);
     @endphp
 
@@ -83,7 +83,11 @@
                 <div class="installment-toolbar">
                     <div>
                         <label class="form-label" for="payment_installments_count">Parcelas</label>
-                        <input class="form-control" id="payment_installments_count" type="number" name="payment_installments_count" min="1" max="36" value="{{ old('payment_installments_count', $oldInstallmentCount) }}" data-installments-count>
+                        <select class="form-select" id="payment_installments_count" name="payment_installments_count" data-installments-count>
+                            @for($count = 1; $count <= 12; $count++)
+                                <option value="{{ $count }}" @selected($oldInstallmentCount === $count)>{{ $count }}x</option>
+                            @endfor
+                        </select>
                     </div>
                 </div>
                 <div class="installments-grid" data-installments-grid>

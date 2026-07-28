@@ -150,7 +150,7 @@
             countInput.disabled = ! requiresInstallments;
             countInput.required = requiresInstallments;
 
-            const count = Math.max(1, Math.min(36, Number.parseInt(countInput.value || '1', 10) || 1));
+            const count = Math.max(1, Math.min(12, Number.parseInt(countInput.value || '1', 10) || 1));
             countInput.value = String(count);
 
             while (grid.children.length < count) {
@@ -186,7 +186,7 @@
         };
 
         select.addEventListener('change', syncInstallments);
-        countInput?.addEventListener('input', syncInstallments);
+        countInput?.addEventListener('change', syncInstallments);
         syncInstallments();
     });
 

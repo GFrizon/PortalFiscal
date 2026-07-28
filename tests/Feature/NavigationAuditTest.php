@@ -350,6 +350,30 @@ class NavigationAuditTest extends TestCase
         $this->assertDatabaseCount('invoices', 0);
     }
 
+    public function test_payment_installments_are_limited_to_twelve(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('invoices.store'), [
+                'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf',
+                'purchase_order_number' => '123456',
+                'arrival_date' => now()->format('Y-m-d'),
+                'payment_method' => 'boleto',
+                'payment_installments_count' => 13,
+                'payment_installments' => array_fill(0, 13, [
+                    'due_date' => '2026-08-10',
+                    'amount' => '100',
+                ]),
+            ])
+            ->assertSessionHasErrors(['payment_installments_count']);
+
+        $this->assertDatabaseCount('invoices', 0);
+    }
+
     public function test_user_can_delete_invoice_that_was_not_launched_and_pdf_is_removed(): void
     {
         Storage::fake('local');
