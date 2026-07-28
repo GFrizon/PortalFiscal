@@ -134,9 +134,10 @@
                 </thead>
                 <tbody>
                 @forelse($invoices as $invoice)
+                    @php($documentType = $invoice->document_type ?? \App\Enums\InvoiceDocumentType::Nf)
                     <tr>
                         <td><span class="protocol-code">{{ $invoice->protocol }}</span></td>
-                        <td>{{ $invoice->document_type->label() }}</td>
+                        <td>{{ $documentType->label() }}</td>
                         <td>{{ $invoice->invoice_number ?? '-' }}</td>
                         <td>{{ $invoice->purchase_order_number ?? '-' }}</td>
                         <td>

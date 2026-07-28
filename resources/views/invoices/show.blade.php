@@ -5,6 +5,8 @@
 @section('page_subtitle', 'Detalhes da nota fiscal')
 
 @section('content')
+    @php($documentType = $invoice->document_type ?? \App\Enums\InvoiceDocumentType::Nf)
+
     <div class="invoice-detail-page">
         <div class="section-toolbar mb-3">
             <div>
@@ -73,7 +75,7 @@
                             <strong>{{ $invoice->invoice_number ?? '-' }}</strong>
                         </div>
                         <div>
-                            <span>{{ $invoice->document_type->referenceLabel() }}</span>
+                            <span>{{ $documentType->referenceLabel() }}</span>
                             <strong>{{ $invoice->purchase_order_number ?? '-' }}</strong>
                         </div>
                     </div>
@@ -82,7 +84,7 @@
                         <dt>Unidade</dt>
                         <dd>{{ $invoice->businessUnit?->name ?? 'Nao identificada' }}</dd>
                         <dt>Tipo</dt>
-                        <dd>{{ $invoice->document_type->label() }}</dd>
+                        <dd>{{ $documentType->label() }}</dd>
                         <dt>Enviado por</dt>
                         <dd>{{ $invoice->submitter?->name }}</dd>
                         <dt>Chegada</dt>
@@ -122,7 +124,7 @@
                     @endif
                 </div>
 
-                @if($invoice->document_type === \App\Enums\InvoiceDocumentType::Nf && $invoice->purchaseOrderCheck)
+                @if($documentType === \App\Enums\InvoiceDocumentType::Nf && $invoice->purchaseOrderCheck)
                     <div class="panel mb-3">
                         <div class="po-summary mb-0">
                             <div class="po-summary-header">

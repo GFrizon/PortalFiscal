@@ -5,6 +5,8 @@
 @section('page_subtitle', 'Timeline completa da nota fiscal')
 
 @section('content')
+    @php($documentType = $invoice->document_type ?? \App\Enums\InvoiceDocumentType::Nf)
+
     <div class="section-toolbar mb-3">
         <div>
             <div class="eyebrow">Auditoria da nota</div>
@@ -36,7 +38,7 @@
                 <strong>{{ $invoice->invoice_number ?? '-' }}</strong>
             </div>
             <div>
-                <span>{{ $invoice->document_type->referenceLabel() }}</span>
+                <span>{{ $documentType->referenceLabel() }}</span>
                 <strong>{{ $invoice->purchase_order_number ?? '-' }}</strong>
             </div>
             <div>
