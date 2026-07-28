@@ -2691,3 +2691,99 @@ textarea.form-control {
         overflow: visible;
     }
 }
+
+/* Invoice detail tabbed layout. */
+.invoice-side-panel {
+    padding: 16px;
+}
+
+.invoice-detail-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+    padding: 6px;
+}
+
+.invoice-detail-tabs .nav-item {
+    flex: 1 1 auto;
+}
+
+.invoice-detail-tabs .nav-link {
+    width: 100%;
+    min-height: 34px;
+    padding: 7px 9px;
+    font-size: .76rem;
+}
+
+.compact-summary-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.compact-summary-list > div {
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 7px;
+    background: #fbfcfd;
+}
+
+.compact-summary-list span,
+.compact-summary-list strong {
+    display: block;
+}
+
+.compact-summary-list span {
+    color: var(--color-text-muted);
+    font-size: .66rem;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.compact-summary-list strong {
+    margin-top: 3px;
+    overflow-wrap: anywhere;
+    font-size: .86rem;
+}
+
+@media (min-width: 1200px) {
+    .invoice-detail-page {
+        height: auto;
+        min-height: 0;
+        overflow: visible;
+    }
+
+    .invoice-detail-page .invoice-workspace {
+        height: auto;
+        min-height: 0;
+        grid-template-columns: minmax(760px, 1fr) minmax(430px, 520px);
+        overflow: visible;
+    }
+
+    .invoice-detail-page .pdf-panel {
+        height: auto;
+        min-height: 0;
+        overflow: visible;
+    }
+
+    .invoice-detail-page .pdf-frame {
+        height: calc(100vh - var(--topbar-height) - 176px) !important;
+        min-height: 680px !important;
+        aspect-ratio: auto;
+    }
+
+    .invoice-detail-page .review-column {
+        height: auto;
+        max-height: none;
+        overflow: visible;
+        padding-right: 0 !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .compact-summary-list {
+        grid-template-columns: 1fr;
+    }
+}

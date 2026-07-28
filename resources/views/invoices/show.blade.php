@@ -55,11 +55,11 @@
         </div>
 
         <div class="col-12 col-xl-5 review-column">
-            <div class="panel mb-3">
+            <div class="panel invoice-side-panel">
                 <div class="panel-header">
                     <div>
                         <div class="eyebrow">Protocolo {{ $invoice->protocol }}</div>
-                        <h2 class="panel-title">Dados da nota</h2>
+                        <h2 class="panel-title">Resumo da conferencia</h2>
                     </div>
                 </div>
                 <div class="invoice-summary-strip mb-3">
@@ -77,59 +77,115 @@
                     </div>
                 </div>
 
-                <dl class="details-grid mb-0">
-                    <dt class="col-sm-5">Unidade</dt>
-                    <dd class="col-sm-7">{{ $invoice->businessUnit?->name ?? 'Nao identificada' }}</dd>
-                    <dt class="col-sm-5">Enviado por</dt>
-                    <dd class="col-sm-7">{{ $invoice->submitter?->name }}</dd>
-                    <dt class="col-sm-5">Chegada</dt>
-                    <dd class="col-sm-7">{{ $invoice->arrival_date?->format('d/m/Y') ?? '-' }}</dd>
-                    <dt class="col-sm-5">Vencimento</dt>
-                    <dd class="col-sm-7">{{ $invoice->due_date?->format('d/m/Y') ?? '-' }}</dd>
-                    <dt class="col-sm-5">Emitente</dt>
-                    <dd class="col-sm-7">{{ $invoice->issuer_cnpj ?? '-' }}</dd>
-                    <dt class="col-sm-5">Destinatario</dt>
-                    <dd class="col-sm-7">{{ $invoice->recipient_cnpj ?? '-' }}</dd>
-                    <dt class="col-sm-5">Fiscal responsavel</dt>
-                    <dd class="col-sm-7">{{ $invoice->fiscalUser?->name ?? '-' }}</dd>
-                    <dt class="col-sm-5">Lancamento</dt>
-                    <dd class="col-sm-7">{{ $invoice->launched_at?->format('d/m/Y H:i') ?? '-' }}</dd>
-                </dl>
+                <ul class="nav nav-pills review-tabs invoice-detail-tabs" id="invoiceDetailTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary-tab-pane" type="button" role="tab" aria-controls="summary-tab-pane" aria-selected="true">Resumo</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#data-tab-pane" type="button" role="tab" aria-controls="data-tab-pane" aria-selected="false">Dados</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="cigam-tab" data-bs-toggle="tab" data-bs-target="#cigam-tab-pane" type="button" role="tab" aria-controls="cigam-tab-pane" aria-selected="false">CIGAM</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="alerts-tab" data-bs-toggle="tab" data-bs-target="#alerts-tab-pane" type="button" role="tab" aria-controls="alerts-tab-pane" aria-selected="false">Alertas</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-tab-pane" type="button" role="tab" aria-controls="history-tab-pane" aria-selected="false">Historico</button>
+                    </li>
+                    @can('review', $invoice)
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="review-tab" data-bs-toggle="tab" data-bs-target="#review-tab-pane" type="button" role="tab" aria-controls="review-tab-pane" aria-selected="false">Conferencia</button>
+                        </li>
+                    @endcan
+                </ul>
 
-                <div class="note-box mt-3">
-                    <div class="note-title">
-                        <i class="bi bi-chat-left-text" aria-hidden="true"></i>
-                        Observacoes de {{ $invoice->submitter?->name ?? 'Usuario' }}
-                    </div>
-                    @if(filled($invoice->user_notes))
-                        <div class="text-body">{{ $invoice->user_notes }}</div>
-                    @else
-                        <div class="text-secondary">Nenhuma observacao informada.</div>
-                    @endif
-                </div>
-
-                @if(filled($invoice->fiscal_notes))
-                    <div class="note-box mt-3">
-                        <div class="note-title">
-                            <i class="bi bi-clipboard-check" aria-hidden="true"></i>
-                            Observacoes do Fiscal
+                <div class="tab-content review-tab-content" id="invoiceDetailTabsContent">
+                    <div class="tab-pane fade show active" id="summary-tab-pane" role="tabpanel" aria-labelledby="summary-tab" tabindex="0">
+                        <div class="compact-summary-list">
+                            <div>
+                                <span>Unidade</span>
+                                <strong>{{ $invoice->businessUnit?->name ?? 'Nao identificada' }}</strong>
+                            </div>
+                            <div>
+                                <span>Chegada</span>
+                                <strong>{{ $invoice->arrival_date?->format('d/m/Y') ?? '-' }}</strong>
+                            </div>
+                            <div>
+                                <span>Vencimento</span>
+                                <strong>{{ $invoice->due_date?->format('d/m/Y') ?? '-' }}</strong>
+                            </div>
+                            <div>
+                                <span>Fornecedor CIGAM</span>
+                                <strong>{{ $invoice->purchaseOrderCheck?->supplier_name ?? '-' }}</strong>
+                            </div>
+                            <div>
+                                <span>Valor</span>
+                                <strong>{{ $invoice->purchaseOrderCheck?->amount !== null ? 'R$ '.number_format((float) $invoice->purchaseOrderCheck->amount, 2, ',', '.') : '-' }}</strong>
+                            </div>
+                            <div>
+                                <span>Alertas abertos</span>
+                                <strong>{{ $invoice->alerts->where('resolved', false)->count() }}</strong>
+                            </div>
                         </div>
-                        <div class="text-body">{{ $invoice->fiscal_notes }}</div>
                     </div>
-                @endif
 
-                @if($invoice->purchaseOrderCheck)
-                    <div class="po-summary mt-3 mb-0">
-                        <div class="po-summary-header">
-                            <span>
-                                <i class="bi bi-database-check" aria-hidden="true"></i>
-                                Ordem de compra no CIGAM
-                            </span>
-                            <span class="badge {{ $invoice->purchaseOrderCheck->order_exists ? 'text-bg-primary' : 'text-bg-warning' }}">
-                                {{ $invoice->purchaseOrderCheck->order_exists ? ($invoice->purchaseOrderCheck->status ?? 'Encontrada') : 'Nao encontrada' }}
-                            </span>
+                    <div class="tab-pane fade" id="data-tab-pane" role="tabpanel" aria-labelledby="data-tab" tabindex="0">
+                        <dl class="details-grid mb-0">
+                            <dt>Unidade</dt>
+                            <dd>{{ $invoice->businessUnit?->name ?? 'Nao identificada' }}</dd>
+                            <dt>Enviado por</dt>
+                            <dd>{{ $invoice->submitter?->name }}</dd>
+                            <dt>Chegada</dt>
+                            <dd>{{ $invoice->arrival_date?->format('d/m/Y') ?? '-' }}</dd>
+                            <dt>Vencimento</dt>
+                            <dd>{{ $invoice->due_date?->format('d/m/Y') ?? '-' }}</dd>
+                            <dt>Emitente</dt>
+                            <dd>{{ $invoice->issuer_cnpj ?? '-' }}</dd>
+                            <dt>Destinatario</dt>
+                            <dd>{{ $invoice->recipient_cnpj ?? '-' }}</dd>
+                            <dt>Fiscal responsavel</dt>
+                            <dd>{{ $invoice->fiscalUser?->name ?? '-' }}</dd>
+                            <dt>Lancamento</dt>
+                            <dd>{{ $invoice->launched_at?->format('d/m/Y H:i') ?? '-' }}</dd>
+                        </dl>
+
+                        <div class="note-box mt-3">
+                            <div class="note-title">
+                                <i class="bi bi-chat-left-text" aria-hidden="true"></i>
+                                Observacoes de {{ $invoice->submitter?->name ?? 'Usuario' }}
+                            </div>
+                            @if(filled($invoice->user_notes))
+                                <div class="text-body">{{ $invoice->user_notes }}</div>
+                            @else
+                                <div class="text-secondary">Nenhuma observacao informada.</div>
+                            @endif
                         </div>
-                        <div class="po-summary-grid">
+
+                        @if(filled($invoice->fiscal_notes))
+                            <div class="note-box mt-3">
+                                <div class="note-title">
+                                    <i class="bi bi-clipboard-check" aria-hidden="true"></i>
+                                    Observacoes do Fiscal
+                                </div>
+                                <div class="text-body">{{ $invoice->fiscal_notes }}</div>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="tab-pane fade" id="cigam-tab-pane" role="tabpanel" aria-labelledby="cigam-tab" tabindex="0">
+                        @if($invoice->purchaseOrderCheck)
+                            <div class="po-summary mb-0">
+                                <div class="po-summary-header">
+                                    <span>
+                                        <i class="bi bi-database-check" aria-hidden="true"></i>
+                                        Ordem de compra no CIGAM
+                                    </span>
+                                    <span class="badge {{ $invoice->purchaseOrderCheck->order_exists ? 'text-bg-primary' : 'text-bg-warning' }}">
+                                        {{ $invoice->purchaseOrderCheck->order_exists ? ($invoice->purchaseOrderCheck->status ?? 'Encontrada') : 'Nao encontrada' }}
+                                    </span>
+                                </div>
+                                <div class="po-summary-grid">
                             <div>
                                 <span>Situacao</span>
                                 <strong>{{ $invoice->purchaseOrderCheck->order_exists ? ($invoice->purchaseOrderCheck->status ?? '-') : 'Nao encontrada' }}</strong>
@@ -159,28 +215,62 @@
                                 <strong>CIGAM</strong>
                             </div>
                         </div>
+                            </div>
+                        @else
+                            <p class="empty-state compact">Nenhuma consulta CIGAM registrada.</p>
+                        @endif
                     </div>
-                @endif
-            </div>
 
-            <div class="panel">
-                <ul class="nav nav-pills review-tabs" id="invoiceReviewTabs" role="tablist">
-                    @can('review', $invoice)
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="review-tab" data-bs-toggle="tab" data-bs-target="#review-tab-pane" type="button" role="tab" aria-controls="review-tab-pane" aria-selected="true">Conferencia</button>
-                        </li>
-                    @endcan
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link @cannot('review', $invoice) active @endcannot" id="alerts-tab" data-bs-toggle="tab" data-bs-target="#alerts-tab-pane" type="button" role="tab" aria-controls="alerts-tab-pane" aria-selected="@cannot('review', $invoice) true @else false @endcannot">Alertas</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-tab-pane" type="button" role="tab" aria-controls="history-tab-pane" aria-selected="false">Historico</button>
-                    </li>
-                </ul>
+                    <div class="tab-pane fade" id="alerts-tab-pane" role="tabpanel" aria-labelledby="alerts-tab" tabindex="0">
+                        @forelse($invoice->alerts as $alert)
+                            <div class="alert alert-card {{ $alert->level->value === 'critical' ? 'alert-danger' : 'alert-warning' }} mb-2">
+                                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                                <div class="w-100">
+                                    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-start">
+                                        <div><strong>{{ $alert->type->label() }}:</strong> {{ $alert->message }}</div>
+                                        @if($alert->resolved)
+                                            <span class="badge text-bg-success">Resolvido</span>
+                                        @else
+                                            <span class="badge text-bg-secondary">Aberto</span>
+                                        @endif
+                                    </div>
+                                    @can('review', $invoice)
+                                        @if(! $alert->resolved)
+                                            <form method="POST" action="{{ route('invoices.alerts.resolve', [$invoice, $alert]) }}" class="mt-2">
+                                                @csrf
+                                                <button class="btn btn-sm btn-outline-success" type="submit">
+                                                    <i class="bi bi-check2" aria-hidden="true"></i>
+                                                    Resolver alerta
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endcan
+                                </div>
+                            </div>
+                        @empty
+                            <p class="empty-state compact">Nenhum alerta registrado.</p>
+                        @endforelse
+                    </div>
 
-                <div class="tab-content review-tab-content" id="invoiceReviewTabsContent">
+                    <div class="tab-pane fade" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
+                        <div class="timeline">
+                            @forelse($invoice->histories->sortByDesc('created_at') as $history)
+                                <div class="timeline-item">
+                                    <div class="timeline-dot"></div>
+                                    <div class="fw-semibold">{{ $history->action }}</div>
+                                    <div class="small text-secondary">{{ $history->created_at?->format('d/m/Y H:i') }} - {{ $history->user?->name ?? 'Sistema' }}</div>
+                                    @if($history->note)
+                                        <div class="small">{{ $history->note }}</div>
+                                    @endif
+                                </div>
+                            @empty
+                                <div class="empty-state compact">Nenhum historico registrado.</div>
+                            @endforelse
+                        </div>
+                    </div>
+
                     @can('review', $invoice)
-                        <div class="tab-pane fade show active" id="review-tab-pane" role="tabpanel" aria-labelledby="review-tab" tabindex="0">
+                        <div class="tab-pane fade" id="review-tab-pane" role="tabpanel" aria-labelledby="review-tab" tabindex="0">
                             @if($invoice->alerts->isNotEmpty())
                                 <div class="inline-alerts mb-3">
                                     @foreach($invoice->alerts as $alert)
@@ -236,54 +326,6 @@
                             @endif
                         </div>
                     @endcan
-
-                    <div class="tab-pane fade @cannot('review', $invoice) show active @endcannot" id="alerts-tab-pane" role="tabpanel" aria-labelledby="alerts-tab" tabindex="0">
-                        @forelse($invoice->alerts as $alert)
-                            <div class="alert alert-card {{ $alert->level->value === 'critical' ? 'alert-danger' : 'alert-warning' }} mb-2">
-                                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
-                                <div class="w-100">
-                                    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-start">
-                                        <div><strong>{{ $alert->type->label() }}:</strong> {{ $alert->message }}</div>
-                                        @if($alert->resolved)
-                                            <span class="badge text-bg-success">Resolvido</span>
-                                        @else
-                                            <span class="badge text-bg-secondary">Aberto</span>
-                                        @endif
-                                    </div>
-                                    @can('review', $invoice)
-                                        @if(! $alert->resolved)
-                                            <form method="POST" action="{{ route('invoices.alerts.resolve', [$invoice, $alert]) }}" class="mt-2">
-                                                @csrf
-                                                <button class="btn btn-sm btn-outline-success" type="submit">
-                                                    <i class="bi bi-check2" aria-hidden="true"></i>
-                                                    Resolver alerta
-                                                </button>
-                                            </form>
-                                        @endif
-                                    @endcan
-                                </div>
-                            </div>
-                        @empty
-                            <p class="empty-state compact">Nenhum alerta registrado.</p>
-                        @endforelse
-                    </div>
-
-                    <div class="tab-pane fade" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
-                        <div class="timeline">
-                            @forelse($invoice->histories->sortByDesc('created_at') as $history)
-                                <div class="timeline-item">
-                                    <div class="timeline-dot"></div>
-                                    <div class="fw-semibold">{{ $history->action }}</div>
-                                    <div class="small text-secondary">{{ $history->created_at?->format('d/m/Y H:i') }} - {{ $history->user?->name ?? 'Sistema' }}</div>
-                                    @if($history->note)
-                                        <div class="small">{{ $history->note }}</div>
-                                    @endif
-                                </div>
-                            @empty
-                                <div class="empty-state compact">Nenhum historico registrado.</div>
-                            @endforelse
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
