@@ -2144,7 +2144,6 @@ textarea.form-control {
     align-items: center;
     gap: 4px;
     width: fit-content;
-    margin-top: 3px;
     padding: 2px 7px;
     border-radius: 999px;
     background: #ffe8a3;
@@ -2152,6 +2151,14 @@ textarea.form-control {
     font-size: .66rem;
     font-weight: 850;
     text-transform: uppercase;
+}
+
+.status-cell {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    max-width: 100%;
 }
 
 .table-responsive {
@@ -2479,19 +2486,13 @@ textarea.form-control {
         font-size: .66rem;
     }
 
-    .invoice-list-panel .col-type,
-    .invoice-list-panel .col-arrival,
-    .invoice-list-panel .col-user {
-        display: none;
-    }
-
     .invoice-list-panel .col-supplier,
     .invoice-list-panel .col-unit {
-        width: 16%;
+        width: 15%;
     }
 
     .invoice-list-panel .col-created {
-        width: 10%;
+        width: 9%;
     }
 
     .invoice-list-scroll .badge {
@@ -2499,23 +2500,13 @@ textarea.form-control {
         white-space: normal;
     }
 
-    .invoice-list-scroll .protocol-code,
     .invoice-list-scroll td {
         overflow-wrap: anywhere;
     }
-}
 
-@media (max-width: 1399.98px) {
-    .invoice-list-panel .col-type,
-    .invoice-list-panel .col-arrival {
-        display: none;
-    }
-}
-
-@media (max-width: 1199.98px) {
-    .invoice-list-panel .col-invoice,
-    .invoice-list-panel .col-user {
-        display: none;
+    .invoice-list-scroll .data-table .btn-sm {
+        --bs-btn-padding-x: .42rem;
+        --bs-btn-padding-y: .22rem;
     }
 }
 

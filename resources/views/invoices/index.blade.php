@@ -146,7 +146,6 @@
             <table class="table data-table align-middle mb-0">
                 <thead>
                 <tr>
-                    <th><a class="sort-link" href="{{ $sortLink('protocol') }}">Protocolo <i class="bi {{ $sortIcon('protocol') }}" aria-hidden="true"></i></a></th>
                     <th class="col-type"><a class="sort-link" href="{{ $sortLink('type') }}">Tipo <i class="bi {{ $sortIcon('type') }}" aria-hidden="true"></i></a></th>
                     <th class="col-invoice"><a class="sort-link" href="{{ $sortLink('invoice') }}">Nota <i class="bi {{ $sortIcon('invoice') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('reference') }}">OC/CTE <i class="bi {{ $sortIcon('reference') }}" aria-hidden="true"></i></a></th>
@@ -164,14 +163,6 @@
                 @forelse($invoices as $invoice)
                     @php($documentType = $invoice->documentType())
                     <tr class="{{ $invoice->is_urgent ? 'invoice-row-urgent' : '' }}">
-                        <td data-label="Protocolo">
-                            <div class="stacked-cell">
-                                <span class="protocol-code">{{ $invoice->protocol }}</span>
-                                @if($invoice->is_urgent)
-                                    <span class="urgent-badge"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Urgente</span>
-                                @endif
-                            </div>
-                        </td>
                         <td class="col-type" data-label="Tipo">{{ $documentType->label() }}</td>
                         <td class="col-invoice" data-label="Nota">{{ $invoice->invoice_number ?? '-' }}</td>
                         <td data-label="OC/CTE">{{ $invoice->purchase_order_number ?? '-' }}</td>
@@ -186,7 +177,14 @@
                         <td class="col-created" data-label="Inclusao">{{ $invoice->created_at?->format('d/m/Y H:i') ?? '-' }}</td>
                         <td class="col-arrival" data-label="Chegada">{{ $invoice->arrival_date?->format('d/m/Y') ?? '-' }}</td>
                         <td data-label="Vencimento">{{ $invoice->due_date?->format('d/m/Y') ?? '-' }}</td>
-                        <td data-label="Status"><span class="badge {{ $invoice->status->badgeClass() }}">{{ $invoice->status->label() }}</span></td>
+                        <td data-label="Status">
+                            <div class="status-cell">
+                                <span class="badge {{ $invoice->status->badgeClass() }}">{{ $invoice->status->label() }}</span>
+                                @if($invoice->is_urgent)
+                                    <span class="urgent-badge"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Urgente</span>
+                                @endif
+                            </div>
+                        </td>
                         <td class="text-end" data-label="Acoes">
                             <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-sm btn-outline-primary" aria-label="Abrir {{ $invoice->protocol }}">
                                 <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
@@ -195,7 +193,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="12" class="empty-state">Nenhuma nota nesta pasta.</td>
+                        <td colspan="11" class="empty-state">Nenhuma nota nesta pasta.</td>
                     </tr>
                 @endforelse
                 </tbody>

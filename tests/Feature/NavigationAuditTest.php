@@ -142,22 +142,25 @@ class NavigationAuditTest extends TestCase
         Invoice::factory()->create([
             'submitted_by' => $user->id,
             'protocol' => 'NF-2026-COMPRA1',
+            'invoice_number' => '700001',
         ]);
         Invoice::factory()->create([
             'submitted_by' => $sameGroupUser->id,
             'protocol' => 'NF-2026-COMPRA2',
+            'invoice_number' => '700002',
         ]);
         Invoice::factory()->create([
             'submitted_by' => $otherGroupUser->id,
             'protocol' => 'NF-2026-FIN001',
+            'invoice_number' => '700003',
         ]);
 
         $this->actingAs($user)
             ->get(route('invoices.index'))
             ->assertOk()
-            ->assertSee('NF-2026-COMPRA1')
-            ->assertSee('NF-2026-COMPRA2')
-            ->assertDontSee('NF-2026-FIN001');
+            ->assertSee('700001')
+            ->assertSee('700002')
+            ->assertDontSee('700003');
     }
 
     public function test_regular_user_can_open_same_group_invoice_but_not_other_group_invoice(): void
@@ -1010,37 +1013,42 @@ class NavigationAuditTest extends TestCase
 
         Invoice::factory()->create([
             'protocol' => 'NF-2026-OP001',
+            'invoice_number' => '800001',
             'status' => 'awaiting_review',
         ]);
 
         Invoice::factory()->create([
             'protocol' => 'NF-2026-OP002',
+            'invoice_number' => '800002',
             'status' => 'pending',
         ]);
 
         Invoice::factory()->create([
             'protocol' => 'NF-2026-DONE1',
+            'invoice_number' => '800003',
             'status' => 'launched',
         ]);
 
         Invoice::factory()->create([
             'protocol' => 'NF-2026-CANC1',
+            'invoice_number' => '800004',
             'status' => 'cancelled',
         ]);
 
         Invoice::factory()->create([
             'protocol' => 'NF-2026-REV01',
+            'invoice_number' => '800005',
             'status' => 'in_review',
         ]);
 
         $this->actingAs($admin)
             ->get(route('invoices.index'))
             ->assertOk()
-            ->assertSee('NF-2026-OP001')
-            ->assertSee('NF-2026-OP002')
-            ->assertDontSee('NF-2026-DONE1')
-            ->assertDontSee('NF-2026-CANC1')
-            ->assertDontSee('NF-2026-REV01')
+            ->assertSee('800001')
+            ->assertSee('800002')
+            ->assertDontSee('800003')
+            ->assertDontSee('800004')
+            ->assertDontSee('800005')
             ->assertDontSee('Lancada')
             ->assertDontSee('Cancelada')
             ->assertDontSee('Em conferencia');
@@ -1053,6 +1061,7 @@ class NavigationAuditTest extends TestCase
         $later = Invoice::factory()->create([
             'submitted_by' => $user->id,
             'protocol' => 'NF-2026-000030',
+            'invoice_number' => '900030',
             'due_date' => '2026-09-15',
             'created_at' => '2026-07-29 15:30:00',
         ]);
@@ -1060,6 +1069,7 @@ class NavigationAuditTest extends TestCase
         $earlier = Invoice::factory()->create([
             'submitted_by' => $user->id,
             'protocol' => 'NF-2026-000031',
+            'invoice_number' => '900031',
             'due_date' => '2026-08-10',
             'created_at' => '2026-07-29 08:15:00',
         ]);
@@ -1078,8 +1088,8 @@ class NavigationAuditTest extends TestCase
             ->assertSee('15/09/2026');
 
         $response->assertSeeInOrder([
-            $earlier->protocol,
-            $later->protocol,
+            '900031',
+            '900030',
         ]);
 
         $this->actingAs($user)
@@ -1089,8 +1099,8 @@ class NavigationAuditTest extends TestCase
             ]))
             ->assertOk()
             ->assertSeeInOrder([
-                $earlier->protocol,
-                $later->protocol,
+                '900031',
+                '900030',
             ]);
     }
 
@@ -1100,6 +1110,7 @@ class NavigationAuditTest extends TestCase
 
         $normal = Invoice::factory()->create([
             'protocol' => 'NF-2026-NORMAL',
+            'invoice_number' => '910001',
             'is_urgent' => false,
             'due_date' => '2026-08-10',
         ]);
@@ -1111,6 +1122,7 @@ class NavigationAuditTest extends TestCase
 
         $urgent = Invoice::factory()->create([
             'protocol' => 'NF-2026-URGENT',
+            'invoice_number' => '910002',
             'is_urgent' => true,
             'due_date' => '2026-09-10',
         ]);
@@ -1131,15 +1143,15 @@ class NavigationAuditTest extends TestCase
             ->assertSee('Fornecedor Especial');
 
         $response->assertSeeInOrder([
-            $urgent->protocol,
-            $normal->protocol,
+            '910002',
+            '910001',
         ]);
 
         $this->actingAs($admin)
             ->get(route('invoices.index', ['supplier' => 'Especial']))
             ->assertOk()
-            ->assertSee($urgent->protocol)
-            ->assertDontSee($normal->protocol);
+            ->assertSee('910002')
+            ->assertDontSee('910001');
     }
 
     public function test_admin_can_create_update_and_block_user(): void
