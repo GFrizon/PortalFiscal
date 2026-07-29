@@ -452,7 +452,7 @@
                     toolButton.setAttribute('aria-pressed', active ? 'true' : 'false');
                 });
 
-                setAnnotationStatus(status, state.tool === 'highlight' ? 'Marca texto ativo.' : 'Caneta ativa.');
+                setAnnotationStatus(status, annotationToolLabel(state.tool));
             });
         });
 
@@ -545,12 +545,18 @@
 
     function bindDrawLayer(canvas, pageNumber, state) {
         canvas.addEventListener('pointerdown', (event) => {
+            if (state.tool === 'eraser') {
+                eraseNearestStroke(canvas, pageNumber, state, normalizedPoint(canvas, event));
+
+                return;
+            }
+
             canvas.setPointerCapture(event.pointerId);
             state.drawing = {
                 page: pageNumber,
                 tool: state.tool,
                 color: state.tool === 'highlight' ? '#ffe45c' : '#d92d20',
-                width: state.tool === 'highlight' ? 18 : 3,
+                width: state.tool === 'highlight' ? 22 : 3,
                 points: [normalizedPoint(canvas, event)],
             };
         });
@@ -560,7 +566,14 @@
                 return;
             }
 
-            state.drawing.points.push(normalizedPoint(canvas, event));
+            const point = normalizedPoint(canvas, event);
+
+            if (state.drawing.tool === 'highlight') {
+                state.drawing.points = normalizeHighlightPoints(state.drawing.points[0], point);
+            } else {
+                state.drawing.points.push(point);
+            }
+
             redrawAnnotationsForPage(state, pageNumber, state.drawing);
         });
 
@@ -590,6 +603,83 @@
             x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
             y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)),
         };
+    }
+
+    function normalizeHighlightPoints(start, end) {
+        const horizontalDistance = Math.abs(end.x - start.x);
+        const verticalDistance = Math.abs(end.y - start.y);
+        const y = horizontalDistance >= verticalDistance * 1.2
+            ? (start.y + end.y) / 2
+            : end.y;
+
+        return [
+            { x: start.x, y },
+            { x: end.x, y },
+        ];
+    }
+
+    function eraseNearestStroke(canvas, pageNumber, state, point) {
+        let nearestIndex = -1;
+        let nearestDistance = Number.POSITIVE_INFINITY;
+
+        state.strokes.forEach((stroke, index) => {
+            if (Number(stroke.page) !== pageNumber) {
+                return;
+            }
+
+            const distance = distanceToStroke(point, stroke);
+
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestIndex = index;
+            }
+        });
+
+        if (nearestIndex >= 0 && nearestDistance <= 0.035) {
+            state.strokes.splice(nearestIndex, 1);
+            state.dirty = true;
+            redrawAnnotationsForPage(state, pageNumber);
+        }
+    }
+
+    function distanceToStroke(point, stroke) {
+        const points = stroke.points || [];
+
+        if (points.length === 1) {
+            return distanceBetweenPoints(point, points[0]);
+        }
+
+        let distance = Number.POSITIVE_INFINITY;
+
+        for (let index = 0; index < points.length - 1; index++) {
+            distance = Math.min(distance, distanceToSegment(point, points[index], points[index + 1]));
+        }
+
+        return distance;
+    }
+
+    function distanceBetweenPoints(point, target) {
+        const dx = point.x - target.x;
+        const dy = point.y - target.y;
+
+        return Math.sqrt((dx * dx) + (dy * dy));
+    }
+
+    function distanceToSegment(point, start, end) {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const lengthSquared = (dx * dx) + (dy * dy);
+
+        if (lengthSquared === 0) {
+            return distanceBetweenPoints(point, start);
+        }
+
+        const position = Math.max(0, Math.min(1, (((point.x - start.x) * dx) + ((point.y - start.y) * dy)) / lengthSquared));
+
+        return distanceBetweenPoints(point, {
+            x: start.x + (position * dx),
+            y: start.y + (position * dy),
+        });
     }
 
     function redrawAllAnnotations(state) {
@@ -628,7 +718,7 @@
         context.lineWidth = Number(stroke.width || 3);
         context.lineCap = 'round';
         context.lineJoin = 'round';
-        context.globalAlpha = stroke.tool === 'highlight' ? 0.45 : 1;
+        context.globalAlpha = stroke.tool === 'highlight' ? 0.5 : 1;
         context.globalCompositeOperation = stroke.tool === 'highlight' ? 'multiply' : 'source-over';
         context.beginPath();
         context.moveTo(points[0].x * width, points[0].y * height);
@@ -640,6 +730,18 @@
         context.stroke();
         context.globalAlpha = 1;
         context.globalCompositeOperation = 'source-over';
+    }
+
+    function annotationToolLabel(tool) {
+        if (tool === 'highlight') {
+            return 'Marca texto ativo.';
+        }
+
+        if (tool === 'eraser') {
+            return 'Borracha ativa.';
+        }
+
+        return 'Caneta ativa.';
     }
 
     async function saveAnnotations(url, strokes) {

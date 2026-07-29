@@ -72,6 +72,10 @@
                                     <i class="bi bi-highlighter" aria-hidden="true"></i>
                                     Marca texto
                                 </button>
+                                <button class="btn btn-sm btn-outline-primary" type="button" data-annotation-tool="eraser" aria-pressed="false">
+                                    <i class="bi bi-eraser" aria-hidden="true"></i>
+                                    Borracha
+                                </button>
                                 <button class="btn btn-sm btn-outline-secondary" type="button" data-annotation-undo>
                                     <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
                                     Desfazer
