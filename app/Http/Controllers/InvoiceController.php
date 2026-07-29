@@ -44,6 +44,7 @@ class InvoiceController extends Controller
             'due' => 'due_date',
             'supplier' => 'supplier',
             'status' => 'status',
+            'created' => 'created_at',
         ];
         $sort = array_key_exists($request->string('sort')->toString(), $sortableColumns)
             ? $request->string('sort')->toString()

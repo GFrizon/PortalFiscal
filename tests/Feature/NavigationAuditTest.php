@@ -1054,12 +1054,14 @@ class NavigationAuditTest extends TestCase
             'submitted_by' => $user->id,
             'protocol' => 'NF-2026-000030',
             'due_date' => '2026-09-15',
+            'created_at' => '2026-07-29 15:30:00',
         ]);
 
         $earlier = Invoice::factory()->create([
             'submitted_by' => $user->id,
             'protocol' => 'NF-2026-000031',
             'due_date' => '2026-08-10',
+            'created_at' => '2026-07-29 08:15:00',
         ]);
 
         $response = $this->actingAs($user)
@@ -1068,7 +1070,10 @@ class NavigationAuditTest extends TestCase
                 'direction' => 'asc',
             ]))
             ->assertOk()
+            ->assertSee('Data de inclusao')
             ->assertSee('Vencimento')
+            ->assertSee('29/07/2026 08:15')
+            ->assertSee('29/07/2026 15:30')
             ->assertSee('10/08/2026')
             ->assertSee('15/09/2026');
 
@@ -1076,6 +1081,17 @@ class NavigationAuditTest extends TestCase
             $earlier->protocol,
             $later->protocol,
         ]);
+
+        $this->actingAs($user)
+            ->get(route('invoices.index', [
+                'sort' => 'created',
+                'direction' => 'asc',
+            ]))
+            ->assertOk()
+            ->assertSeeInOrder([
+                $earlier->protocol,
+                $later->protocol,
+            ]);
     }
 
     public function test_invoice_index_highlights_urgent_invoices_and_filters_supplier(): void

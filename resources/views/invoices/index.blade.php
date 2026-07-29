@@ -153,6 +153,7 @@
                     <th><a class="sort-link" href="{{ $sortLink('supplier') }}">Fornecedor <i class="bi {{ $sortIcon('supplier') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('unit') }}">Unidade <i class="bi {{ $sortIcon('unit') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('user') }}">Usuario <i class="bi {{ $sortIcon('user') }}" aria-hidden="true"></i></a></th>
+                    <th><a class="sort-link" href="{{ $sortLink('created') }}">Data de inclusao <i class="bi {{ $sortIcon('created') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('arrival') }}">Chegada <i class="bi {{ $sortIcon('arrival') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('due') }}">Vencimento <i class="bi {{ $sortIcon('due') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('status') }}">Status <i class="bi {{ $sortIcon('status') }}" aria-hidden="true"></i></a></th>
@@ -182,6 +183,7 @@
                             </div>
                         </td>
                         <td>{{ $invoice->submitter?->name }}</td>
+                        <td>{{ $invoice->created_at?->format('d/m/Y H:i') ?? '-' }}</td>
                         <td>{{ $invoice->arrival_date?->format('d/m/Y') ?? '-' }}</td>
                         <td>{{ $invoice->due_date?->format('d/m/Y') ?? '-' }}</td>
                         <td><span class="badge {{ $invoice->status->badgeClass() }}">{{ $invoice->status->label() }}</span></td>
@@ -193,7 +195,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="11" class="empty-state">Nenhuma nota nesta pasta.</td>
+                        <td colspan="12" class="empty-state">Nenhuma nota nesta pasta.</td>
                     </tr>
                 @endforelse
                 </tbody>
