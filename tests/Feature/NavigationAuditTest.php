@@ -851,6 +851,48 @@ class NavigationAuditTest extends TestCase
         });
     }
 
+    public function test_fiscal_can_attach_supporting_document_to_invoice(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+        $fiscal = User::factory()->fiscal()->create();
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => 'awaiting_review',
+        ]);
+
+        $file = UploadedFile::fake()->create('comprovante.pdf', 64, 'application/pdf');
+
+        $this->actingAs($fiscal)
+            ->post(route('invoices.attachments.store', $invoice), [
+                'attachment' => $file,
+                'notes' => 'Comprovante conferido pelo fiscal.',
+            ])
+            ->assertRedirect(route('invoices.show', $invoice));
+
+        $attachment = $invoice->attachments()->firstOrFail();
+
+        Storage::disk('local')->assertExists($attachment->path);
+
+        $this->assertDatabaseHas('invoice_attachments', [
+            'invoice_id' => $invoice->id,
+            'uploaded_by' => $fiscal->id,
+            'original_name' => 'comprovante.pdf',
+            'notes' => 'Comprovante conferido pelo fiscal.',
+        ]);
+
+        $this->assertDatabaseHas('invoice_histories', [
+            'invoice_id' => $invoice->id,
+            'user_id' => $fiscal->id,
+            'action' => 'Documento complementar anexado',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('invoices.attachments.download', [$invoice, $attachment]))
+            ->assertOk();
+    }
+
     public function test_fiscal_must_resolve_critical_alert_before_launching_invoice(): void
     {
         $user = User::factory()->create();

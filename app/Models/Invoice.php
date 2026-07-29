@@ -103,6 +103,11 @@ class Invoice extends Model
         return $this->hasMany(InvoiceAlert::class);
     }
 
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(InvoiceAttachment::class);
+    }
+
     public function purchaseOrderCheck(): HasOne
     {
         return $this->hasOne(PurchaseOrderCheck::class);

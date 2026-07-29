@@ -278,7 +278,7 @@ class InvoiceController extends Controller
         }
 
         return view('invoices.show', [
-            'invoice' => $invoice->load(['businessUnit', 'submitter', 'fiscalUser', 'alerts.resolver', 'histories.user', 'purchaseOrderCheck.businessUnit', 'annotation']),
+            'invoice' => $invoice->load(['businessUnit', 'submitter', 'fiscalUser', 'alerts.resolver', 'histories.user', 'purchaseOrderCheck.businessUnit', 'annotation', 'attachments.uploader']),
             'businessUnits' => BusinessUnit::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
