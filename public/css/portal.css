@@ -914,6 +914,13 @@ textarea:focus-visible {
     gap: 8px 12px;
 }
 
+.invoice-details-and-attachments {
+    display: grid;
+    grid-template-columns: minmax(360px, .72fr) minmax(360px, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+
 .details-grid dt {
     color: var(--color-text-muted);
     font-size: .78rem;
@@ -960,11 +967,12 @@ textarea:focus-visible {
 }
 
 .attachment-upload-row.compact {
-    grid-template-columns: minmax(130px, .8fr) minmax(150px, 1fr) auto;
+    grid-template-columns: minmax(120px, .65fr) minmax(150px, 1fr) auto;
     gap: 8px;
 }
 
 .attachment-compact {
+    min-height: 160px;
     padding: 10px;
     border: 1px solid var(--color-border);
     border-radius: 7px;
@@ -1499,6 +1507,7 @@ body.sidebar-collapsed .sidebar-collapse-button i {
     }
 
     .settings-grid,
+    .invoice-details-and-attachments,
     .details-grid,
     .po-summary-grid {
         grid-template-columns: 1fr;
@@ -2678,6 +2687,10 @@ textarea.form-control {
 }
 
 @media (max-width: 991.98px) {
+    .invoice-details-and-attachments {
+        grid-template-columns: 1fr;
+    }
+
     .attachment-upload-row {
         grid-template-columns: 1fr;
     }

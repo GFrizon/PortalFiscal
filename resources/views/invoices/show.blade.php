@@ -154,26 +154,72 @@
                         </button>
                     @endif
 
-                    <dl class="details-grid mb-0">
-                        <dt>Unidade</dt>
-                        <dd>{{ $invoice->businessUnit?->name ?? 'Nao identificada' }}</dd>
-                        <dt>Tipo</dt>
-                        <dd>{{ $documentType->label() }}</dd>
-                        <dt>Enviado por</dt>
-                        <dd>{{ $invoice->submitter?->name }}</dd>
-                        <dt>Chegada</dt>
-                        <dd>{{ $invoice->arrival_date?->format('d/m/Y') ?? '-' }}</dd>
-                        <dt>Vencimento</dt>
-                        <dd>{{ $paymentMethod->label() }}</dd>
-                        <dt>Emitente</dt>
-                        <dd>{{ $invoice->issuer_cnpj ?? '-' }}</dd>
-                        <dt>Destinatario</dt>
-                        <dd>{{ $invoice->recipient_cnpj ?? '-' }}</dd>
-                        <dt>Fiscal responsavel</dt>
-                        <dd>{{ $invoice->fiscalUser?->name ?? '-' }}</dd>
-                        <dt>Lancamento</dt>
-                        <dd>{{ $invoice->launched_at?->format('d/m/Y H:i') ?? '-' }}</dd>
-                    </dl>
+                    <div class="invoice-details-and-attachments">
+                        <dl class="details-grid mb-0">
+                            <dt>Unidade</dt>
+                            <dd>{{ $invoice->businessUnit?->name ?? 'Nao identificada' }}</dd>
+                            <dt>Tipo</dt>
+                            <dd>{{ $documentType->label() }}</dd>
+                            <dt>Enviado por</dt>
+                            <dd>{{ $invoice->submitter?->name }}</dd>
+                            <dt>Chegada</dt>
+                            <dd>{{ $invoice->arrival_date?->format('d/m/Y') ?? '-' }}</dd>
+                            <dt>Vencimento</dt>
+                            <dd>{{ $paymentMethod->label() }}</dd>
+                            <dt>Emitente</dt>
+                            <dd>{{ $invoice->issuer_cnpj ?? '-' }}</dd>
+                            <dt>Destinatario</dt>
+                            <dd>{{ $invoice->recipient_cnpj ?? '-' }}</dd>
+                            <dt>Fiscal responsavel</dt>
+                            <dd>{{ $invoice->fiscalUser?->name ?? '-' }}</dd>
+                            <dt>Lancamento</dt>
+                            <dd>{{ $invoice->launched_at?->format('d/m/Y H:i') ?? '-' }}</dd>
+                        </dl>
+
+                        <div class="attachment-compact">
+                            <div class="attachment-compact-header">
+                                <div>
+                                    <span>Documentos complementares</span>
+                                    <small>{{ $invoice->attachments->count() }} anexo{{ $invoice->attachments->count() === 1 ? '' : 's' }}</small>
+                                </div>
+                            </div>
+
+                            @can('review', $invoice)
+                                <form method="POST" action="{{ route('invoices.attachments.store', $invoice) }}" enctype="multipart/form-data" class="attachment-form compact mb-2">
+                                    @csrf
+                                    <div class="attachment-upload-row compact">
+                                        <input class="form-control" id="attachment" type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" required aria-label="Documento complementar">
+                                        <input class="form-control" id="attachment_notes" name="notes" value="{{ old('notes') }}" maxlength="2000" placeholder="Observacao">
+                                        <button class="btn btn-primary" type="submit">
+                                            <i class="bi bi-paperclip" aria-hidden="true"></i>
+                                            Anexar
+                                        </button>
+                                    </div>
+                                </form>
+                            @endcan
+
+                            <div class="attachment-list compact">
+                                @forelse($invoice->attachments->sortByDesc('created_at') as $attachment)
+                                    <div class="attachment-item compact">
+                                        <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>
+                                        <div class="attachment-copy">
+                                            <a href="{{ route('invoices.attachments.download', [$invoice, $attachment]) }}" class="attachment-name">
+                                                {{ $attachment->original_name }}
+                                            </a>
+                                            <div class="attachment-meta">
+                                                {{ $attachment->formattedSize() }} - {{ $attachment->created_at?->format('d/m/Y H:i') }} - {{ $attachment->uploader?->name ?? 'Fiscal' }}
+                                            </div>
+                                            @if(filled($attachment->notes))
+                                                <div class="attachment-notes">{{ $attachment->notes }}</div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @empty
+                                    <p class="empty-state compact mb-0">Nenhum documento complementar anexado.</p>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
 
                     @if($paymentMethod->requiresInstallments())
                         <div class="payment-installments-summary mt-3">
@@ -304,48 +350,6 @@
                                         <button class="btn btn-outline-primary" type="submit">Atualizar</button>
                                     </div>
                                 </form>
-
-                                <div class="attachment-compact mb-3">
-                                    <div class="attachment-compact-header">
-                                        <div>
-                                            <span>Documentos complementares</span>
-                                            <small>{{ $invoice->attachments->count() }} anexo{{ $invoice->attachments->count() === 1 ? '' : 's' }}</small>
-                                        </div>
-                                    </div>
-
-                                    <form method="POST" action="{{ route('invoices.attachments.store', $invoice) }}" enctype="multipart/form-data" class="attachment-form compact mb-2">
-                                        @csrf
-                                        <div class="attachment-upload-row compact">
-                                            <input class="form-control" id="attachment" type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" required aria-label="Documento complementar">
-                                            <input class="form-control" id="attachment_notes" name="notes" value="{{ old('notes') }}" maxlength="2000" placeholder="Observacao">
-                                            <button class="btn btn-primary" type="submit">
-                                                <i class="bi bi-paperclip" aria-hidden="true"></i>
-                                                Anexar
-                                            </button>
-                                        </div>
-                                    </form>
-
-                                    <div class="attachment-list compact">
-                                        @forelse($invoice->attachments->sortByDesc('created_at') as $attachment)
-                                            <div class="attachment-item compact">
-                                                <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>
-                                                <div class="attachment-copy">
-                                                    <a href="{{ route('invoices.attachments.download', [$invoice, $attachment]) }}" class="attachment-name">
-                                                        {{ $attachment->original_name }}
-                                                    </a>
-                                                    <div class="attachment-meta">
-                                                        {{ $attachment->formattedSize() }} - {{ $attachment->created_at?->format('d/m/Y H:i') }} - {{ $attachment->uploader?->name ?? 'Fiscal' }}
-                                                    </div>
-                                                    @if(filled($attachment->notes))
-                                                        <div class="attachment-notes">{{ $attachment->notes }}</div>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        @empty
-                                            <p class="empty-state compact mb-0">Nenhum documento complementar anexado.</p>
-                                        @endforelse
-                                    </div>
-                                </div>
 
                                 @if($invoice->status === \App\Enums\InvoiceStatus::Launched)
                                     <div class="alert alert-success mb-0">
