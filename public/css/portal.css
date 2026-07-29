@@ -2458,6 +2458,53 @@ textarea.form-control {
     z-index: 2;
 }
 
+@media (max-width: 1899.98px) {
+    .invoice-list-scroll {
+        overflow-x: hidden;
+    }
+
+    .invoice-list-scroll .data-table {
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .invoice-list-scroll .data-table thead th,
+    .invoice-list-scroll .data-table tbody td {
+        padding-right: 8px;
+        padding-left: 8px;
+        font-size: .78rem;
+    }
+
+    .invoice-list-scroll .data-table thead th {
+        font-size: .66rem;
+    }
+
+    .invoice-list-panel .col-type,
+    .invoice-list-panel .col-arrival,
+    .invoice-list-panel .col-user {
+        display: none;
+    }
+
+    .invoice-list-panel .col-supplier,
+    .invoice-list-panel .col-unit {
+        width: 16%;
+    }
+
+    .invoice-list-panel .col-created {
+        width: 10%;
+    }
+
+    .invoice-list-scroll .badge {
+        max-width: 100%;
+        white-space: normal;
+    }
+
+    .invoice-list-scroll .protocol-code,
+    .invoice-list-scroll td {
+        overflow-wrap: anywhere;
+    }
+}
+
 @media (max-width: 1399.98px) {
     .invoice-list-panel .col-type,
     .invoice-list-panel .col-arrival {
