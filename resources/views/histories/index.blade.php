@@ -23,7 +23,7 @@
                 <input id="protocol" class="form-control" name="protocol" value="{{ $filters['protocol'] ?? '' }}">
             </div>
             <div class="col-12 col-md-3">
-                <label class="form-label" for="purchase_order_number">Ordem de compra</label>
+                <label class="form-label" for="purchase_order_number">OC/CTE</label>
                 <input id="purchase_order_number" class="form-control" name="purchase_order_number" value="{{ $filters['purchase_order_number'] ?? '' }}">
             </div>
             <div class="col-12 col-md-3">
@@ -71,7 +71,7 @@
                 <tr>
                     <th>Protocolo</th>
                     <th>Nota</th>
-                    <th>Ordem de compra</th>
+                    <th>OC/CTE</th>
                     <th>Unidade</th>
                     <th>Status</th>
                     <th>Ultima acao</th>
