@@ -63,6 +63,18 @@ class Invoice extends Model
         ];
     }
 
+    public function documentType(): InvoiceDocumentType
+    {
+        return InvoiceDocumentType::tryFrom((string) $this->getRawOriginal('document_type'))
+            ?? InvoiceDocumentType::Nf;
+    }
+
+    public function paymentMethod(): InvoicePaymentMethod
+    {
+        return InvoicePaymentMethod::tryFrom((string) $this->getRawOriginal('payment_method'))
+            ?? InvoicePaymentMethod::Anticipated;
+    }
+
     public function submitter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');

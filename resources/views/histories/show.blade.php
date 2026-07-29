@@ -5,7 +5,7 @@
 @section('page_subtitle', 'Timeline completa da nota fiscal')
 
 @section('content')
-    @php($documentType = $invoice->document_type ?? \App\Enums\InvoiceDocumentType::Nf)
+    @php($documentType = $invoice->documentType())
 
     <div class="section-toolbar mb-3">
         <div>

@@ -13,6 +13,7 @@ use App\Services\PdfExtractionService;
 use App\Services\PurchaseOrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -678,6 +679,27 @@ class NavigationAuditTest extends TestCase
             ->assertOk()
             ->assertSee('Observacoes de '.$user->name)
             ->assertSee('Entregar urgente ao fiscal.');
+    }
+
+    public function test_invoice_details_tolerate_legacy_empty_document_and_payment_fields(): void
+    {
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+        ]);
+
+        DB::table('invoices')
+            ->where('id', $invoice->id)
+            ->update([
+                'document_type' => '',
+                'payment_method' => '',
+            ]);
+
+        $this->actingAs($user)
+            ->get(route('invoices.show', $invoice))
+            ->assertOk()
+            ->assertSee('Ordem de compra')
+            ->assertSee('Antecipado');
     }
 
     public function test_regular_user_can_see_purchase_order_check_on_invoice_details(): void

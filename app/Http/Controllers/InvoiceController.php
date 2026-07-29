@@ -178,7 +178,7 @@ class InvoiceController extends Controller
                     $alertService->create($invoice, AlertType::BusinessUnitNotIdentified, 'Unidade de negocio nao identificada pelo CNPJ do destinatario.', AlertLevel::Warning);
                 }
 
-                if ($invoice->document_type === InvoiceDocumentType::Nf && $invoice->purchase_order_number) {
+                if ($invoice->documentType() === InvoiceDocumentType::Nf && $invoice->purchase_order_number) {
                     $purchaseOrder = $purchaseOrderService->find($invoice->purchase_order_number);
                     $invoice->purchaseOrderCheck()->create($purchaseOrder + [
                         'purchase_order_number' => $invoice->purchase_order_number,

@@ -5,8 +5,8 @@
 @section('page_subtitle', 'Detalhes da nota fiscal')
 
 @section('content')
-    @php($documentType = $invoice->document_type ?? \App\Enums\InvoiceDocumentType::Nf)
-    @php($paymentMethod = $invoice->payment_method ?? \App\Enums\InvoicePaymentMethod::Anticipated)
+    @php($documentType = $invoice->documentType())
+    @php($paymentMethod = $invoice->paymentMethod())
 
     <div class="invoice-detail-page">
         <div class="section-toolbar mb-3">
