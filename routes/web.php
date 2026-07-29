@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\BusinessUnitController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FiscalReviewController;
+use App\Http\Controllers\InvoiceAnnotationController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\InvoiceHistoryController;
 use App\Http\Controllers\PdfController;
@@ -39,6 +40,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::post('invoices/{invoice}/mark-as-pending', [FiscalReviewController::class, 'markAsPending'])->name('invoices.mark-as-pending');
         Route::post('invoices/{invoice}/mark-as-launched', [FiscalReviewController::class, 'markAsLaunched'])->name('invoices.mark-as-launched');
         Route::post('invoices/{invoice}/alerts/{alert}/resolve', [FiscalReviewController::class, 'resolveAlert'])->name('invoices.alerts.resolve');
+        Route::put('invoices/{invoice}/annotations', [InvoiceAnnotationController::class, 'update'])->name('invoices.annotations.update');
         Route::get('invoices/{invoice}/pdf', [PdfController::class, 'show'])->name('invoices.pdf.show');
         Route::get('invoices/{invoice}/pdf/download', [PdfController::class, 'download'])->name('invoices.pdf.download');
 

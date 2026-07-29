@@ -107,4 +107,9 @@ class Invoice extends Model
     {
         return $this->hasOne(PurchaseOrderCheck::class);
     }
+
+    public function annotation(): HasOne
+    {
+        return $this->hasOne(InvoiceAnnotation::class);
+    }
 }

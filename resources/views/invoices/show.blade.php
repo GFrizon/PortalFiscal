@@ -7,6 +7,7 @@
 @section('content')
     @php($documentType = $invoice->documentType())
     @php($paymentMethod = $invoice->paymentMethod())
+    @php($annotationData = $invoice->annotation?->data ?? ['strokes' => []])
 
     <div class="invoice-detail-page">
         <div class="section-toolbar mb-3">
@@ -53,7 +54,44 @@
                             </a>
                         </div>
                     </div>
-                    <iframe src="{{ route('invoices.pdf.show', $invoice) }}#toolbar=1&navpanes=0&zoom=page-fit" class="pdf-frame"></iframe>
+                    <div
+                        class="pdf-annotation-viewer"
+                        data-pdf-annotator
+                        data-pdf-url="{{ route('invoices.pdf.show', $invoice) }}"
+                        data-save-url="{{ route('invoices.annotations.update', $invoice) }}"
+                        data-can-annotate="@can('review', $invoice) true @else false @endcan"
+                        data-annotations='@json($annotationData)'
+                    >
+                        @can('review', $invoice)
+                            <div class="pdf-annotation-toolbar" aria-label="Ferramentas de anotacao">
+                                <button class="btn btn-sm btn-primary" type="button" data-annotation-tool="pen">
+                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                    Caneta
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-annotation-undo>
+                                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                                    Desfazer
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" type="button" data-annotation-clear>
+                                    <i class="bi bi-trash" aria-hidden="true"></i>
+                                    Limpar
+                                </button>
+                                <button class="btn btn-sm btn-success" type="button" data-annotation-save>
+                                    <i class="bi bi-cloud-check" aria-hidden="true"></i>
+                                    Salvar rabiscos
+                                </button>
+                                <span class="annotation-status" data-annotation-status></span>
+                            </div>
+                        @else
+                            <div class="annotation-status mb-2">PDF com anotacoes da conferencia, quando existirem.</div>
+                        @endcan
+                        <div class="pdf-pages" data-pdf-pages>
+                            <div class="pdf-loading-state">
+                                <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+                                Carregando PDF...
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -327,4 +365,8 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('vendor_scripts')
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 @endsection

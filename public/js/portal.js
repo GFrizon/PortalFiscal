@@ -134,6 +134,8 @@
         });
     });
 
+    document.querySelectorAll('[data-pdf-annotator]').forEach(initPdfAnnotator);
+
     document.querySelectorAll('[data-digits-only]').forEach((input) => {
         input.addEventListener('input', () => {
             input.value = input.value.replace(/\D/g, '');
@@ -389,5 +391,264 @@
         const count = form.querySelector('[name="payment_installments_count"]')?.value || '1';
 
         return `${label} - ${count} parcela${count === '1' ? '' : 's'}`;
+    }
+
+    async function initPdfAnnotator(root) {
+        const pdfjs = window.pdfjsLib;
+        const pagesRoot = root.querySelector('[data-pdf-pages]');
+        const status = root.querySelector('[data-annotation-status]');
+        const canAnnotate = (root.dataset.canAnnotate || '').trim() === 'true';
+        const pdfUrl = root.dataset.pdfUrl;
+        const saveUrl = root.dataset.saveUrl;
+        const state = {
+            strokes: parseAnnotationData(root.dataset.annotations).strokes || [],
+            pages: new Map(),
+            drawing: null,
+            dirty: false,
+        };
+
+        root.classList.toggle('is-readonly', ! canAnnotate);
+
+        if (! pdfjs || ! pagesRoot || ! pdfUrl) {
+            setAnnotationStatus(status, 'Nao foi possivel carregar o visualizador.');
+
+            return;
+        }
+
+        pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        bindAnnotationToolbar(root, state, canAnnotate, saveUrl, status);
+
+        try {
+            const pdf = await pdfjs.getDocument(pdfUrl).promise;
+            pagesRoot.innerHTML = '';
+
+            for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+                await renderPdfPage(pdf, pageNumber, pagesRoot, state, canAnnotate);
+            }
+
+            setAnnotationStatus(status, canAnnotate ? 'Pronto para marcar.' : '');
+        } catch (error) {
+            pagesRoot.innerHTML = '<div class="pdf-loading-state">Nao foi possivel carregar o PDF.</div>';
+            setAnnotationStatus(status, 'Falha ao carregar PDF.');
+        }
+    }
+
+    function bindAnnotationToolbar(root, state, canAnnotate, saveUrl, status) {
+        if (! canAnnotate) {
+            return;
+        }
+
+        root.querySelector('[data-annotation-undo]')?.addEventListener('click', () => {
+            state.strokes.pop();
+            state.dirty = true;
+            redrawAllAnnotations(state);
+            setAnnotationStatus(status, 'Alteracao pendente.');
+        });
+
+        root.querySelector('[data-annotation-clear]')?.addEventListener('click', () => {
+            if (! confirm('Limpar todos os rabiscos desta nota?')) {
+                return;
+            }
+
+            state.strokes = [];
+            state.dirty = true;
+            redrawAllAnnotations(state);
+            setAnnotationStatus(status, 'Alteracao pendente.');
+        });
+
+        root.querySelector('[data-annotation-save]')?.addEventListener('click', async (event) => {
+            const button = event.currentTarget;
+            button.disabled = true;
+            setAnnotationStatus(status, 'Salvando...');
+
+            try {
+                await saveAnnotations(saveUrl, state.strokes);
+                state.dirty = false;
+                setAnnotationStatus(status, 'Rabiscos salvos.');
+            } catch (error) {
+                setAnnotationStatus(status, 'Falha ao salvar.');
+            } finally {
+                button.disabled = false;
+            }
+        });
+    }
+
+    async function renderPdfPage(pdf, pageNumber, pagesRoot, state, canAnnotate) {
+        const page = await pdf.getPage(pageNumber);
+        const unscaledViewport = page.getViewport({ scale: 1 });
+        const pageWidth = Math.min(pagesRoot.clientWidth || 980, 980);
+        const scale = pageWidth / unscaledViewport.width;
+        const viewport = page.getViewport({ scale });
+        const pixelRatio = window.devicePixelRatio || 1;
+
+        const shell = document.createElement('div');
+        shell.className = 'pdf-page-shell';
+        shell.dataset.page = String(pageNumber);
+        shell.style.width = `${viewport.width}px`;
+
+        const pdfCanvas = document.createElement('canvas');
+        pdfCanvas.width = Math.floor(viewport.width * pixelRatio);
+        pdfCanvas.height = Math.floor(viewport.height * pixelRatio);
+        pdfCanvas.style.width = `${viewport.width}px`;
+        pdfCanvas.style.height = `${viewport.height}px`;
+
+        const pdfContext = pdfCanvas.getContext('2d');
+        pdfContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+
+        const drawCanvas = document.createElement('canvas');
+        drawCanvas.className = 'pdf-draw-layer';
+        drawCanvas.width = Math.floor(viewport.width * pixelRatio);
+        drawCanvas.height = Math.floor(viewport.height * pixelRatio);
+        drawCanvas.style.width = `${viewport.width}px`;
+        drawCanvas.style.height = `${viewport.height}px`;
+
+        shell.appendChild(pdfCanvas);
+        shell.appendChild(drawCanvas);
+        pagesRoot.appendChild(shell);
+
+        await page.render({
+            canvasContext: pdfContext,
+            viewport,
+        }).promise;
+
+        state.pages.set(pageNumber, {
+            canvas: drawCanvas,
+            width: viewport.width,
+            height: viewport.height,
+            pixelRatio,
+        });
+
+        redrawAnnotationsForPage(state, pageNumber);
+
+        if (canAnnotate) {
+            bindDrawLayer(drawCanvas, pageNumber, state);
+        }
+    }
+
+    function bindDrawLayer(canvas, pageNumber, state) {
+        canvas.addEventListener('pointerdown', (event) => {
+            canvas.setPointerCapture(event.pointerId);
+            state.drawing = {
+                page: pageNumber,
+                color: '#d92d20',
+                width: 3,
+                points: [normalizedPoint(canvas, event)],
+            };
+        });
+
+        canvas.addEventListener('pointermove', (event) => {
+            if (! state.drawing || state.drawing.page !== pageNumber) {
+                return;
+            }
+
+            state.drawing.points.push(normalizedPoint(canvas, event));
+            redrawAnnotationsForPage(state, pageNumber, state.drawing);
+        });
+
+        const finishDrawing = (event) => {
+            if (! state.drawing || state.drawing.page !== pageNumber) {
+                return;
+            }
+
+            if (state.drawing.points.length > 1) {
+                state.strokes.push(state.drawing);
+                state.dirty = true;
+            }
+
+            state.drawing = null;
+            canvas.releasePointerCapture?.(event.pointerId);
+            redrawAnnotationsForPage(state, pageNumber);
+        };
+
+        canvas.addEventListener('pointerup', finishDrawing);
+        canvas.addEventListener('pointercancel', finishDrawing);
+    }
+
+    function normalizedPoint(canvas, event) {
+        const rect = canvas.getBoundingClientRect();
+
+        return {
+            x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
+            y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)),
+        };
+    }
+
+    function redrawAllAnnotations(state) {
+        state.pages.forEach((_, pageNumber) => redrawAnnotationsForPage(state, pageNumber));
+    }
+
+    function redrawAnnotationsForPage(state, pageNumber, activeStroke = null) {
+        const page = state.pages.get(pageNumber);
+
+        if (! page) {
+            return;
+        }
+
+        const context = page.canvas.getContext('2d');
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.clearRect(0, 0, page.canvas.width, page.canvas.height);
+        context.setTransform(page.pixelRatio, 0, 0, page.pixelRatio, 0, 0);
+
+        state.strokes
+            .filter((stroke) => Number(stroke.page) === pageNumber)
+            .forEach((stroke) => drawStroke(context, stroke, page.width, page.height));
+
+        if (activeStroke) {
+            drawStroke(context, activeStroke, page.width, page.height);
+        }
+    }
+
+    function drawStroke(context, stroke, width, height) {
+        const points = stroke.points || [];
+
+        if (! points.length) {
+            return;
+        }
+
+        context.strokeStyle = stroke.color || '#d92d20';
+        context.lineWidth = Number(stroke.width || 3);
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.beginPath();
+        context.moveTo(points[0].x * width, points[0].y * height);
+
+        points.slice(1).forEach((point) => {
+            context.lineTo(point.x * width, point.y * height);
+        });
+
+        context.stroke();
+    }
+
+    async function saveAnnotations(url, strokes) {
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const response = await fetch(url, {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrf,
+            },
+            body: JSON.stringify({ strokes }),
+        });
+
+        if (! response.ok) {
+            throw new Error('Annotation save failed');
+        }
+    }
+
+    function parseAnnotationData(value) {
+        try {
+            return value ? JSON.parse(value) : { strokes: [] };
+        } catch (error) {
+            return { strokes: [] };
+        }
+    }
+
+    function setAnnotationStatus(element, message) {
+        if (element) {
+            element.textContent = message || '';
+        }
     }
 })();

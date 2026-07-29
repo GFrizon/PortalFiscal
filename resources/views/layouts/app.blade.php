@@ -7,6 +7,7 @@
     @endphp
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Portal de Notas Fiscais - BAKOF')</title>
     <link rel="icon" href="{{ asset('favicon.svg') }}?v=bakoftec-20260727" type="image/svg+xml">
     <link rel="alternate icon" href="{{ asset('favicon.ico') }}?v=bakoftec-20260727">
@@ -177,6 +178,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+@yield('vendor_scripts')
 <script src="{{ asset('js/portal.js') }}?v={{ $jsVersion }}"></script>
+@yield('page_scripts')
 </body>
 </html>

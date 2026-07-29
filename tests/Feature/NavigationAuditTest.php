@@ -735,6 +735,52 @@ class NavigationAuditTest extends TestCase
             ->assertSee('data-copy-text="35260754163230000109550040000314261443991849"', false);
     }
 
+    public function test_fiscal_can_save_invoice_pdf_annotations(): void
+    {
+        $fiscal = User::factory()->fiscal()->create();
+        $invoice = Invoice::factory()->create();
+
+        $this->actingAs($fiscal)
+            ->putJson(route('invoices.annotations.update', $invoice), [
+                'strokes' => [
+                    [
+                        'page' => 1,
+                        'color' => '#d92d20',
+                        'width' => 3,
+                        'points' => [
+                            ['x' => 0.1, 'y' => 0.2],
+                            ['x' => 0.4, 'y' => 0.5],
+                        ],
+                    ],
+                ],
+            ])
+            ->assertOk()
+            ->assertJson(['ok' => true]);
+
+        $this->assertDatabaseHas('invoice_annotations', [
+            'invoice_id' => $invoice->id,
+            'user_id' => $fiscal->id,
+        ]);
+    }
+
+    public function test_regular_user_cannot_save_invoice_pdf_annotations(): void
+    {
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)
+            ->putJson(route('invoices.annotations.update', $invoice), [
+                'strokes' => [],
+            ])
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('invoice_annotations', [
+            'invoice_id' => $invoice->id,
+        ]);
+    }
+
     public function test_invoice_details_tolerate_legacy_empty_document_and_payment_fields(): void
     {
         $user = User::factory()->create();
