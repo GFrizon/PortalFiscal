@@ -4,6 +4,7 @@ namespace App\Http\Requests\Invoice;
 
 use App\Models\Invoice;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class StoreInvoiceRequest extends FormRequest
@@ -45,6 +46,33 @@ class StoreInvoiceRequest extends FormRequest
             if (! is_array($installments) || count($installments) !== $count) {
                 $validator->errors()->add('payment_installments_count', 'Informe os dados de todas as parcelas.');
             }
+
+            $minimumDueDate = $this->minimumDueDate();
+
+            foreach ($installments as $index => $installment) {
+                $dueDate = $installment['due_date'] ?? null;
+
+                if (! $dueDate) {
+                    continue;
+                }
+
+                try {
+                    $date = Carbon::parse($dueDate)->startOfDay();
+                } catch (\Throwable) {
+                    continue;
+                }
+
+                if ($date->isWeekend()) {
+                    $validator->errors()->add("payment_installments.{$index}.due_date", 'O vencimento deve cair em dia util.');
+                }
+
+                if ($date->lt($minimumDueDate)) {
+                    $validator->errors()->add(
+                        "payment_installments.{$index}.due_date",
+                        'O vencimento deve ter no minimo 2 dias uteis a partir de hoje.'
+                    );
+                }
+            }
         });
     }
 
@@ -75,5 +103,21 @@ class StoreInvoiceRequest extends FormRequest
                 'amount' => $amount,
             ];
         }, $installments, array_keys($installments)));
+    }
+
+    private function minimumDueDate(): Carbon
+    {
+        $date = Carbon::today(config('app.timezone'));
+        $businessDays = 0;
+
+        while ($businessDays < 2) {
+            $date->addDay();
+
+            if ($date->isWeekday()) {
+                $businessDays++;
+            }
+        }
+
+        return $date->startOfDay();
     }
 }

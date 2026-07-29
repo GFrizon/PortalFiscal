@@ -13,6 +13,7 @@ use App\Services\PdfExtractionService;
 use App\Services\PurchaseOrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -400,6 +401,58 @@ class NavigationAuditTest extends TestCase
             ->assertSessionHasErrors(['payment_installments_count']);
 
         $this->assertDatabaseCount('invoices', 0);
+    }
+
+    public function test_invoice_due_date_requires_at_least_two_business_days(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-29 10:00:00', config('app.timezone')));
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('invoices.store'), [
+                'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf',
+                'purchase_order_number' => '123456',
+                'arrival_date' => '2026-07-29',
+                'payment_method' => 'deposit',
+                'payment_installments_count' => 1,
+                'payment_installments' => [
+                    ['due_date' => '2026-07-30', 'amount' => '100'],
+                ],
+            ])
+            ->assertSessionHasErrors(['payment_installments.0.due_date']);
+
+        $this->assertDatabaseCount('invoices', 0);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_invoice_due_date_must_be_business_day(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-29 10:00:00', config('app.timezone')));
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('invoices.store'), [
+                'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf',
+                'purchase_order_number' => '123456',
+                'arrival_date' => '2026-07-29',
+                'payment_method' => 'deposit',
+                'payment_installments_count' => 1,
+                'payment_installments' => [
+                    ['due_date' => '2026-08-01', 'amount' => '100'],
+                ],
+            ])
+            ->assertSessionHasErrors(['payment_installments.0.due_date']);
+
+        $this->assertDatabaseCount('invoices', 0);
+
+        Carbon::setTestNow();
     }
 
     public function test_payment_installments_are_limited_to_twelve(): void
