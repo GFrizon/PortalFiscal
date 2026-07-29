@@ -2139,6 +2139,24 @@ textarea.form-control {
     background: #fff4d2;
 }
 
+.data-table tbody tr.invoice-row-launched {
+    background: #f4faf7;
+    box-shadow: inset 3px 0 0 #5ba979;
+}
+
+.data-table tbody tr.invoice-row-launched:hover {
+    background: #edf7f1;
+}
+
+.data-table tbody tr.invoice-row-launched.invoice-row-urgent {
+    background: #fff9e8;
+    box-shadow: inset 3px 0 0 #e0ad28;
+}
+
+.data-table tbody tr.invoice-row-launched.invoice-row-urgent:hover {
+    background: #fff4d2;
+}
+
 .urgent-badge {
     display: inline-flex;
     align-items: center;
@@ -2162,6 +2180,18 @@ textarea.form-control {
     border-radius: 999px;
     background: #ffe8a3;
     color: #8a5a00;
+    font-size: .82rem;
+}
+
+.launched-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: #dff1e6;
+    color: #2f7a4c;
     font-size: .82rem;
 }
 

@@ -163,12 +163,20 @@
                 <tbody>
                 @forelse($invoices as $invoice)
                     @php($documentType = $invoice->documentType())
-                    <tr class="{{ $invoice->is_urgent ? 'invoice-row-urgent' : '' }}">
-                        <td class="col-priority {{ $invoice->is_urgent ? '' : 'priority-empty' }}" data-label="Prioridade">
+                    <tr @class([
+                        'invoice-row-urgent' => $invoice->is_urgent,
+                        'invoice-row-launched' => $invoice->status === \App\Enums\InvoiceStatus::Launched,
+                    ])>
+                        <td class="col-priority {{ $invoice->is_urgent || $invoice->status === \App\Enums\InvoiceStatus::Launched ? '' : 'priority-empty' }}" data-label="Prioridade">
                             @if($invoice->is_urgent)
                                 <span class="urgent-indicator" title="Urgente" aria-label="Urgente">
                                     <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
                                     <span class="visually-hidden">Urgente</span>
+                                </span>
+                            @elseif($invoice->status === \App\Enums\InvoiceStatus::Launched)
+                                <span class="launched-indicator" title="Lancada" aria-label="Lancada">
+                                    <i class="bi bi-archive" aria-hidden="true"></i>
+                                    <span class="visually-hidden">Lancada</span>
                                 </span>
                             @endif
                         </td>
