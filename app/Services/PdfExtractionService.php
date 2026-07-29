@@ -42,7 +42,7 @@ class PdfExtractionService
     public function extractFromText(string $text): array
     {
         $cnpjs = $this->extractCnpjs($text);
-        $recipientCnpj = $this->identifyRecipientCnpj($cnpjs);
+        $recipientCnpj = $this->identifyRecipientCnpj($cnpjs, $text);
 
         return [
             'success' => true,
@@ -66,7 +66,7 @@ class PdfExtractionService
     {
         $normalizedText = str_replace(["\u{00A0}", "\u{2007}", "\u{202F}"], ' ', $text);
 
-        preg_match_all('/(?<!\d)(\d{2}\s*\.\s*\d{3}\s*\.\s*\d{3}\s*\/\s*\d{4}\s*-\s*\d{2})(?!\d)/u', $normalizedText, $formattedMatches);
+        preg_match_all('/(?<!\d)(\d{2}\s*\.\s*\d{3}\s*\.\s*\d{3}\s*[\.\/]\s*\d{4}\s*-\s*\d{2})(?!\d)/u', $normalizedText, $formattedMatches);
         preg_match_all('/(?<!\d)(\d{14})(?!\d)/u', $normalizedText, $plainMatches);
 
         return collect(array_merge($formattedMatches[0] ?? [], $plainMatches[0] ?? []))
@@ -96,12 +96,70 @@ class PdfExtractionService
         return $digits[12] === $firstDigit && $digits[13] === $secondDigit;
     }
 
-    private function identifyRecipientCnpj(array $cnpjs): ?string
+    private function identifyRecipientCnpj(array $cnpjs, string $text): ?string
     {
-        return BusinessUnit::query()
-            ->get(['cnpj'])
-            ->map(fn (BusinessUnit $unit) => $this->normalizeCnpj($unit->cnpj))
-            ->first(fn (string $cnpj) => in_array($cnpj, $cnpjs, true));
+        $units = BusinessUnit::query()->get(['name', 'legal_name', 'cnpj', 'internal_code']);
+
+        $unit = $units->first(function (BusinessUnit $unit) use ($cnpjs): bool {
+            return in_array($this->normalizeCnpj($unit->cnpj), $cnpjs, true);
+        });
+
+        if ($unit) {
+            return $this->normalizeCnpj($unit->cnpj);
+        }
+
+        $unit = $this->identifyBusinessUnitByInternalCode($units, $text)
+            ?? $this->identifyBusinessUnitByName($units, $text);
+
+        return $unit ? $this->normalizeCnpj($unit->cnpj) : null;
+    }
+
+    private function identifyBusinessUnitByInternalCode($units, string $text): ?BusinessUnit
+    {
+        if (! preg_match_all('/(?:unidade(?:\s+de)?\s+neg[oó]cio|unidade|u\.?n\.?)\D{0,20}(\d{1,4})/iu', $text, $matches)) {
+            return null;
+        }
+
+        foreach ($matches[1] as $code) {
+            $normalizedCode = ltrim($code, '0') ?: '0';
+            $matchedUnits = $units->filter(function (BusinessUnit $unit) use ($normalizedCode): bool {
+                $unitCode = preg_replace('/\D/', '', (string) $unit->internal_code) ?: '';
+
+                return $unitCode !== '' && (ltrim($unitCode, '0') ?: '0') === $normalizedCode;
+            });
+
+            if ($matchedUnits->count() === 1) {
+                return $matchedUnits->first();
+            }
+        }
+
+        return null;
+    }
+
+    private function identifyBusinessUnitByName($units, string $text): ?BusinessUnit
+    {
+        $normalizedText = $this->normalizeSearchText($text);
+
+        return $units
+            ->sortByDesc(fn (BusinessUnit $unit): int => strlen((string) $unit->legal_name))
+            ->first(function (BusinessUnit $unit) use ($normalizedText): bool {
+                foreach ([$unit->legal_name, $unit->name] as $name) {
+                    $normalizedName = $this->normalizeSearchText((string) $name);
+
+                    if (strlen($normalizedName) >= 8 && str_contains($normalizedText, $normalizedName)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+    }
+
+    private function normalizeSearchText(string $text): string
+    {
+        $text = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text) ?: $text;
+
+        return preg_replace('/[^A-Z0-9]+/', '', strtoupper($text)) ?? '';
     }
 
     private function identifyIssuerCnpj(array $cnpjs, ?string $recipientCnpj): ?string

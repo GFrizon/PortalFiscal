@@ -2,7 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\AlertType;
+use App\Enums\AlertLevel;
+use App\Models\BusinessUnit;
 use App\Models\Invoice;
+use App\Services\PdfExtractionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -64,5 +68,50 @@ class StorageMaintenanceTest extends TestCase
             ->assertExitCode(0);
 
         $this->assertSame('2026-08-10', $invoice->refresh()->due_date?->format('Y-m-d'));
+    }
+
+    public function test_identify_units_command_updates_unidentified_invoice(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('notas/2026/07/unidade-nao-identificada/teste.pdf', 'pdf');
+
+        $unit = BusinessUnit::factory()->create([
+            'name' => 'UNIDADE 004',
+            'cnpj' => '91967067000317',
+        ]);
+
+        $invoice = Invoice::factory()->create([
+            'business_unit_id' => null,
+            'recipient_cnpj' => null,
+            'pdf_path' => 'notas/2026/07/unidade-nao-identificada/teste.pdf',
+        ]);
+
+        $invoice->alerts()->create([
+            'type' => AlertType::BusinessUnitNotIdentified,
+            'message' => 'Unidade nao identificada.',
+            'level' => AlertLevel::Warning,
+        ]);
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => '',
+                'cnpjs' => ['91967067000317'],
+                'issuer_cnpj' => null,
+                'recipient_cnpj' => '91967067000317',
+                'invoice_number' => null,
+                'issuer_legal_name' => null,
+                'recipient_legal_name' => null,
+                'error' => null,
+            ]);
+        });
+
+        $this->artisan('invoices:identify-units')
+            ->expectsOutputToContain('Identifying '.$invoice->protocol)
+            ->assertExitCode(0);
+
+        $this->assertSame($unit->id, $invoice->refresh()->business_unit_id);
+        $this->assertSame('91967067000317', $invoice->recipient_cnpj);
+        $this->assertTrue($invoice->alerts()->firstOrFail()->resolved);
     }
 }

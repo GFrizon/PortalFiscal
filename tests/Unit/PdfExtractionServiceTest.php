@@ -49,4 +49,39 @@ class PdfExtractionServiceTest extends TestCase
         $this->assertSame('54163230000109', $result['issuer_cnpj']);
         $this->assertSame('91967067000155', $result['recipient_cnpj']);
     }
+
+    public function test_it_accepts_cnpj_with_irregular_separator_instead_of_slash(): void
+    {
+        BusinessUnit::factory()->create([
+            'name' => 'BAKOF PLASTICOS LTDA (UNIDADE 004)',
+            'cnpj' => '91967067000317',
+            'internal_code' => '004',
+        ]);
+
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "Unidade: BAKOF PLASTICOS LTDA CNPJ.: 91.967.067.0003-17\nUnidade Negocio: 004"
+        );
+
+        $this->assertContains('91967067000317', $result['cnpjs']);
+        $this->assertSame('91967067000317', $result['recipient_cnpj']);
+    }
+
+    public function test_it_identifies_business_unit_by_internal_code_when_cnpj_is_not_readable(): void
+    {
+        BusinessUnit::factory()->create([
+            'name' => 'BAKOF PLASTICOS LTDA (UNIDADE 004)',
+            'cnpj' => '91967067000317',
+            'internal_code' => '004',
+        ]);
+
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "Relatorio de conferencia\nUnidade Negocio: 004\nCNPJ ilegivel no arquivo"
+        );
+
+        $this->assertSame('91967067000317', $result['recipient_cnpj']);
+    }
 }
