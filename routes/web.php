@@ -13,6 +13,7 @@ use App\Http\Controllers\InvoiceHistoryController;
 use App\Http\Controllers\PdfController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserGroupController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
@@ -46,6 +47,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
 
         Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function (): void {
             Route::resource('users', UserController::class)->except(['show']);
+            Route::resource('user-groups', UserGroupController::class)->except(['show']);
             Route::resource('business-units', BusinessUnitController::class)->except(['show']);
             Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
         });

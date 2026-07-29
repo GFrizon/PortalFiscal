@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Enums\InvoiceStatus;
+use App\Support\InvoiceVisibility;
 
 class InvoicePolicy
 {
@@ -15,7 +16,9 @@ class InvoicePolicy
 
     public function view(User $user, Invoice $invoice): bool
     {
-        return $user->isAdmin() || $user->isFiscal() || $invoice->submitted_by === $user->id;
+        return $user->isAdmin()
+            || $user->isFiscal()
+            || InvoiceVisibility::canView($user, $invoice->submitter ?? $invoice->submitter()->firstOrFail());
     }
 
     public function create(User $user): bool
@@ -25,7 +28,9 @@ class InvoicePolicy
 
     public function update(User $user, Invoice $invoice): bool
     {
-        return $user->isAdmin() || $user->isFiscal() || $invoice->submitted_by === $user->id;
+        return $user->isAdmin()
+            || $user->isFiscal()
+            || $invoice->submitted_by === $user->id;
     }
 
     public function delete(User $user, Invoice $invoice): bool

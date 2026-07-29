@@ -80,6 +80,10 @@
                     <i class="bi bi-people nav-icon" aria-hidden="true"></i>
                     <span class="nav-text">Usuarios</span>
                 </a>
+                <a class="nav-link-item {{ request()->routeIs('admin.user-groups.*') ? 'active' : '' }}" href="{{ route('admin.user-groups.index') }}">
+                    <i class="bi bi-diagram-3 nav-icon" aria-hidden="true"></i>
+                    <span class="nav-text">Grupos</span>
+                </a>
                 <a class="nav-link-item {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.index') }}">
                     <i class="bi bi-sliders2 nav-icon" aria-hidden="true"></i>
                     <span class="nav-text">Configuracoes</span>

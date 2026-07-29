@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\User;
+use App\Support\InvoiceVisibility;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -25,9 +26,7 @@ class InvoiceHistoryController extends Controller
             ->orderByDesc('histories_max_created_at')
             ->latest('id');
 
-        if ($request->user()->isRegularUser()) {
-            $query->where('submitted_by', $request->user()->id);
-        }
+        InvoiceVisibility::apply($query, $request->user());
 
         if ($request->filled('protocol')) {
             $query->where('protocol', 'like', '%'.$request->string('protocol')->toString().'%');

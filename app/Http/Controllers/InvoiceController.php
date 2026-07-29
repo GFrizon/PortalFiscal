@@ -15,6 +15,7 @@ use App\Services\InvoiceService;
 use App\Services\PdfExtractionService;
 use App\Services\PdfStorageService;
 use App\Services\PurchaseOrderService;
+use App\Support\InvoiceVisibility;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -53,9 +54,7 @@ class InvoiceController extends Controller
             ->with(['businessUnit:id,name', 'submitter:id,name', 'purchaseOrderCheck:id,invoice_id,supplier_name'])
             ->whereIn('status', $visibleStatusValues);
 
-        if ($request->user()->isRegularUser()) {
-            $query->where('submitted_by', $request->user()->id);
-        }
+        InvoiceVisibility::apply($query, $request->user());
 
         if ($request->filled('protocol')) {
             $query->where('protocol', 'like', '%'.$request->string('protocol')->toString().'%');
@@ -103,9 +102,7 @@ class InvoiceController extends Controller
             ->with('businessUnit:id,name')
             ->whereIn('status', $visibleStatusValues);
 
-        if ($request->user()->isRegularUser()) {
-            $unitSummaryQuery->where('submitted_by', $request->user()->id);
-        }
+        InvoiceVisibility::apply($unitSummaryQuery, $request->user());
 
         $unitSummary = $unitSummaryQuery
             ->selectRaw('business_unit_id, count(*) as total')

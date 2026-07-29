@@ -24,6 +24,7 @@
                     <th>Nome</th>
                     <th>E-mail</th>
                     <th>Tipo</th>
+                    <th>Grupo</th>
                     <th>Situacao</th>
                     <th>Criado em</th>
                     <th class="text-end">Acoes</th>
@@ -40,6 +41,7 @@
                         </td>
                         <td>{{ $user->email }}</td>
                         <td>{{ $user->role->label() }}</td>
+                        <td>{{ $user->group?->name ?? '-' }}</td>
                         <td><span class="badge {{ $user->isActive() ? 'text-bg-success' : 'text-bg-secondary' }}">{{ $user->status->label() }}</span></td>
                         <td>{{ $user->created_at?->format('d/m/Y H:i') }}</td>
                         <td class="text-end">
@@ -59,7 +61,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="empty-state">Nenhum usuario cadastrado.</td>
+                        <td colspan="7" class="empty-state">Nenhum usuario cadastrado.</td>
                     </tr>
                 @endforelse
                 </tbody>

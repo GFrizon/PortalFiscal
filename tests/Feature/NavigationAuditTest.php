@@ -9,6 +9,7 @@ use App\Enums\AlertType;
 use App\Models\Invoice;
 use App\Models\BusinessUnit;
 use App\Models\User;
+use App\Models\UserGroup;
 use App\Services\PdfExtractionService;
 use App\Services\PurchaseOrderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,6 +34,8 @@ class NavigationAuditTest extends TestCase
             'histories.index',
             'admin.users.index',
             'admin.users.create',
+            'admin.user-groups.index',
+            'admin.user-groups.create',
             'admin.business-units.index',
             'admin.business-units.create',
             'admin.settings.index',
@@ -125,6 +128,93 @@ class NavigationAuditTest extends TestCase
             ->assertOk()
             ->assertSee('Acao propria')
             ->assertDontSee('Acao de outro usuario');
+    }
+
+    public function test_regular_user_sees_invoices_from_same_group_only(): void
+    {
+        $compras = UserGroup::query()->create(['name' => 'Compras']);
+        $financeiro = UserGroup::query()->create(['name' => 'Financeiro']);
+
+        $user = User::factory()->create(['user_group_id' => $compras->id]);
+        $sameGroupUser = User::factory()->create(['user_group_id' => $compras->id]);
+        $otherGroupUser = User::factory()->create(['user_group_id' => $financeiro->id]);
+
+        Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'protocol' => 'NF-2026-COMPRA1',
+        ]);
+        Invoice::factory()->create([
+            'submitted_by' => $sameGroupUser->id,
+            'protocol' => 'NF-2026-COMPRA2',
+        ]);
+        Invoice::factory()->create([
+            'submitted_by' => $otherGroupUser->id,
+            'protocol' => 'NF-2026-FIN001',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('invoices.index'))
+            ->assertOk()
+            ->assertSee('NF-2026-COMPRA1')
+            ->assertSee('NF-2026-COMPRA2')
+            ->assertDontSee('NF-2026-FIN001');
+    }
+
+    public function test_regular_user_can_open_same_group_invoice_but_not_other_group_invoice(): void
+    {
+        $compras = UserGroup::query()->create(['name' => 'Compras']);
+        $financeiro = UserGroup::query()->create(['name' => 'Financeiro']);
+
+        $user = User::factory()->create(['user_group_id' => $compras->id]);
+        $sameGroupUser = User::factory()->create(['user_group_id' => $compras->id]);
+        $otherGroupUser = User::factory()->create(['user_group_id' => $financeiro->id]);
+
+        $sameGroupInvoice = Invoice::factory()->create([
+            'submitted_by' => $sameGroupUser->id,
+        ]);
+        $otherGroupInvoice = Invoice::factory()->create([
+            'submitted_by' => $otherGroupUser->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('invoices.show', $sameGroupInvoice))
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->get(route('invoices.show', $otherGroupInvoice))
+            ->assertForbidden();
+    }
+
+    public function test_regular_user_history_shows_same_group_invoice_actions(): void
+    {
+        $compras = UserGroup::query()->create(['name' => 'Compras']);
+        $financeiro = UserGroup::query()->create(['name' => 'Financeiro']);
+
+        $user = User::factory()->create(['user_group_id' => $compras->id]);
+        $sameGroupUser = User::factory()->create(['user_group_id' => $compras->id]);
+        $otherGroupUser = User::factory()->create(['user_group_id' => $financeiro->id]);
+
+        $sameGroupInvoice = Invoice::factory()->create(['submitted_by' => $sameGroupUser->id]);
+        $otherGroupInvoice = Invoice::factory()->create(['submitted_by' => $otherGroupUser->id]);
+
+        $sameGroupInvoice->histories()->create([
+            'user_id' => $sameGroupUser->id,
+            'action' => 'Acao do grupo compras',
+            'new_status' => 'awaiting_review',
+            'ip_address' => '127.0.0.1',
+        ]);
+        $otherGroupInvoice->histories()->create([
+            'user_id' => $otherGroupUser->id,
+            'action' => 'Acao do grupo financeiro',
+            'new_status' => 'awaiting_review',
+            'ip_address' => '127.0.0.1',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('histories.index'))
+            ->assertOk()
+            ->assertSee('Acao do grupo compras')
+            ->assertDontSee('Acao do grupo financeiro');
     }
 
     public function test_history_index_groups_events_by_invoice_and_detail_shows_timeline(): void
@@ -1039,6 +1129,7 @@ class NavigationAuditTest extends TestCase
     public function test_admin_can_create_update_and_block_user(): void
     {
         $admin = User::factory()->admin()->create();
+        $group = UserGroup::query()->create(['name' => 'Compras']);
 
         $this->actingAs($admin)
             ->post(route('admin.users.store'), [
@@ -1048,6 +1139,7 @@ class NavigationAuditTest extends TestCase
                 'password_confirmation' => 'Alterar123!',
                 'role' => UserRole::User->value,
                 'status' => UserStatus::Active->value,
+                'user_group_id' => $group->id,
             ])
             ->assertRedirect(route('admin.users.index'));
 
@@ -1061,6 +1153,7 @@ class NavigationAuditTest extends TestCase
                 'password_confirmation' => '',
                 'role' => UserRole::Fiscal->value,
                 'status' => UserStatus::Active->value,
+                'user_group_id' => $group->id,
                 'force_password_change' => '0',
             ])
             ->assertRedirect(route('admin.users.index'));
@@ -1070,6 +1163,7 @@ class NavigationAuditTest extends TestCase
             'name' => 'Usuario Atualizado',
             'email' => 'usuario.atualizado@bakof.local',
             'role' => UserRole::Fiscal->value,
+            'user_group_id' => $group->id,
         ]);
 
         $this->actingAs($admin)
@@ -1079,6 +1173,38 @@ class NavigationAuditTest extends TestCase
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
             'status' => UserStatus::Inactive->value,
+        ]);
+    }
+
+    public function test_admin_can_manage_user_groups(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->post(route('admin.user-groups.store'), [
+                'name' => 'Compras',
+            ])
+            ->assertRedirect(route('admin.user-groups.index'));
+
+        $group = UserGroup::query()->where('name', 'Compras')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->put(route('admin.user-groups.update', $group), [
+                'name' => 'Compras nacionais',
+            ])
+            ->assertRedirect(route('admin.user-groups.index'));
+
+        $this->assertDatabaseHas('user_groups', [
+            'id' => $group->id,
+            'name' => 'Compras nacionais',
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.user-groups.destroy', $group->refresh()))
+            ->assertRedirect(route('admin.user-groups.index'));
+
+        $this->assertDatabaseMissing('user_groups', [
+            'id' => $group->id,
         ]);
     }
 

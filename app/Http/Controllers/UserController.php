@@ -7,6 +7,7 @@ use App\Enums\UserStatus;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
+use App\Models\UserGroup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -17,7 +18,7 @@ class UserController extends Controller
         $this->authorize('viewAny', User::class);
 
         return view('admin.users.index', [
-            'users' => User::query()->latest()->paginate(15),
+            'users' => User::query()->with('group:id,name')->latest()->paginate(15),
         ]);
     }
 
@@ -28,6 +29,7 @@ class UserController extends Controller
         return view('admin.users.create', [
             'roles' => UserRole::cases(),
             'statuses' => UserStatus::cases(),
+            'groups' => UserGroup::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -46,6 +48,7 @@ class UserController extends Controller
             'user' => $user,
             'roles' => UserRole::cases(),
             'statuses' => UserStatus::cases(),
+            'groups' => UserGroup::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 

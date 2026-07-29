@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
+use App\Support\InvoiceVisibility;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -12,9 +13,7 @@ class DashboardController extends Controller
     {
         $query = Invoice::query();
 
-        if (auth()->user()->isRegularUser()) {
-            $query->where('submitted_by', auth()->id());
-        }
+        InvoiceVisibility::apply($query, auth()->user());
 
         $statusCounts = (clone $query)
             ->selectRaw('status, count(*) as total')

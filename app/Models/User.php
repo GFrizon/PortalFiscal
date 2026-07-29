@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Enums\UserStatus;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -27,6 +28,7 @@ class User extends Authenticatable
         'password',
         'role',
         'status',
+        'user_group_id',
         'force_password_change',
     ];
 
@@ -59,6 +61,11 @@ class User extends Authenticatable
     public function submittedInvoices(): HasMany
     {
         return $this->hasMany(Invoice::class, 'submitted_by');
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(UserGroup::class, 'user_group_id');
     }
 
     public function fiscalInvoices(): HasMany

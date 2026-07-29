@@ -31,4 +31,13 @@
             @endforeach
         </select>
     </div>
+    <div class="col-12 col-md-6">
+        <label class="form-label" for="user_group_id">Grupo</label>
+        <select class="form-select" id="user_group_id" name="user_group_id">
+            <option value="">Sem grupo</option>
+            @foreach($groups as $group)
+                <option value="{{ $group->id }}" @selected((string) old('user_group_id', $user?->user_group_id) === (string) $group->id)>{{ $group->name }}</option>
+            @endforeach
+        </select>
+    </div>
 </div>

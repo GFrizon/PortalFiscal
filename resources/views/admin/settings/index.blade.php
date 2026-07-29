@@ -56,6 +56,26 @@
     <div class="panel">
         <div class="panel-header">
             <div>
+                <div class="eyebrow">Acessos</div>
+                <h2 class="panel-title">Grupos de usuarios</h2>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="{{ route('admin.user-groups.index') }}">
+                <i class="bi bi-diagram-3" aria-hidden="true"></i>
+                Gerenciar
+            </a>
+        </div>
+        <div class="settings-item">
+            <i class="bi bi-people" aria-hidden="true"></i>
+            <div>
+                <div class="eyebrow">Visibilidade de notas</div>
+                <div class="fw-semibold">Usuarios do mesmo grupo enxergam as notas anexadas entre si.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header">
+            <div>
                 <div class="eyebrow">Armazenamento</div>
                 <h2 class="panel-title">PDFs e volume</h2>
             </div>
