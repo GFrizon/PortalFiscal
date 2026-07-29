@@ -323,7 +323,7 @@ class NavigationAuditTest extends TestCase
         $invoice = Invoice::query()->where('submitted_by', $user->id)->firstOrFail();
 
         $this->assertSame('boleto', $invoice->payment_method->value);
-        $this->assertSame('2026-09-10', $invoice->due_date?->format('Y-m-d'));
+        $this->assertSame('2026-08-10', $invoice->due_date?->format('Y-m-d'));
         $this->assertSame(100.50, (float) $invoice->payment_installments[0]['amount']);
         $this->assertSame(200.75, (float) $invoice->payment_installments[1]['amount']);
     }

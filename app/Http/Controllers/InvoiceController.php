@@ -300,7 +300,7 @@ class InvoiceController extends Controller
             ->pluck('due_date')
             ->filter()
             ->sort()
-            ->last();
+            ->first();
     }
 
     private function decimalAmount(mixed $amount): float

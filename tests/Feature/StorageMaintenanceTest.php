@@ -48,4 +48,21 @@ class StorageMaintenanceTest extends TestCase
 
         Storage::disk('local')->assertExists('notas/tmp/teste.pdf');
     }
+
+    public function test_sync_due_dates_uses_earliest_installment(): void
+    {
+        $invoice = Invoice::factory()->create([
+            'due_date' => '2026-09-10',
+            'payment_installments' => [
+                ['number' => 1, 'due_date' => '2026-08-10', 'amount' => 100],
+                ['number' => 2, 'due_date' => '2026-09-10', 'amount' => 200],
+            ],
+        ]);
+
+        $this->artisan('invoices:sync-due-dates')
+            ->expectsOutputToContain('Updating '.$invoice->protocol)
+            ->assertExitCode(0);
+
+        $this->assertSame('2026-08-10', $invoice->refresh()->due_date?->format('Y-m-d'));
+    }
 }
