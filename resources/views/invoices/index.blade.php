@@ -188,7 +188,7 @@
                         <td data-label="Vencimento">{{ $invoice->due_date?->format('d/m/Y') ?? '-' }}</td>
                         <td data-label="Status">
                             <div class="status-cell">
-                                <span class="badge {{ $invoice->status->badgeClass() }}">{{ $invoice->status->label() }}</span>
+                                <span class="badge {{ $invoice->status->badgeClass() }}" title="{{ $invoice->status->label() }}">{{ $invoice->status->shortLabel() }}</span>
                             </div>
                         </td>
                         <td class="text-end" data-label="Acoes">

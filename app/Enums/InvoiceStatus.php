@@ -21,6 +21,17 @@ enum InvoiceStatus: string
         };
     }
 
+    public function shortLabel(): string
+    {
+        return match ($this) {
+            self::AwaitingReview => 'Ag. conf.',
+            self::InReview => 'Em conf.',
+            self::Pending => 'Pendencia',
+            self::Launched => 'Lancada',
+            self::Cancelled => 'Cancelada',
+        };
+    }
+
     public function badgeClass(): string
     {
         return match ($this) {
