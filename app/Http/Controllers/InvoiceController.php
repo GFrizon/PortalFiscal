@@ -490,24 +490,38 @@ class InvoiceController extends Controller
             return;
         }
 
-        try {
-            Mail::to($recipients->all())->send(new InvoicePendingResolvedMail($invoice, $submitter));
+        $sent = collect();
 
-            $historyService->record(
-                $invoice,
-                $submitter,
-                'Fiscal avisado sobre pendencia respondida',
-                $invoice->status,
-                $invoice->status,
-                'Aviso enviado para '.$recipients->count().' destinatario'.($recipients->count() === 1 ? '' : 's').'.',
-                $request
-            );
-        } catch (Throwable $exception) {
-            Log::warning('Falha ao enviar e-mail de pendencia respondida para fiscais.', [
+        foreach ($recipients as $recipient) {
+            try {
+                Mail::to($recipient)->send(new InvoicePendingResolvedMail($invoice, $submitter));
+                $sent->push($recipient);
+            } catch (Throwable $exception) {
+                Log::warning('Falha ao enviar e-mail de pendencia respondida para fiscal.', [
+                    'invoice_id' => $invoice->id,
+                    'recipient' => $recipient,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        if ($sent->isEmpty()) {
+            Log::warning('Nenhum fiscal recebeu o e-mail de pendencia respondida.', [
                 'invoice_id' => $invoice->id,
                 'recipients' => $recipients->all(),
-                'error' => $exception->getMessage(),
             ]);
+
+            return;
         }
+
+        $historyService->record(
+            $invoice,
+            $submitter,
+            'Fiscal avisado sobre pendencia respondida',
+            $invoice->status,
+            $invoice->status,
+            'Aviso enviado para '.$sent->count().' destinatario'.($sent->count() === 1 ? '' : 's').'.',
+            $request
+        );
     }
 }

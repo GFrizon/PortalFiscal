@@ -660,13 +660,21 @@ class NavigationAuditTest extends TestCase
             'new_status' => 'awaiting_review',
         ]);
 
-        Mail::assertSent(InvoicePendingResolvedMail::class, function (InvoicePendingResolvedMail $mail) use ($invoice, $user, $fiscal, $admin): bool {
+        Mail::assertSent(InvoicePendingResolvedMail::class, 2);
+
+        Mail::assertSent(InvoicePendingResolvedMail::class, function (InvoicePendingResolvedMail $mail) use ($invoice, $user, $fiscal): bool {
             return $mail->invoice->is($invoice)
                 && $mail->submitter->is($user)
-                && $mail->hasTo($fiscal->email)
-                && $mail->hasTo($admin->email)
-                && ! $mail->hasTo('fiscal.inativo@bakof.local');
+                && $mail->hasTo($fiscal->email);
         });
+
+        Mail::assertSent(InvoicePendingResolvedMail::class, function (InvoicePendingResolvedMail $mail) use ($invoice, $user, $admin): bool {
+            return $mail->invoice->is($invoice)
+                && $mail->submitter->is($user)
+                && $mail->hasTo($admin->email);
+        });
+
+        Mail::assertNotSent(InvoicePendingResolvedMail::class, fn (InvoicePendingResolvedMail $mail): bool => $mail->hasTo('fiscal.inativo@bakof.local'));
 
         $this->assertDatabaseHas('invoice_histories', [
             'invoice_id' => $invoice->id,
