@@ -723,13 +723,16 @@ class NavigationAuditTest extends TestCase
         $invoice = Invoice::factory()->create([
             'submitted_by' => $user->id,
             'user_notes' => 'Entregar urgente ao fiscal.',
+            'invoice_access_key' => '35260754163230000109550040000314261443991849',
         ]);
 
         $this->actingAs($user)
             ->get(route('invoices.show', $invoice))
             ->assertOk()
             ->assertSee('Observacoes de '.$user->name)
-            ->assertSee('Entregar urgente ao fiscal.');
+            ->assertSee('Entregar urgente ao fiscal.')
+            ->assertSee('35260754163230000109550040000314261443991849')
+            ->assertSee('data-copy-text="35260754163230000109550040000314261443991849"', false);
     }
 
     public function test_invoice_details_tolerate_legacy_empty_document_and_payment_fields(): void

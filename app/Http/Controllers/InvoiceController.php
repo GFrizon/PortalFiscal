@@ -178,6 +178,7 @@ class InvoiceController extends Controller
                     'document_type' => $request->string('document_type')->toString(),
                     'purchase_order_number' => $request->string('purchase_order_number')->toString() ?: null,
                     'invoice_number' => $extracted['invoice_number'],
+                    'invoice_access_key' => $extracted['invoice_access_key'] ?? null,
                     'issuer_cnpj' => $extracted['issuer_cnpj'],
                     'issuer_legal_name' => $extracted['issuer_legal_name'],
                     'recipient_cnpj' => $extracted['recipient_cnpj'],

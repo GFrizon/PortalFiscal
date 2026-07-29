@@ -94,6 +94,7 @@ class PdfExtractionServiceTest extends TestCase
         );
 
         $this->assertSame('31426', $result['invoice_number']);
+        $this->assertSame('35260754163230000109550040000314261443991849', $result['invoice_access_key']);
     }
 
     public function test_it_extracts_nfse_number_from_label(): void
@@ -105,5 +106,6 @@ class PdfExtractionServiceTest extends TestCase
         );
 
         $this->assertSame('361', $result['invoice_number']);
+        $this->assertNull($result['invoice_access_key']);
     }
 }

@@ -25,6 +25,7 @@ class InvoiceFactory extends Factory
             'document_type' => InvoiceDocumentType::Nf,
             'purchase_order_number' => fake()->numerify('######'),
             'invoice_number' => fake()->numerify('########'),
+            'invoice_access_key' => fake()->numerify('############################################'),
             'issuer_cnpj' => fake()->numerify('##############'),
             'issuer_legal_name' => fake()->company(),
             'recipient_cnpj' => fake()->numerify('##############'),

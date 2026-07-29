@@ -112,6 +112,28 @@
         form.addEventListener('change', refreshPreview);
     });
 
+    document.querySelectorAll('[data-copy-text]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const text = button.dataset.copyText || '';
+
+            if (! text) {
+                return;
+            }
+
+            await copyText(text);
+
+            const icon = button.querySelector('i');
+            const originalClass = icon?.className;
+
+            if (icon) {
+                icon.className = 'bi bi-check2';
+                window.setTimeout(() => {
+                    icon.className = originalClass || 'bi bi-clipboard';
+                }, 1200);
+            }
+        });
+    });
+
     document.querySelectorAll('[data-digits-only]').forEach((input) => {
         input.addEventListener('input', () => {
             input.value = input.value.replace(/\D/g, '');
@@ -254,6 +276,28 @@
         if (element) {
             element.textContent = value || '-';
         }
+    }
+
+    async function copyText(text) {
+        if (navigator.clipboard?.writeText) {
+            try {
+                await navigator.clipboard.writeText(text);
+
+                return;
+            } catch (error) {
+                // Fall back to the textarea copy path below.
+            }
+        }
+
+        const input = document.createElement('textarea');
+        input.value = text;
+        input.setAttribute('readonly', '');
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        input.remove();
     }
 
     function formatBytes(bytes) {

@@ -25,6 +25,7 @@ class Invoice extends Model
         'document_type',
         'purchase_order_number',
         'invoice_number',
+        'invoice_access_key',
         'issuer_cnpj',
         'issuer_legal_name',
         'recipient_cnpj',

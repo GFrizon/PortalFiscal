@@ -32,6 +32,7 @@ class PdfExtractionService
                 'issuer_cnpj' => null,
                 'recipient_cnpj' => null,
                 'invoice_number' => null,
+                'invoice_access_key' => null,
                 'issuer_legal_name' => null,
                 'recipient_legal_name' => null,
                 'error' => $exception->getMessage(),
@@ -51,6 +52,7 @@ class PdfExtractionService
             'issuer_cnpj' => $this->identifyIssuerCnpj($cnpjs, $recipientCnpj),
             'recipient_cnpj' => $recipientCnpj,
             'invoice_number' => $this->extractInvoiceNumber($text),
+            'invoice_access_key' => $this->extractAccessKey($text),
             'issuer_legal_name' => null,
             'recipient_legal_name' => null,
             'error' => null,
@@ -170,7 +172,8 @@ class PdfExtractionService
 
     private function extractInvoiceNumber(string $text): ?string
     {
-        $accessKeyInvoiceNumber = $this->extractInvoiceNumberFromAccessKey($text);
+        $accessKey = $this->extractAccessKey($text);
+        $accessKeyInvoiceNumber = $accessKey ? $this->normalizeInvoiceNumber(substr($accessKey, 25, 9)) : null;
 
         if ($accessKeyInvoiceNumber) {
             return $accessKeyInvoiceNumber;
@@ -194,7 +197,7 @@ class PdfExtractionService
         return null;
     }
 
-    private function extractInvoiceNumberFromAccessKey(string $text): ?string
+    private function extractAccessKey(string $text): ?string
     {
         preg_match_all('/(?<!\d)(\d[\d\s]{42,70}\d)(?!\d)/u', $text, $matches);
 
@@ -208,7 +211,7 @@ class PdfExtractionService
                     continue;
                 }
 
-                return $this->normalizeInvoiceNumber(substr($key, 25, 9));
+                return $key;
             }
         }
 

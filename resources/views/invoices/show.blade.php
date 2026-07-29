@@ -81,6 +81,21 @@
                         </div>
                     </div>
 
+                    @if(filled($invoice->invoice_access_key))
+                        <button
+                            type="button"
+                            class="access-key-copy mb-3"
+                            data-copy-text="{{ $invoice->invoice_access_key }}"
+                            aria-label="Copiar chave de acesso da NF"
+                        >
+                            <span>
+                                <small>Chave de acesso</small>
+                                <strong>{{ $invoice->invoice_access_key }}</strong>
+                            </span>
+                            <i class="bi bi-clipboard" aria-hidden="true"></i>
+                        </button>
+                    @endif
+
                     <dl class="details-grid mb-0">
                         <dt>Unidade</dt>
                         <dd>{{ $invoice->businessUnit?->name ?? 'Nao identificada' }}</dd>

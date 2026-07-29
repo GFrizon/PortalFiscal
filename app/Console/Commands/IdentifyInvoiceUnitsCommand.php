@@ -66,6 +66,7 @@ class IdentifyInvoiceUnitsCommand extends Command
                     'recipient_cnpj' => $invoice->recipient_cnpj ?: $recipientCnpj,
                     'issuer_cnpj' => $invoice->issuer_cnpj ?: ($extracted['issuer_cnpj'] ?? null),
                     'invoice_number' => $invoice->invoice_number ?: ($extracted['invoice_number'] ?? null),
+                    'invoice_access_key' => $invoice->invoice_access_key ?: ($extracted['invoice_access_key'] ?? null),
                 ])->save();
 
                 $invoice->alerts()
