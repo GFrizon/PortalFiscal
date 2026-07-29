@@ -1057,6 +1057,29 @@ textarea:focus-visible {
     text-decoration: underline;
 }
 
+.attachment-main-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.attachment-actions {
+    display: inline-flex;
+    flex: 0 0 auto;
+    gap: 4px;
+}
+
+.attachment-actions form {
+    margin: 0;
+}
+
+.attachment-actions .btn-icon-only {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+}
+
 .attachment-meta {
     color: var(--color-text-muted);
     font-size: .76rem;
@@ -2705,6 +2728,11 @@ textarea.form-control {
 
     .attachment-upload-row.compact .btn {
         width: 100%;
+    }
+
+    .attachment-main-line {
+        align-items: flex-start;
+        flex-direction: column;
     }
 
     .invoice-list-scroll {

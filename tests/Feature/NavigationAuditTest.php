@@ -891,6 +891,47 @@ class NavigationAuditTest extends TestCase
         $this->actingAs($user)
             ->get(route('invoices.attachments.download', [$invoice, $attachment]))
             ->assertOk();
+
+        $this->actingAs($user)
+            ->get(route('invoices.attachments.show', [$invoice, $attachment]))
+            ->assertOk();
+    }
+
+    public function test_fiscal_can_delete_supporting_document_from_invoice(): void
+    {
+        Storage::fake('local');
+
+        $fiscal = User::factory()->fiscal()->create();
+        $invoice = Invoice::factory()->create([
+            'status' => 'awaiting_review',
+        ]);
+
+        Storage::disk('local')->put('invoice-attachments/teste.pdf', 'conteudo');
+
+        $attachment = $invoice->attachments()->create([
+            'uploaded_by' => $fiscal->id,
+            'original_name' => 'teste.pdf',
+            'path' => 'invoice-attachments/teste.pdf',
+            'mime_type' => 'application/pdf',
+            'file_size' => 8,
+        ]);
+
+        $this->actingAs($fiscal)
+            ->delete(route('invoices.attachments.destroy', [$invoice, $attachment]))
+            ->assertRedirect(route('invoices.show', $invoice));
+
+        Storage::disk('local')->assertMissing('invoice-attachments/teste.pdf');
+
+        $this->assertDatabaseMissing('invoice_attachments', [
+            'id' => $attachment->id,
+        ]);
+
+        $this->assertDatabaseHas('invoice_histories', [
+            'invoice_id' => $invoice->id,
+            'user_id' => $fiscal->id,
+            'action' => 'Documento complementar excluido',
+            'note' => 'teste.pdf',
+        ]);
     }
 
     public function test_fiscal_must_resolve_critical_alert_before_launching_invoice(): void

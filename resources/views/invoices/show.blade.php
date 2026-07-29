@@ -203,9 +203,28 @@
                                     <div class="attachment-item compact">
                                         <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>
                                         <div class="attachment-copy">
-                                            <a href="{{ route('invoices.attachments.download', [$invoice, $attachment]) }}" class="attachment-name">
-                                                {{ $attachment->original_name }}
-                                            </a>
+                                            <div class="attachment-main-line">
+                                                <a href="{{ route('invoices.attachments.show', [$invoice, $attachment]) }}" class="attachment-name" target="_blank" rel="noopener">
+                                                    {{ $attachment->original_name }}
+                                                </a>
+                                                <div class="attachment-actions">
+                                                    <a href="{{ route('invoices.attachments.show', [$invoice, $attachment]) }}" class="btn btn-sm btn-outline-primary btn-icon-only" target="_blank" rel="noopener" aria-label="Visualizar {{ $attachment->original_name }}">
+                                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                                    </a>
+                                                    <a href="{{ route('invoices.attachments.download', [$invoice, $attachment]) }}" class="btn btn-sm btn-outline-secondary btn-icon-only" aria-label="Baixar {{ $attachment->original_name }}">
+                                                        <i class="bi bi-download" aria-hidden="true"></i>
+                                                    </a>
+                                                    @can('review', $invoice)
+                                                        <form method="POST" action="{{ route('invoices.attachments.destroy', [$invoice, $attachment]) }}" class="d-inline" data-confirm="Excluir este documento complementar?">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button class="btn btn-sm btn-outline-danger btn-icon-only" type="submit" aria-label="Excluir {{ $attachment->original_name }}">
+                                                                <i class="bi bi-trash" aria-hidden="true"></i>
+                                                            </button>
+                                                        </form>
+                                                    @endcan
+                                                </div>
+                                            </div>
                                             <div class="attachment-meta">
                                                 {{ $attachment->formattedSize() }} - {{ $attachment->created_at?->format('d/m/Y H:i') }} - {{ $attachment->uploader?->name ?? 'Fiscal' }}
                                             </div>

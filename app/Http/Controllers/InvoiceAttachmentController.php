@@ -8,6 +8,7 @@ use App\Models\InvoiceAttachment;
 use App\Services\InvoiceHistoryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InvoiceAttachmentController extends Controller
@@ -49,5 +50,45 @@ class InvoiceAttachmentController extends Controller
         abort_unless(Storage::disk('local')->exists($attachment->path), 404);
 
         return Storage::disk('local')->download($attachment->path, $attachment->original_name);
+    }
+
+    public function show(Invoice $invoice, InvoiceAttachment $attachment): StreamedResponse
+    {
+        $this->authorize('view', $invoice);
+
+        abort_unless($attachment->invoice_id === $invoice->id, 404);
+        abort_unless(Storage::disk('local')->exists($attachment->path), 404);
+
+        return Storage::disk('local')->response($attachment->path, $attachment->original_name, [
+            'Content-Type' => $attachment->mime_type ?: 'application/octet-stream',
+            'Content-Disposition' => 'inline; filename="'.Str::ascii($attachment->original_name).'"',
+        ]);
+    }
+
+    public function destroy(Invoice $invoice, InvoiceAttachment $attachment, InvoiceHistoryService $historyService): RedirectResponse
+    {
+        $this->authorize('review', $invoice);
+
+        abort_unless($attachment->invoice_id === $invoice->id, 404);
+
+        $originalName = $attachment->original_name;
+        $path = $attachment->path;
+
+        $attachment->delete();
+        Storage::disk('local')->delete($path);
+
+        $historyService->record(
+            $invoice,
+            request()->user(),
+            'Documento complementar excluido',
+            $invoice->status,
+            $invoice->status,
+            $originalName,
+            request()
+        );
+
+        return redirect()
+            ->route('invoices.show', $invoice)
+            ->with('success', 'Documento complementar excluido com sucesso.');
     }
 }
