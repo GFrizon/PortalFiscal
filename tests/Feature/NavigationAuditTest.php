@@ -8,6 +8,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Mail\InvoicePendingMail;
+use App\Mail\InvoicePendingResolvedMail;
 use App\Models\BusinessUnit;
 use App\Models\Invoice;
 use App\Models\User;
@@ -601,7 +602,19 @@ class NavigationAuditTest extends TestCase
 
     public function test_submitter_can_edit_invoice_before_it_is_launched(): void
     {
+        Mail::fake();
+
         $user = User::factory()->create();
+        $fiscal = User::factory()->fiscal()->create([
+            'email' => 'fiscal.ativo@bakof.local',
+        ]);
+        $admin = User::factory()->admin()->create([
+            'email' => 'admin.ativo@bakof.local',
+        ]);
+        User::factory()->fiscal()->create([
+            'email' => 'fiscal.inativo@bakof.local',
+            'status' => UserStatus::Inactive->value,
+        ]);
         $invoice = Invoice::factory()->create([
             'submitted_by' => $user->id,
             'status' => 'pending',
@@ -645,6 +658,20 @@ class NavigationAuditTest extends TestCase
             'action' => 'Dados da nota atualizados',
             'previous_status' => 'pending',
             'new_status' => 'awaiting_review',
+        ]);
+
+        Mail::assertSent(InvoicePendingResolvedMail::class, function (InvoicePendingResolvedMail $mail) use ($invoice, $user, $fiscal, $admin): bool {
+            return $mail->invoice->is($invoice)
+                && $mail->submitter->is($user)
+                && $mail->hasTo($fiscal->email)
+                && $mail->hasTo($admin->email)
+                && ! $mail->hasTo('fiscal.inativo@bakof.local');
+        });
+
+        $this->assertDatabaseHas('invoice_histories', [
+            'invoice_id' => $invoice->id,
+            'user_id' => $user->id,
+            'action' => 'Fiscal avisado sobre pendencia respondida',
         ]);
     }
 

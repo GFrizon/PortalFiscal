@@ -6,10 +6,14 @@ use App\Enums\AlertLevel;
 use App\Enums\AlertType;
 use App\Enums\InvoiceDocumentType;
 use App\Enums\InvoiceStatus;
+use App\Enums\UserRole;
+use App\Enums\UserStatus;
 use App\Http\Requests\Invoice\StoreInvoiceRequest;
 use App\Http\Requests\Invoice\UpdateInvoiceRequest;
+use App\Mail\InvoicePendingResolvedMail;
 use App\Models\BusinessUnit;
 use App\Models\Invoice;
+use App\Models\User;
 use App\Services\InvoiceAlertService;
 use App\Services\InvoiceHistoryService;
 use App\Services\InvoiceService;
@@ -20,6 +24,8 @@ use App\Support\InvoiceVisibility;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Throwable;
 
@@ -292,12 +298,15 @@ class InvoiceController extends Controller
     ): RedirectResponse {
         $this->authorize('update', $invoice);
 
-        DB::transaction(function () use ($request, $invoice, $purchaseOrderService, $pdfExtractionService, $alertService, $historyService): void {
+        $notifyFiscalTeam = false;
+
+        DB::transaction(function () use ($request, $invoice, $purchaseOrderService, $pdfExtractionService, $alertService, $historyService, &$notifyFiscalTeam): void {
             $previousStatus = $invoice->status;
             $nextStatus = $invoice->status;
 
             if ($request->user()->isRegularUser() && $invoice->status === InvoiceStatus::Pending) {
                 $nextStatus = InvoiceStatus::AwaitingReview;
+                $notifyFiscalTeam = true;
             }
 
             $invoice->update([
@@ -324,6 +333,10 @@ class InvoiceController extends Controller
                 $request
             );
         });
+
+        if ($notifyFiscalTeam) {
+            $this->notifyFiscalTeamPendingWasResolved($invoice->refresh(), $request->user(), $historyService, $request);
+        }
 
         return redirect()
             ->route('invoices.show', $invoice)
@@ -455,6 +468,46 @@ class InvoiceController extends Controller
 
         if ($issuerCnpj && $supplierCnpj && $issuerCnpj !== $supplierCnpj) {
             $alertService->create($invoice, AlertType::CnpjMismatch, 'CNPJ do emitente diferente do fornecedor da ordem de compra.', AlertLevel::Critical);
+        }
+    }
+
+    private function notifyFiscalTeamPendingWasResolved(
+        Invoice $invoice,
+        User $submitter,
+        InvoiceHistoryService $historyService,
+        Request $request
+    ): void {
+        $recipients = User::query()
+            ->where('status', UserStatus::Active->value)
+            ->whereIn('role', [UserRole::Admin->value, UserRole::Fiscal->value])
+            ->whereNotNull('email')
+            ->pluck('email')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        try {
+            Mail::to($recipients->all())->send(new InvoicePendingResolvedMail($invoice, $submitter));
+
+            $historyService->record(
+                $invoice,
+                $submitter,
+                'Fiscal avisado sobre pendencia respondida',
+                $invoice->status,
+                $invoice->status,
+                'Aviso enviado para '.$recipients->count().' destinatario'.($recipients->count() === 1 ? '' : 's').'.',
+                $request
+            );
+        } catch (Throwable $exception) {
+            Log::warning('Falha ao enviar e-mail de pendencia respondida para fiscais.', [
+                'invoice_id' => $invoice->id,
+                'recipients' => $recipients->all(),
+                'error' => $exception->getMessage(),
+            ]);
         }
     }
 }
