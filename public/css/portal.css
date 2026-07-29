@@ -3235,14 +3235,20 @@ textarea.form-control {
 
 .invoice-detail-page .pdf-panel {
     margin-bottom: 0 !important;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
 }
 
 .invoice-detail-page .pdf-frame {
     display: block;
     width: 100%;
-    height: calc(100vh - var(--topbar-height) - 120px) !important;
-    min-height: 860px !important;
+    height: auto !important;
+    min-height: 1180px !important;
+    aspect-ratio: 1 / 1.46;
+    border: 0;
     border-radius: 7px;
+    background: #fff;
 }
 
 .invoice-detail-page .review-column {
@@ -3269,11 +3275,16 @@ textarea.form-control {
 
 @media (max-width: 1199.98px) {
     .invoice-detail-page .pdf-frame {
-        height: 82vh !important;
-        min-height: 680px !important;
+        min-height: 860px !important;
     }
 
     .invoice-detail-page .invoice-info-column {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .invoice-detail-page .pdf-frame {
+        min-height: 620px !important;
     }
 }
