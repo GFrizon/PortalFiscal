@@ -84,4 +84,26 @@ class PdfExtractionServiceTest extends TestCase
 
         $this->assertSame('91967067000317', $result['recipient_cnpj']);
     }
+
+    public function test_it_extracts_nfe_number_from_access_key(): void
+    {
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            'CHAVE DE ACESSO 3526 0754 1632 3000 0109 5500 4000 0314 2614 4399 1849'
+        );
+
+        $this->assertSame('31426', $result['invoice_number']);
+    }
+
+    public function test_it_extracts_nfse_number_from_label(): void
+    {
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            'NOTA FISCAL DE SERVICO ELETRONICA - NFS-e Numero da NFS-e 361 Data e Hora da Emissao'
+        );
+
+        $this->assertSame('361', $result['invoice_number']);
+    }
 }

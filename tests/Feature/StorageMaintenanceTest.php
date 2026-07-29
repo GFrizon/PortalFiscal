@@ -70,6 +70,37 @@ class StorageMaintenanceTest extends TestCase
         $this->assertSame('2026-08-10', $invoice->refresh()->due_date?->format('Y-m-d'));
     }
 
+    public function test_sync_invoice_numbers_updates_existing_invoice_from_pdf(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('notas/2026/07/unidade-001/teste.pdf', 'pdf');
+
+        $invoice = Invoice::factory()->create([
+            'invoice_number' => '154',
+            'pdf_path' => 'notas/2026/07/unidade-001/teste.pdf',
+        ]);
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => '',
+                'cnpjs' => [],
+                'issuer_cnpj' => null,
+                'recipient_cnpj' => null,
+                'invoice_number' => '31426',
+                'issuer_legal_name' => null,
+                'recipient_legal_name' => null,
+                'error' => null,
+            ]);
+        });
+
+        $this->artisan('invoices:sync-numbers')
+            ->expectsOutputToContain('Updating '.$invoice->protocol.' invoice number from 154 to 31426')
+            ->assertExitCode(0);
+
+        $this->assertSame('31426', $invoice->refresh()->invoice_number);
+    }
+
     public function test_identify_units_command_updates_unidentified_invoice(): void
     {
         Storage::fake('local');

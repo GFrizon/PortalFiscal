@@ -170,17 +170,55 @@ class PdfExtractionService
 
     private function extractInvoiceNumber(string $text): ?string
     {
+        $accessKeyInvoiceNumber = $this->extractInvoiceNumberFromAccessKey($text);
+
+        if ($accessKeyInvoiceNumber) {
+            return $accessKeyInvoiceNumber;
+        }
+
         $patterns = [
+            '/N.{0,3}mero\s+da\s+NFS-?e\s+(\d{1,})/iu',
+            '/N.{0,3}mero\s+(?:da\s+)?(?:Nota|NF-?e|NFS-?e)\s*[:\-]?\s*(\d{1,})/iu',
+            '/N[uú]mero\s+da\s+NFS-?e\s+(\d{1,})/iu',
+            '/N[uú]mero\s+(?:da\s+)?(?:Nota|NF-?e|NFS-?e)\s*[:\-]?\s*(\d{1,})/iu',
             '/N(?:F|OTA)\s*(?:E|FISCAL)?\s*(?:N[ºO.]*)?\s*[:\-]?\s*(\d{3,})/iu',
             '/Numero\s*(?:da)?\s*Nota\s*[:\-]?\s*(\d{3,})/iu',
         ];
 
         foreach ($patterns as $pattern) {
             if (preg_match($pattern, $text, $match)) {
-                return $match[1];
+                return $this->normalizeInvoiceNumber($match[1]);
             }
         }
 
         return null;
+    }
+
+    private function extractInvoiceNumberFromAccessKey(string $text): ?string
+    {
+        preg_match_all('/(?<!\d)(\d[\d\s]{42,70}\d)(?!\d)/u', $text, $matches);
+
+        foreach ($matches[1] ?? [] as $candidate) {
+            $digits = preg_replace('/\D/', '', $candidate) ?? '';
+
+            for ($offset = 0; $offset <= strlen($digits) - 44; $offset++) {
+                $key = substr($digits, $offset, 44);
+
+                if (substr($key, 20, 2) !== '55') {
+                    continue;
+                }
+
+                return $this->normalizeInvoiceNumber(substr($key, 25, 9));
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeInvoiceNumber(string $number): string
+    {
+        $digits = preg_replace('/\D/', '', $number) ?? '';
+
+        return ltrim($digits, '0') ?: '0';
     }
 }
