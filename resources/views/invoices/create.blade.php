@@ -69,8 +69,8 @@
             <div class="col-12 col-md-3">
                 <label class="form-label" for="document_type">Tipo de documento</label>
                 <select class="form-select" id="document_type" name="document_type" required data-document-type-select>
-                    <option value="nf" @selected(old('document_type', 'nf') === 'nf')>NF</option>
-                    <option value="nf_no_oc" @selected(old('document_type') === 'nf_no_oc')>Nota Fiscal sem ordem de compra</option>
+                    <option value="nf" @selected(old('document_type', 'nf') === 'nf')>NFe</option>
+                    <option value="nf_no_oc" @selected(old('document_type') === 'nf_no_oc')>NFe sem OC</option>
                     <option value="cte" @selected(old('document_type') === 'cte')>CTE</option>
                 </select>
             </div>

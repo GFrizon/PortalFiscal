@@ -11,8 +11,8 @@ enum InvoiceDocumentType: string
     public function label(): string
     {
         return match ($this) {
-            self::Nf => 'NF',
-            self::NfWithoutPurchaseOrder => 'NF sem OC',
+            self::Nf => 'NFe',
+            self::NfWithoutPurchaseOrder => 'NFe sem OC',
             self::Cte => 'CTE',
         };
     }
