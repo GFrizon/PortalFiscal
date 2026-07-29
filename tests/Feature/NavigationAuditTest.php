@@ -7,6 +7,7 @@ use App\Enums\AlertType;
 use App\Enums\InvoiceStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Mail\InvoicePendingMail;
 use App\Models\BusinessUnit;
 use App\Models\Invoice;
 use App\Models\User;
@@ -17,6 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -813,6 +815,40 @@ class NavigationAuditTest extends TestCase
             'user_id' => $fiscal->id,
             'action' => 'Nota marcada como lancada',
         ]);
+    }
+
+    public function test_fiscal_pending_status_sends_email_to_submitter(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create([
+            'email' => 'usuario.nota@bakof.local',
+        ]);
+        $fiscal = User::factory()->fiscal()->create();
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => 'awaiting_review',
+            'protocol' => 'NF-2026-EMAIL01',
+            'invoice_number' => '445566',
+        ]);
+
+        $this->actingAs($fiscal)
+            ->post(route('invoices.mark-as-pending', $invoice), [
+                'fiscal_notes' => 'CNPJ divergente, favor revisar.',
+            ])
+            ->assertRedirect(route('invoices.show', $invoice));
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+            'status' => 'pending',
+            'fiscal_notes' => 'CNPJ divergente, favor revisar.',
+        ]);
+
+        Mail::assertSent(InvoicePendingMail::class, function (InvoicePendingMail $mail) use ($user, $invoice): bool {
+            return $mail->hasTo($user->email)
+                && $mail->invoice->is($invoice)
+                && $mail->notes === 'CNPJ divergente, favor revisar.';
+        });
     }
 
     public function test_fiscal_must_resolve_critical_alert_before_launching_invoice(): void

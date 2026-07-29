@@ -6,13 +6,18 @@ use App\Enums\AlertLevel;
 use App\Enums\InvoiceStatus;
 use App\Http\Requests\Invoice\FiscalStatusRequest;
 use App\Http\Requests\Invoice\FiscalReviewRequest;
+use App\Mail\InvoicePendingMail;
 use App\Http\Requests\Invoice\UpdateInvoiceUnitRequest;
 use App\Models\BusinessUnit;
 use App\Models\Invoice;
 use App\Models\InvoiceAlert;
+use App\Models\User;
 use App\Services\InvoiceAlertService;
 use App\Services\InvoiceHistoryService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 class FiscalReviewController extends Controller
 {
@@ -127,8 +132,32 @@ class FiscalReviewController extends Controller
             $request
         );
 
+        if ($newStatus === InvoiceStatus::Pending) {
+            $this->sendPendingMail($invoice, $request->user(), $fiscalNotes);
+        }
+
         return redirect()
             ->route('invoices.show', $invoice)
             ->with('success', $action.' com sucesso.');
+    }
+
+    private function sendPendingMail(Invoice $invoice, User $fiscal, string $fiscalNotes): void
+    {
+        $invoice->loadMissing('submitter');
+        $recipient = $invoice->submitter;
+
+        if (! $recipient || blank($recipient->email)) {
+            return;
+        }
+
+        try {
+            Mail::to($recipient->email)->send(new InvoicePendingMail($invoice, $fiscal, $fiscalNotes));
+        } catch (Throwable $exception) {
+            Log::warning('Falha ao enviar e-mail de pendencia da nota fiscal.', [
+                'invoice_id' => $invoice->id,
+                'recipient' => $recipient->email,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 }
