@@ -14,6 +14,23 @@
         } elseif ($selectedUnitId !== '') {
             $selectedUnitName = $businessUnits->firstWhere('id', (int) $selectedUnitId)?->name ?? 'Unidade selecionada';
         }
+
+        $sortLink = function (string $column) use ($filters, $sort, $direction) {
+            $nextDirection = $sort === $column && $direction === 'asc' ? 'desc' : 'asc';
+
+            return route('invoices.index', array_filter([
+                'business_unit_id' => $filters['business_unit_id'] ?? null,
+                'protocol' => $filters['protocol'] ?? null,
+                'purchase_order_number' => $filters['purchase_order_number'] ?? null,
+                'status' => $filters['status'] ?? null,
+                'sort' => $column,
+                'direction' => $nextDirection,
+            ], fn ($value) => filled($value)));
+        };
+
+        $sortIcon = fn (string $column) => $sort === $column
+            ? ($direction === 'asc' ? 'bi-chevron-up' : 'bi-chevron-down')
+            : 'bi-chevron-expand';
     @endphp
 
     <div class="invoices-index-page">
@@ -58,6 +75,8 @@
                         'status' => $filters['status'] ?? null,
                         'protocol' => $filters['protocol'] ?? null,
                         'purchase_order_number' => $filters['purchase_order_number'] ?? null,
+                        'sort' => $filters['sort'] ?? null,
+                        'direction' => $filters['direction'] ?? null,
                     ], fn ($value) => filled($value)));
                 @endphp
 
@@ -121,14 +140,15 @@
             <table class="table data-table align-middle mb-0">
                 <thead>
                 <tr>
-                    <th>Protocolo</th>
-                    <th>Tipo</th>
-                    <th>Nota</th>
-                    <th>Referencia</th>
-                    <th>Unidade</th>
-                    <th>Usuario</th>
-                    <th>Chegada</th>
-                    <th>Status</th>
+                    <th><a class="sort-link" href="{{ $sortLink('protocol') }}">Protocolo <i class="bi {{ $sortIcon('protocol') }}" aria-hidden="true"></i></a></th>
+                    <th><a class="sort-link" href="{{ $sortLink('type') }}">Tipo <i class="bi {{ $sortIcon('type') }}" aria-hidden="true"></i></a></th>
+                    <th><a class="sort-link" href="{{ $sortLink('invoice') }}">Nota <i class="bi {{ $sortIcon('invoice') }}" aria-hidden="true"></i></a></th>
+                    <th><a class="sort-link" href="{{ $sortLink('reference') }}">Referencia <i class="bi {{ $sortIcon('reference') }}" aria-hidden="true"></i></a></th>
+                    <th><a class="sort-link" href="{{ $sortLink('unit') }}">Unidade <i class="bi {{ $sortIcon('unit') }}" aria-hidden="true"></i></a></th>
+                    <th><a class="sort-link" href="{{ $sortLink('user') }}">Usuario <i class="bi {{ $sortIcon('user') }}" aria-hidden="true"></i></a></th>
+                    <th><a class="sort-link" href="{{ $sortLink('arrival') }}">Chegada <i class="bi {{ $sortIcon('arrival') }}" aria-hidden="true"></i></a></th>
+                    <th><a class="sort-link" href="{{ $sortLink('due') }}">Vencimento <i class="bi {{ $sortIcon('due') }}" aria-hidden="true"></i></a></th>
+                    <th><a class="sort-link" href="{{ $sortLink('status') }}">Status <i class="bi {{ $sortIcon('status') }}" aria-hidden="true"></i></a></th>
                     <th class="text-end">Acoes</th>
                 </tr>
                 </thead>
@@ -148,6 +168,7 @@
                         </td>
                         <td>{{ $invoice->submitter?->name }}</td>
                         <td>{{ $invoice->arrival_date?->format('d/m/Y') ?? '-' }}</td>
+                        <td>{{ $invoice->due_date?->format('d/m/Y') ?? '-' }}</td>
                         <td><span class="badge {{ $invoice->status->badgeClass() }}">{{ $invoice->status->label() }}</span></td>
                         <td class="text-end">
                             <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-sm btn-outline-primary" aria-label="Abrir {{ $invoice->protocol }}">
@@ -157,7 +178,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" class="empty-state">Nenhuma nota nesta pasta.</td>
+                        <td colspan="10" class="empty-state">Nenhuma nota nesta pasta.</td>
                     </tr>
                 @endforelse
                 </tbody>

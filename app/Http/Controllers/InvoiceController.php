@@ -32,11 +32,25 @@ class InvoiceController extends Controller
             InvoiceStatus::Pending,
         ];
         $visibleStatusValues = array_map(fn (InvoiceStatus $status): string => $status->value, $visibleStatuses);
+        $sortableColumns = [
+            'protocol' => 'protocol',
+            'type' => 'document_type',
+            'invoice' => 'invoice_number',
+            'reference' => 'purchase_order_number',
+            'unit' => 'business_unit_id',
+            'user' => 'submitted_by',
+            'arrival' => 'arrival_date',
+            'due' => 'due_date',
+            'status' => 'status',
+        ];
+        $sort = array_key_exists($request->string('sort')->toString(), $sortableColumns)
+            ? $request->string('sort')->toString()
+            : 'arrival';
+        $direction = $request->string('direction')->toString() === 'asc' ? 'asc' : 'desc';
 
         $query = Invoice::query()
             ->with(['businessUnit:id,name', 'submitter:id,name'])
-            ->whereIn('status', $visibleStatusValues)
-            ->latest();
+            ->whereIn('status', $visibleStatusValues);
 
         if ($request->user()->isRegularUser()) {
             $query->where('submitted_by', $request->user()->id);
@@ -60,6 +74,10 @@ class InvoiceController extends Controller
             $query->where('business_unit_id', $request->integer('business_unit_id'));
         }
 
+        $query
+            ->orderBy($sortableColumns[$sort], $direction)
+            ->orderByDesc('id');
+
         $unitSummaryQuery = Invoice::query()
             ->with('businessUnit:id,name')
             ->whereIn('status', $visibleStatusValues);
@@ -78,7 +96,9 @@ class InvoiceController extends Controller
             'businessUnits' => BusinessUnit::query()->orderBy('name')->get(['id', 'name']),
             'statuses' => $visibleStatuses,
             'unitSummary' => $unitSummary,
-            'filters' => $request->only(['protocol', 'purchase_order_number', 'status', 'business_unit_id']),
+            'filters' => $request->only(['protocol', 'purchase_order_number', 'status', 'business_unit_id', 'sort', 'direction']),
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
     }
 

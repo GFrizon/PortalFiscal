@@ -802,6 +802,38 @@ class NavigationAuditTest extends TestCase
             ->assertDontSee('Em conferencia');
     }
 
+    public function test_invoice_index_shows_due_date_and_sorts_by_columns(): void
+    {
+        $user = User::factory()->create();
+
+        $later = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'protocol' => 'NF-2026-000030',
+            'due_date' => '2026-09-15',
+        ]);
+
+        $earlier = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'protocol' => 'NF-2026-000031',
+            'due_date' => '2026-08-10',
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('invoices.index', [
+                'sort' => 'due',
+                'direction' => 'asc',
+            ]))
+            ->assertOk()
+            ->assertSee('Vencimento')
+            ->assertSee('10/08/2026')
+            ->assertSee('15/09/2026');
+
+        $response->assertSeeInOrder([
+            $earlier->protocol,
+            $later->protocol,
+        ]);
+    }
+
     public function test_admin_can_create_update_and_block_user(): void
     {
         $admin = User::factory()->admin()->create();

@@ -2057,6 +2057,22 @@ textarea.form-control {
     letter-spacing: .04em;
 }
 
+.data-table thead .sort-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.data-table thead .sort-link:hover {
+    color: var(--color-primary);
+}
+
+.data-table thead .sort-link .bi {
+    font-size: .78rem;
+}
+
 .data-table tbody td {
     padding: 11px 12px;
     font-size: .86rem;
