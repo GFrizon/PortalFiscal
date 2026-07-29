@@ -51,12 +51,8 @@
                 <div>
                     <span class="eyebrow">Pendencia registrada</span>
                     <strong>{{ filled($invoice->fiscal_notes) ? $invoice->fiscal_notes : 'Revise os dados solicitados pelo fiscal.' }}</strong>
-                    <small>Para resolver, clique em Responder pendencia, ajuste as informacoes e salve. A nota volta automaticamente para a conferencia e o fiscal recebe um aviso por e-mail.</small>
+                    <small>Para resolver, use o botao amarelo acima, ajuste as informacoes e salve. A nota volta automaticamente para a conferencia e o fiscal recebe um aviso por e-mail.</small>
                 </div>
-                <a href="{{ route('invoices.edit', $invoice) }}" class="btn btn-warning">
-                    <i class="bi bi-reply" aria-hidden="true"></i>
-                    Responder pendencia
-                </a>
             </div>
         @endif
 

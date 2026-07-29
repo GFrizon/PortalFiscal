@@ -1156,13 +1156,15 @@ class NavigationAuditTest extends TestCase
             'fiscal_notes' => 'Numero da OC errado',
         ]);
 
-        $this->actingAs($user)
+        $response = $this->actingAs($user)
             ->get(route('invoices.show', $invoice))
             ->assertOk()
             ->assertSee('Pendencia registrada')
             ->assertSee('Numero da OC errado')
-            ->assertSee('Responder pendencia')
+            ->assertSeeTextInOrder(['Responder pendencia', 'Pendencia registrada'])
             ->assertSee('A nota volta automaticamente para a conferencia');
+
+        $this->assertSame(1, substr_count($response->getContent(), 'Responder pendencia'));
     }
 
     public function test_fiscal_can_save_invoice_pdf_annotations(): void
