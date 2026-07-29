@@ -2149,12 +2149,12 @@ textarea.form-control {
 }
 
 .data-table tbody tr.invoice-row-launched.invoice-row-urgent {
-    background: #fff9e8;
-    box-shadow: inset 3px 0 0 #e0ad28;
+    background: #f4faf7;
+    box-shadow: inset 3px 0 0 #5ba979;
 }
 
 .data-table tbody tr.invoice-row-launched.invoice-row-urgent:hover {
-    background: #fff4d2;
+    background: #edf7f1;
 }
 
 .urgent-badge {

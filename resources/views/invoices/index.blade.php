@@ -168,15 +168,15 @@
                         'invoice-row-launched' => $invoice->status === \App\Enums\InvoiceStatus::Launched,
                     ])>
                         <td class="col-priority {{ $invoice->is_urgent || $invoice->status === \App\Enums\InvoiceStatus::Launched ? '' : 'priority-empty' }}" data-label="Prioridade">
-                            @if($invoice->is_urgent)
-                                <span class="urgent-indicator" title="Urgente" aria-label="Urgente">
-                                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
-                                    <span class="visually-hidden">Urgente</span>
-                                </span>
-                            @elseif($invoice->status === \App\Enums\InvoiceStatus::Launched)
+                            @if($invoice->status === \App\Enums\InvoiceStatus::Launched)
                                 <span class="launched-indicator" title="Lancada" aria-label="Lancada">
                                     <i class="bi bi-archive" aria-hidden="true"></i>
                                     <span class="visually-hidden">Lancada</span>
+                                </span>
+                            @elseif($invoice->is_urgent)
+                                <span class="urgent-indicator" title="Urgente" aria-label="Urgente">
+                                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                                    <span class="visually-hidden">Urgente</span>
                                 </span>
                             @endif
                         </td>
