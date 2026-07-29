@@ -213,63 +213,6 @@
                     @endif
                 </div>
 
-                <div class="panel mb-3">
-                    <div class="panel-header">
-                        <div>
-                            <div class="eyebrow">Conferencia</div>
-                            <h2 class="panel-title">Documentos complementares</h2>
-                        </div>
-                    </div>
-
-                    @can('review', $invoice)
-                        <form method="POST" action="{{ route('invoices.attachments.store', $invoice) }}" enctype="multipart/form-data" class="attachment-form mb-3">
-                            @csrf
-                            <div class="attachment-upload-row">
-                                <div>
-                                    <label class="form-label" for="attachment">Documento</label>
-                                    <input class="form-control" id="attachment" type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" required>
-                                </div>
-                                <div>
-                                    <label class="form-label" for="attachment_notes">Observacao</label>
-                                    <input class="form-control" id="attachment_notes" name="notes" value="{{ old('notes') }}" maxlength="2000" placeholder="Ex.: comprovante de entrega">
-                                </div>
-                                <div class="attachment-submit">
-                                    <button class="btn btn-primary" type="submit">
-                                        <i class="bi bi-paperclip" aria-hidden="true"></i>
-                                        Anexar
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="form-text">PDF, imagens, Word ou Excel, ate 10 MB.</div>
-                        </form>
-                    @endcan
-
-                    <div class="attachment-list">
-                        @forelse($invoice->attachments->sortByDesc('created_at') as $attachment)
-                            <div class="attachment-item">
-                                <div class="attachment-icon">
-                                    <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>
-                                </div>
-                                <div class="attachment-copy">
-                                    <a href="{{ route('invoices.attachments.download', [$invoice, $attachment]) }}" class="attachment-name">
-                                        {{ $attachment->original_name }}
-                                    </a>
-                                    <div class="attachment-meta">
-                                        {{ $attachment->formattedSize() }}
-                                        - {{ $attachment->created_at?->format('d/m/Y H:i') }}
-                                        - {{ $attachment->uploader?->name ?? 'Fiscal' }}
-                                    </div>
-                                    @if(filled($attachment->notes))
-                                        <div class="attachment-notes">{{ $attachment->notes }}</div>
-                                    @endif
-                                </div>
-                            </div>
-                        @empty
-                            <p class="empty-state compact mb-0">Nenhum documento complementar anexado.</p>
-                        @endforelse
-                    </div>
-                </div>
-
                 @if($documentType === \App\Enums\InvoiceDocumentType::Nf && $invoice->purchaseOrderCheck)
                     <div class="panel mb-3">
                         <div class="po-summary mb-0">
@@ -361,6 +304,48 @@
                                         <button class="btn btn-outline-primary" type="submit">Atualizar</button>
                                     </div>
                                 </form>
+
+                                <div class="attachment-compact mb-3">
+                                    <div class="attachment-compact-header">
+                                        <div>
+                                            <span>Documentos complementares</span>
+                                            <small>{{ $invoice->attachments->count() }} anexo{{ $invoice->attachments->count() === 1 ? '' : 's' }}</small>
+                                        </div>
+                                    </div>
+
+                                    <form method="POST" action="{{ route('invoices.attachments.store', $invoice) }}" enctype="multipart/form-data" class="attachment-form compact mb-2">
+                                        @csrf
+                                        <div class="attachment-upload-row compact">
+                                            <input class="form-control" id="attachment" type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" required aria-label="Documento complementar">
+                                            <input class="form-control" id="attachment_notes" name="notes" value="{{ old('notes') }}" maxlength="2000" placeholder="Observacao">
+                                            <button class="btn btn-primary" type="submit">
+                                                <i class="bi bi-paperclip" aria-hidden="true"></i>
+                                                Anexar
+                                            </button>
+                                        </div>
+                                    </form>
+
+                                    <div class="attachment-list compact">
+                                        @forelse($invoice->attachments->sortByDesc('created_at') as $attachment)
+                                            <div class="attachment-item compact">
+                                                <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>
+                                                <div class="attachment-copy">
+                                                    <a href="{{ route('invoices.attachments.download', [$invoice, $attachment]) }}" class="attachment-name">
+                                                        {{ $attachment->original_name }}
+                                                    </a>
+                                                    <div class="attachment-meta">
+                                                        {{ $attachment->formattedSize() }} - {{ $attachment->created_at?->format('d/m/Y H:i') }} - {{ $attachment->uploader?->name ?? 'Fiscal' }}
+                                                    </div>
+                                                    @if(filled($attachment->notes))
+                                                        <div class="attachment-notes">{{ $attachment->notes }}</div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @empty
+                                            <p class="empty-state compact mb-0">Nenhum documento complementar anexado.</p>
+                                        @endforelse
+                                    </div>
+                                </div>
 
                                 @if($invoice->status === \App\Enums\InvoiceStatus::Launched)
                                     <div class="alert alert-success mb-0">
