@@ -948,6 +948,33 @@ textarea:focus-visible {
     font-weight: 850;
 }
 
+.pending-response-callout {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 13px 14px;
+    border: 1px solid #e6bd58;
+    border-radius: var(--radius);
+    background: #fff8e8;
+    box-shadow: var(--shadow-sm);
+}
+
+.pending-response-callout > div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.pending-response-callout strong {
+    color: #4a3508;
+    overflow-wrap: anywhere;
+}
+
+.pending-response-callout small {
+    color: var(--color-text-muted);
+}
+
 .attachment-form {
     padding: 9px;
     border: 1px dashed rgba(33, 63, 120, .28);
@@ -3211,6 +3238,10 @@ textarea.form-control {
         overflow: hidden;
     }
 
+    .invoice-detail-page.has-pending-callout .invoice-workspace {
+        height: calc(100% - 136px);
+    }
+
     .invoice-detail-page .pdf-panel {
         height: 100%;
         min-height: 0;
@@ -3240,6 +3271,18 @@ textarea.form-control {
 
     .invoice-detail-page .review-column .panel:last-child {
         margin-bottom: 0;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .pending-response-callout {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .pending-response-callout .btn {
+        justify-content: center;
+        width: 100%;
     }
 }
 

@@ -9,8 +9,10 @@
     @php($paymentMethod = $invoice->paymentMethod())
     @php($annotationData = $invoice->annotation?->data ?? ['strokes' => []])
     @php($openAlerts = $invoice->alerts->where('resolved', false))
+    @php($canReviewInvoice = auth()->user()?->can('review', $invoice) ?? false)
+    @php($isPendingForSubmitter = $invoice->status === \App\Enums\InvoiceStatus::Pending && ! $canReviewInvoice)
 
-    <div class="invoice-detail-page">
+    <div class="invoice-detail-page {{ $isPendingForSubmitter ? 'has-pending-callout' : '' }}">
         <div class="section-toolbar mb-3">
             <div>
                 <div class="eyebrow">Navegacao</div>
@@ -26,9 +28,9 @@
                     Anexar
                 </a>
                 @can('update', $invoice)
-                    <a href="{{ route('invoices.edit', $invoice) }}" class="btn btn-outline-primary">
-                        <i class="bi bi-pencil-square" aria-hidden="true"></i>
-                        Editar
+                    <a href="{{ route('invoices.edit', $invoice) }}" class="btn {{ $isPendingForSubmitter ? 'btn-warning' : 'btn-outline-primary' }}">
+                        <i class="bi {{ $isPendingForSubmitter ? 'bi-reply' : 'bi-pencil-square' }}" aria-hidden="true"></i>
+                        {{ $isPendingForSubmitter ? 'Responder pendencia' : 'Editar' }}
                     </a>
                 @endcan
                 @can('delete', $invoice)
@@ -43,6 +45,20 @@
                 @endcan
             </div>
         </div>
+
+        @if($isPendingForSubmitter)
+            <div class="pending-response-callout mb-3">
+                <div>
+                    <span class="eyebrow">Pendencia registrada</span>
+                    <strong>{{ filled($invoice->fiscal_notes) ? $invoice->fiscal_notes : 'Revise os dados solicitados pelo fiscal.' }}</strong>
+                    <small>Para resolver, clique em Responder pendencia, ajuste as informacoes e salve. A nota volta automaticamente para a conferencia e o fiscal recebe um aviso por e-mail.</small>
+                </div>
+                <a href="{{ route('invoices.edit', $invoice) }}" class="btn btn-warning">
+                    <i class="bi bi-reply" aria-hidden="true"></i>
+                    Responder pendencia
+                </a>
+            </div>
+        @endif
 
         <div class="invoice-workspace invoice-workspace-balanced">
             <div class="invoice-pdf-column">

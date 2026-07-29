@@ -1147,6 +1147,24 @@ class NavigationAuditTest extends TestCase
             ->assertSee('data-copy-text="35260754163230000109550040000314261443991849"', false);
     }
 
+    public function test_submitter_sees_pending_response_action_on_invoice_details(): void
+    {
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => InvoiceStatus::Pending->value,
+            'fiscal_notes' => 'Numero da OC errado',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('invoices.show', $invoice))
+            ->assertOk()
+            ->assertSee('Pendencia registrada')
+            ->assertSee('Numero da OC errado')
+            ->assertSee('Responder pendencia')
+            ->assertSee('A nota volta automaticamente para a conferencia');
+    }
+
     public function test_fiscal_can_save_invoice_pdf_annotations(): void
     {
         $fiscal = User::factory()->fiscal()->create();
