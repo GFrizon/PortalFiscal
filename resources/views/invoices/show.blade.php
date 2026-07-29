@@ -76,6 +76,18 @@
                                     <i class="bi bi-eraser" aria-hidden="true"></i>
                                     Borracha
                                 </button>
+                                <button class="btn btn-sm btn-outline-primary" type="button" data-annotation-tool="rectangle" aria-pressed="false">
+                                    <i class="bi bi-bounding-box" aria-hidden="true"></i>
+                                    Retangulo
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" type="button" data-annotation-tool="ellipse" aria-pressed="false">
+                                    <i class="bi bi-circle" aria-hidden="true"></i>
+                                    Circulo
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" type="button" data-annotation-tool="arrow" aria-pressed="false">
+                                    <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+                                    Seta
+                                </button>
                                 <button class="btn btn-sm btn-outline-secondary" type="button" data-annotation-undo>
                                     <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
                                     Desfazer

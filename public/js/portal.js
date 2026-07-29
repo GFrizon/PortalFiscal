@@ -555,8 +555,8 @@
             state.drawing = {
                 page: pageNumber,
                 tool: state.tool,
-                color: state.tool === 'highlight' ? '#ffe45c' : '#d92d20',
-                width: state.tool === 'highlight' ? 22 : 3,
+                color: annotationToolColor(state.tool),
+                width: annotationToolWidth(state.tool),
                 points: [normalizedPoint(canvas, event)],
             };
         });
@@ -570,6 +570,8 @@
 
             if (state.drawing.tool === 'highlight') {
                 state.drawing.points = normalizeHighlightPoints(state.drawing.points[0], point);
+            } else if (isShapeTool(state.drawing.tool)) {
+                state.drawing.points = [state.drawing.points[0], point];
             } else {
                 state.drawing.points.push(point);
             }
@@ -714,6 +716,12 @@
             return;
         }
 
+        if (isShapeTool(stroke.tool)) {
+            drawShape(context, stroke, width, height);
+
+            return;
+        }
+
         context.strokeStyle = stroke.color || '#d92d20';
         context.lineWidth = Number(stroke.width || 3);
         context.lineCap = 'round';
@@ -732,6 +740,77 @@
         context.globalCompositeOperation = 'source-over';
     }
 
+    function drawShape(context, stroke, width, height) {
+        const points = stroke.points || [];
+
+        if (points.length < 2) {
+            return;
+        }
+
+        const start = {
+            x: points[0].x * width,
+            y: points[0].y * height,
+        };
+        const end = {
+            x: points[1].x * width,
+            y: points[1].y * height,
+        };
+        const box = {
+            x: Math.min(start.x, end.x),
+            y: Math.min(start.y, end.y),
+            width: Math.abs(end.x - start.x),
+            height: Math.abs(end.y - start.y),
+        };
+
+        context.strokeStyle = stroke.color || '#d92d20';
+        context.lineWidth = Number(stroke.width || 3);
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.globalAlpha = 1;
+        context.globalCompositeOperation = 'source-over';
+
+        if (stroke.tool === 'rectangle') {
+            context.strokeRect(box.x, box.y, box.width, box.height);
+
+            return;
+        }
+
+        if (stroke.tool === 'ellipse') {
+            context.beginPath();
+            context.ellipse(
+                box.x + (box.width / 2),
+                box.y + (box.height / 2),
+                Math.max(1, box.width / 2),
+                Math.max(1, box.height / 2),
+                0,
+                0,
+                Math.PI * 2
+            );
+            context.stroke();
+
+            return;
+        }
+
+        drawArrow(context, start, end);
+    }
+
+    function drawArrow(context, start, end) {
+        const angle = Math.atan2(end.y - start.y, end.x - start.x);
+        const headLength = 18;
+
+        context.beginPath();
+        context.moveTo(start.x, start.y);
+        context.lineTo(end.x, end.y);
+        context.stroke();
+
+        context.beginPath();
+        context.moveTo(end.x, end.y);
+        context.lineTo(end.x - (headLength * Math.cos(angle - Math.PI / 6)), end.y - (headLength * Math.sin(angle - Math.PI / 6)));
+        context.moveTo(end.x, end.y);
+        context.lineTo(end.x - (headLength * Math.cos(angle + Math.PI / 6)), end.y - (headLength * Math.sin(angle + Math.PI / 6)));
+        context.stroke();
+    }
+
     function annotationToolLabel(tool) {
         if (tool === 'highlight') {
             return 'Marca texto ativo.';
@@ -741,7 +820,35 @@
             return 'Borracha ativa.';
         }
 
+        if (tool === 'rectangle') {
+            return 'Retangulo ativo.';
+        }
+
+        if (tool === 'ellipse') {
+            return 'Circulo ativo.';
+        }
+
+        if (tool === 'arrow') {
+            return 'Seta ativa.';
+        }
+
         return 'Caneta ativa.';
+    }
+
+    function isShapeTool(tool) {
+        return ['rectangle', 'ellipse', 'arrow'].includes(tool);
+    }
+
+    function annotationToolColor(tool) {
+        return tool === 'highlight' ? '#ffe45c' : '#d92d20';
+    }
+
+    function annotationToolWidth(tool) {
+        if (tool === 'highlight') {
+            return 22;
+        }
+
+        return isShapeTool(tool) ? 4 : 3;
     }
 
     async function saveAnnotations(url, strokes) {

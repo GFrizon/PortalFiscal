@@ -745,9 +745,9 @@ class NavigationAuditTest extends TestCase
                 'strokes' => [
                     [
                         'page' => 1,
-                        'tool' => 'highlight',
-                        'color' => '#ffe45c',
-                        'width' => 18,
+                        'tool' => 'rectangle',
+                        'color' => '#d92d20',
+                        'width' => 4,
                         'points' => [
                             ['x' => 0.1, 'y' => 0.2],
                             ['x' => 0.4, 'y' => 0.5],
