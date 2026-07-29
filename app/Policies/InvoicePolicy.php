@@ -28,6 +28,10 @@ class InvoicePolicy
 
     public function update(User $user, Invoice $invoice): bool
     {
+        if ($invoice->status === InvoiceStatus::Launched) {
+            return false;
+        }
+
         return $user->isAdmin()
             || $user->isFiscal()
             || $invoice->submitted_by === $user->id;

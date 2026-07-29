@@ -200,6 +200,11 @@
                             </div>
                         </td>
                         <td class="text-end" data-label="Acoes">
+                            @can('update', $invoice)
+                                <a href="{{ route('invoices.edit', $invoice) }}" class="btn btn-sm btn-outline-secondary" aria-label="Editar {{ $invoice->protocol }}">
+                                    <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                </a>
+                            @endcan
                             <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-sm btn-outline-primary" aria-label="Abrir {{ $invoice->protocol }}">
                                 <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
                             </a>

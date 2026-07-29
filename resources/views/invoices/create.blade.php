@@ -1,31 +1,36 @@
+@php
+    $isEditing = $isEditing ?? false;
+    $invoiceInstallments = $isEditing ? ($invoice->payment_installments ?? []) : [];
+    $oldPaymentMethod = old('payment_method', $isEditing ? $invoice->paymentMethod()->value : 'anticipated');
+    $oldInstallments = old('payment_installments', $invoiceInstallments);
+    $oldInstallmentCount = min(12, max(1, (int) old('payment_installments_count', max(1, count($oldInstallments)))));
+@endphp
+
 @extends('layouts.app')
 
-@section('title', 'Anexar nota - BAKOF')
-@section('page_title', 'Anexar nota fiscal')
-@section('page_subtitle', 'Envie o PDF e informe os dados de acompanhamento')
+@section('title', ($isEditing ? 'Editar nota' : 'Anexar nota').' - BAKOF')
+@section('page_title', $isEditing ? 'Editar nota fiscal' : 'Anexar nota fiscal')
+@section('page_subtitle', $isEditing ? 'Atualize os dados de acompanhamento' : 'Envie o PDF e informe os dados de acompanhamento')
 
 @section('content')
-    @php
-        $oldPaymentMethod = old('payment_method', 'anticipated');
-        $oldInstallmentCount = min(12, max(1, (int) old('payment_installments_count', max(1, count(old('payment_installments', []))))));
-        $oldInstallments = old('payment_installments', []);
-    @endphp
-
     <div class="invoice-create-page">
     <div class="section-toolbar mb-3">
         <div>
             <div class="eyebrow">Importacao</div>
-            <div class="section-title">Nova nota fiscal</div>
+            <div class="section-title">{{ $isEditing ? $invoice->protocol : 'Nova nota fiscal' }}</div>
         </div>
-        <a href="{{ route('invoices.index') }}" class="btn btn-outline-secondary">
+        <a href="{{ $isEditing ? route('invoices.show', $invoice) : route('invoices.index') }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left" aria-hidden="true"></i>
-            Voltar para notas
+            {{ $isEditing ? 'Voltar para detalhes' : 'Voltar para notas' }}
         </a>
     </div>
 
     <div class="invoice-create-grid">
-    <form method="POST" action="{{ route('invoices.store') }}" enctype="multipart/form-data" class="panel form-panel upload-form" data-pdf-preview-form>
+    <form method="POST" action="{{ $isEditing ? route('invoices.update', $invoice) : route('invoices.store') }}" enctype="multipart/form-data" class="panel form-panel upload-form" @unless($isEditing) data-pdf-preview-form @endunless>
         @csrf
+        @if($isEditing)
+            @method('PUT')
+        @endif
         <div class="panel-header">
             <div>
                 <div class="eyebrow">Arquivo e acompanhamento</div>
@@ -37,29 +42,47 @@
             </span>
         </div>
         <div class="row g-3">
-            <div class="col-12">
-                <label class="upload-dropzone" for="pdf">
-                    <span class="upload-icon">
-                        <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
-                    </span>
-                    <span class="upload-copy">
-                        <span class="upload-title">Selecionar PDF da nota fiscal</span>
-                        <span class="upload-text">Somente arquivos PDF, ate 10 MB. O documento sera armazenado em area privada.</span>
-                    </span>
-                    <span class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-upload" aria-hidden="true"></i>
-                        Escolher arquivo
-                    </span>
-                </label>
-                <input class="form-control visually-hidden" id="pdf" type="file" name="pdf" accept="application/pdf,.pdf" required data-file-input data-file-target="#selectedFileName">
-                <div class="selected-file-name" id="selectedFileName">Nenhum arquivo selecionado.</div>
-            </div>
+            @if($isEditing)
+                <div class="col-12">
+                    <div class="upload-dropzone static">
+                        <span class="upload-icon">
+                            <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+                        </span>
+                        <span class="upload-copy">
+                            <span class="upload-title">{{ $invoice->original_pdf_name }}</span>
+                            <span class="upload-text">PDF principal mantido. Esta tela altera somente os dados de acompanhamento.</span>
+                        </span>
+                        <a class="btn btn-outline-primary btn-sm" href="{{ route('invoices.pdf.show', $invoice) }}" target="_blank">
+                            <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                            Abrir PDF
+                        </a>
+                    </div>
+                </div>
+            @else
+                <div class="col-12">
+                    <label class="upload-dropzone" for="pdf">
+                        <span class="upload-icon">
+                            <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+                        </span>
+                        <span class="upload-copy">
+                            <span class="upload-title">Selecionar PDF da nota fiscal</span>
+                            <span class="upload-text">Somente arquivos PDF, ate 10 MB. O documento sera armazenado em area privada.</span>
+                        </span>
+                        <span class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-upload" aria-hidden="true"></i>
+                            Escolher arquivo
+                        </span>
+                    </label>
+                    <input class="form-control visually-hidden" id="pdf" type="file" name="pdf" accept="application/pdf,.pdf" required data-file-input data-file-target="#selectedFileName">
+                    <div class="selected-file-name" id="selectedFileName">Nenhum arquivo selecionado.</div>
+                </div>
+            @endif
             <div class="col-12">
                 <div class="form-section-label">Acompanhamento</div>
             </div>
             <div class="col-12">
                 <label class="urgent-toggle">
-                    <input class="form-check-input" type="checkbox" name="is_urgent" value="1" @checked(old('is_urgent'))>
+                    <input class="form-check-input" type="checkbox" name="is_urgent" value="1" @checked(old('is_urgent', $isEditing ? $invoice->is_urgent : false))>
                     <span>
                         <strong>Marcar como urgente</strong>
                         <small>Prioriza esta nota na fila de conferencia.</small>
@@ -69,18 +92,18 @@
             <div class="col-12 col-md-3">
                 <label class="form-label" for="document_type">Tipo de documento</label>
                 <select class="form-select" id="document_type" name="document_type" required data-document-type-select>
-                    <option value="nf" @selected(old('document_type', 'nf') === 'nf')>NFe</option>
-                    <option value="nf_no_oc" @selected(old('document_type') === 'nf_no_oc')>NFe sem OC</option>
-                    <option value="cte" @selected(old('document_type') === 'cte')>CTE</option>
+                    <option value="nf" @selected(old('document_type', $isEditing ? $invoice->documentType()->value : 'nf') === 'nf')>NFe</option>
+                    <option value="nf_no_oc" @selected(old('document_type', $isEditing ? $invoice->documentType()->value : null) === 'nf_no_oc')>NFe sem OC</option>
+                    <option value="cte" @selected(old('document_type', $isEditing ? $invoice->documentType()->value : null) === 'cte')>CTE</option>
                 </select>
             </div>
             <div class="col-12 col-md-3" data-reference-field>
                 <label class="form-label" for="purchase_order_number" data-reference-label>Ordem de compra</label>
-                <input class="form-control" id="purchase_order_number" name="purchase_order_number" value="{{ old('purchase_order_number') }}" inputmode="numeric" pattern="[0-9]*" required data-digits-only>
+                <input class="form-control" id="purchase_order_number" name="purchase_order_number" value="{{ old('purchase_order_number', $isEditing ? $invoice->purchase_order_number : '') }}" inputmode="numeric" pattern="[0-9]*" required data-digits-only>
             </div>
             <div class="col-12 col-md-3">
                 <label class="form-label" for="arrival_date">Data de chegada</label>
-                <input class="form-control" id="arrival_date" type="date" name="arrival_date" value="{{ old('arrival_date', now()->format('Y-m-d')) }}" required>
+                <input class="form-control" id="arrival_date" type="date" name="arrival_date" value="{{ old('arrival_date', $isEditing ? $invoice->arrival_date?->format('Y-m-d') : now()->format('Y-m-d')) }}" required>
             </div>
             <div class="col-12 col-md-3">
                 <label class="form-label" for="payment_method">Vencimento</label>
@@ -119,21 +142,22 @@
             </div>
             <div class="col-12">
                 <label class="form-label" for="user_notes">Observacoes</label>
-                <textarea class="form-control" id="user_notes" name="user_notes" rows="4">{{ old('user_notes') }}</textarea>
+                <textarea class="form-control" id="user_notes" name="user_notes" rows="4">{{ old('user_notes', $isEditing ? $invoice->user_notes : '') }}</textarea>
             </div>
         </div>
         <div class="form-actions">
             <button class="btn btn-primary" type="submit">
                 <i class="bi bi-check2-circle" aria-hidden="true"></i>
-                Salvar nota
+                {{ $isEditing ? 'Salvar alteracoes' : 'Salvar nota' }}
             </button>
-            <a href="{{ route('invoices.index') }}" class="btn btn-outline-secondary">
+            <a href="{{ $isEditing ? route('invoices.show', $invoice) : route('invoices.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-x-lg" aria-hidden="true"></i>
                 Cancelar
             </a>
         </div>
     </form>
 
+    @unless($isEditing)
     <aside class="panel upload-preview-panel" data-inline-pdf-preview hidden>
         <div class="panel-header">
             <div>
@@ -182,6 +206,7 @@
             </div>
         </div>
     </aside>
+    @endunless
     </div>
     </div>
 @endsection

@@ -599,6 +599,92 @@ class NavigationAuditTest extends TestCase
         Storage::disk('local')->assertMissing($invoice->pdf_path);
     }
 
+    public function test_submitter_can_edit_invoice_before_it_is_launched(): void
+    {
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => 'pending',
+            'document_type' => 'nf_no_oc',
+            'purchase_order_number' => null,
+            'is_urgent' => false,
+            'arrival_date' => '2026-07-29',
+            'payment_method' => 'anticipated',
+            'payment_installments' => null,
+            'due_date' => null,
+            'user_notes' => 'Texto antigo',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('invoices.edit', $invoice))
+            ->assertOk()
+            ->assertSee('Editar nota fiscal');
+
+        $this->actingAs($user)
+            ->put(route('invoices.update', $invoice), [
+                'is_urgent' => '1',
+                'document_type' => 'nf_no_oc',
+                'purchase_order_number' => '',
+                'arrival_date' => '2026-07-30',
+                'payment_method' => 'anticipated',
+                'user_notes' => 'Dados corrigidos pelo usuario.',
+            ])
+            ->assertRedirect(route('invoices.show', $invoice));
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+            'is_urgent' => true,
+            'arrival_date' => '2026-07-30 00:00:00',
+            'status' => 'awaiting_review',
+            'user_notes' => 'Dados corrigidos pelo usuario.',
+        ]);
+
+        $this->assertDatabaseHas('invoice_histories', [
+            'invoice_id' => $invoice->id,
+            'user_id' => $user->id,
+            'action' => 'Dados da nota atualizados',
+            'previous_status' => 'pending',
+            'new_status' => 'awaiting_review',
+        ]);
+    }
+
+    public function test_launched_invoice_cannot_be_edited(): void
+    {
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => 'launched',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('invoices.edit', $invoice))
+            ->assertForbidden();
+
+        $this->actingAs($user)
+            ->put(route('invoices.update', $invoice), [
+                'document_type' => 'nf_no_oc',
+                'purchase_order_number' => '',
+                'arrival_date' => '2026-07-30',
+                'payment_method' => 'anticipated',
+                'user_notes' => 'Tentativa bloqueada.',
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_regular_user_cannot_edit_invoice_from_another_submitter(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $owner->id,
+            'status' => 'awaiting_review',
+        ]);
+
+        $this->actingAs($otherUser)
+            ->get(route('invoices.edit', $invoice))
+            ->assertForbidden();
+    }
+
     public function test_admin_can_delete_invoice_that_was_not_launched(): void
     {
         Storage::fake('local');

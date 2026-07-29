@@ -7,6 +7,7 @@ use App\Enums\AlertType;
 use App\Enums\InvoiceDocumentType;
 use App\Enums\InvoiceStatus;
 use App\Http\Requests\Invoice\StoreInvoiceRequest;
+use App\Http\Requests\Invoice\UpdateInvoiceRequest;
 use App\Models\BusinessUnit;
 use App\Models\Invoice;
 use App\Services\InvoiceAlertService;
@@ -133,6 +134,18 @@ class InvoiceController extends Controller
 
         return view('invoices.create', [
             'businessUnits' => BusinessUnit::query()->orderBy('name')->get(['id', 'name']),
+            'isEditing' => false,
+        ]);
+    }
+
+    public function edit(Invoice $invoice): View
+    {
+        $this->authorize('update', $invoice);
+
+        return view('invoices.create', [
+            'businessUnits' => BusinessUnit::query()->orderBy('name')->get(['id', 'name']),
+            'invoice' => $invoice,
+            'isEditing' => true,
         ]);
     }
 
@@ -269,6 +282,54 @@ class InvoiceController extends Controller
             ->with('success', 'Nota anexada com sucesso.');
     }
 
+    public function update(
+        UpdateInvoiceRequest $request,
+        Invoice $invoice,
+        PurchaseOrderService $purchaseOrderService,
+        PdfExtractionService $pdfExtractionService,
+        InvoiceAlertService $alertService,
+        InvoiceHistoryService $historyService
+    ): RedirectResponse {
+        $this->authorize('update', $invoice);
+
+        DB::transaction(function () use ($request, $invoice, $purchaseOrderService, $pdfExtractionService, $alertService, $historyService): void {
+            $previousStatus = $invoice->status;
+            $nextStatus = $invoice->status;
+
+            if ($request->user()->isRegularUser() && $invoice->status === InvoiceStatus::Pending) {
+                $nextStatus = InvoiceStatus::AwaitingReview;
+            }
+
+            $invoice->update([
+                'is_urgent' => $request->boolean('is_urgent'),
+                'document_type' => $request->string('document_type')->toString(),
+                'purchase_order_number' => $request->string('purchase_order_number')->toString() ?: null,
+                'arrival_date' => $request->date('arrival_date'),
+                'payment_method' => $request->string('payment_method')->toString(),
+                'payment_installments' => $this->paymentInstallments($request),
+                'due_date' => $this->paymentDueDate($request),
+                'user_notes' => $request->string('user_notes')->toString() ?: null,
+                'status' => $nextStatus,
+            ]);
+
+            $this->syncPurchaseOrderCheck($invoice->refresh(), $purchaseOrderService, $pdfExtractionService, $alertService);
+
+            $historyService->record(
+                $invoice,
+                $request->user(),
+                'Dados da nota atualizados',
+                $previousStatus,
+                $nextStatus,
+                null,
+                $request
+            );
+        });
+
+        return redirect()
+            ->route('invoices.show', $invoice)
+            ->with('success', 'Dados da nota atualizados com sucesso.');
+    }
+
     public function show(Invoice $invoice, InvoiceHistoryService $historyService, Request $request): View
     {
         $this->authorize('view', $invoice);
@@ -339,5 +400,61 @@ class InvoiceController extends Controller
         }
 
         return (float) $amount;
+    }
+
+    private function syncPurchaseOrderCheck(
+        Invoice $invoice,
+        PurchaseOrderService $purchaseOrderService,
+        PdfExtractionService $pdfExtractionService,
+        InvoiceAlertService $alertService
+    ): void {
+        $relatedAlertTypes = [
+            AlertType::PurchaseOrderLookupFailed,
+            AlertType::PurchaseOrderNotFound,
+            AlertType::PurchaseOrderCancelled,
+            AlertType::CnpjMismatch,
+        ];
+
+        $invoice->alerts()
+            ->whereIn('type', array_map(fn (AlertType $type): string => $type->value, $relatedAlertTypes))
+            ->where('resolved', false)
+            ->delete();
+
+        if ($invoice->documentType() !== InvoiceDocumentType::Nf || blank($invoice->purchase_order_number)) {
+            $invoice->purchaseOrderCheck()->delete();
+
+            return;
+        }
+
+        $purchaseOrder = $purchaseOrderService->find($invoice->purchase_order_number);
+
+        $invoice->purchaseOrderCheck()->updateOrCreate(
+            ['invoice_id' => $invoice->id],
+            $purchaseOrder + ['purchase_order_number' => $invoice->purchase_order_number]
+        );
+
+        $purchaseOrderSource = $purchaseOrder['raw_response']['source'] ?? null;
+        $lookupFailedSources = [
+            'oci8_missing',
+            'oracle_error',
+            'http_not_configured',
+            'http_error',
+            'http_exception',
+        ];
+
+        if (! $purchaseOrder['exists'] && in_array($purchaseOrderSource, $lookupFailedSources, true)) {
+            $alertService->create($invoice, AlertType::PurchaseOrderLookupFailed, 'Nao foi possivel consultar a ordem de compra no ERP. Verifique a API local/Oracle.', AlertLevel::Critical);
+        } elseif (! $purchaseOrder['exists']) {
+            $alertService->create($invoice, AlertType::PurchaseOrderNotFound, 'Ordem de compra nao encontrada no ERP.', AlertLevel::Warning);
+        } elseif ($purchaseOrder['status'] === 'cancelada') {
+            $alertService->create($invoice, AlertType::PurchaseOrderCancelled, 'Ordem de compra cancelada.', AlertLevel::Critical);
+        }
+
+        $issuerCnpj = $pdfExtractionService->normalizeCnpj((string) $invoice->issuer_cnpj);
+        $supplierCnpj = $pdfExtractionService->normalizeCnpj((string) $purchaseOrder['supplier_cnpj']);
+
+        if ($issuerCnpj && $supplierCnpj && $issuerCnpj !== $supplierCnpj) {
+            $alertService->create($invoice, AlertType::CnpjMismatch, 'CNPJ do emitente diferente do fornecedor da ordem de compra.', AlertLevel::Critical);
+        }
     }
 }

@@ -24,6 +24,12 @@
                     <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
                     Anexar
                 </a>
+                @can('update', $invoice)
+                    <a href="{{ route('invoices.edit', $invoice) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                        Editar
+                    </a>
+                @endcan
                 @can('delete', $invoice)
                     <form method="POST" action="{{ route('invoices.destroy', $invoice) }}" class="d-inline" data-confirm="Excluir esta nota e remover o PDF anexado?">
                         @csrf
