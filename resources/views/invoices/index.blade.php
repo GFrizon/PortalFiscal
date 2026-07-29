@@ -147,14 +147,14 @@
                 <thead>
                 <tr>
                     <th><a class="sort-link" href="{{ $sortLink('protocol') }}">Protocolo <i class="bi {{ $sortIcon('protocol') }}" aria-hidden="true"></i></a></th>
-                    <th><a class="sort-link" href="{{ $sortLink('type') }}">Tipo <i class="bi {{ $sortIcon('type') }}" aria-hidden="true"></i></a></th>
-                    <th><a class="sort-link" href="{{ $sortLink('invoice') }}">Nota <i class="bi {{ $sortIcon('invoice') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-type"><a class="sort-link" href="{{ $sortLink('type') }}">Tipo <i class="bi {{ $sortIcon('type') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-invoice"><a class="sort-link" href="{{ $sortLink('invoice') }}">Nota <i class="bi {{ $sortIcon('invoice') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('reference') }}">OC/CTE <i class="bi {{ $sortIcon('reference') }}" aria-hidden="true"></i></a></th>
-                    <th><a class="sort-link" href="{{ $sortLink('supplier') }}">Fornecedor <i class="bi {{ $sortIcon('supplier') }}" aria-hidden="true"></i></a></th>
-                    <th><a class="sort-link" href="{{ $sortLink('unit') }}">Unidade <i class="bi {{ $sortIcon('unit') }}" aria-hidden="true"></i></a></th>
-                    <th><a class="sort-link" href="{{ $sortLink('user') }}">Usuario <i class="bi {{ $sortIcon('user') }}" aria-hidden="true"></i></a></th>
-                    <th><a class="sort-link" href="{{ $sortLink('created') }}">Data de inclusao <i class="bi {{ $sortIcon('created') }}" aria-hidden="true"></i></a></th>
-                    <th><a class="sort-link" href="{{ $sortLink('arrival') }}">Chegada <i class="bi {{ $sortIcon('arrival') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-supplier"><a class="sort-link" href="{{ $sortLink('supplier') }}">Fornecedor <i class="bi {{ $sortIcon('supplier') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-unit"><a class="sort-link" href="{{ $sortLink('unit') }}">Unidade <i class="bi {{ $sortIcon('unit') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-user"><a class="sort-link" href="{{ $sortLink('user') }}">Usuario <i class="bi {{ $sortIcon('user') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-created"><a class="sort-link" href="{{ $sortLink('created') }}">Inclusao <i class="bi {{ $sortIcon('created') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-arrival"><a class="sort-link" href="{{ $sortLink('arrival') }}">Chegada <i class="bi {{ $sortIcon('arrival') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('due') }}">Vencimento <i class="bi {{ $sortIcon('due') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('status') }}">Status <i class="bi {{ $sortIcon('status') }}" aria-hidden="true"></i></a></th>
                     <th class="text-end">Acoes</th>
@@ -164,7 +164,7 @@
                 @forelse($invoices as $invoice)
                     @php($documentType = $invoice->documentType())
                     <tr class="{{ $invoice->is_urgent ? 'invoice-row-urgent' : '' }}">
-                        <td>
+                        <td data-label="Protocolo">
                             <div class="stacked-cell">
                                 <span class="protocol-code">{{ $invoice->protocol }}</span>
                                 @if($invoice->is_urgent)
@@ -172,22 +172,22 @@
                                 @endif
                             </div>
                         </td>
-                        <td>{{ $documentType->label() }}</td>
-                        <td>{{ $invoice->invoice_number ?? '-' }}</td>
-                        <td>{{ $invoice->purchase_order_number ?? '-' }}</td>
-                        <td>{{ $invoice->purchaseOrderCheck?->supplier_name ?? '-' }}</td>
-                        <td>
+                        <td class="col-type" data-label="Tipo">{{ $documentType->label() }}</td>
+                        <td class="col-invoice" data-label="Nota">{{ $invoice->invoice_number ?? '-' }}</td>
+                        <td data-label="OC/CTE">{{ $invoice->purchase_order_number ?? '-' }}</td>
+                        <td class="col-supplier" data-label="Fornecedor">{{ $invoice->purchaseOrderCheck?->supplier_name ?? '-' }}</td>
+                        <td class="col-unit" data-label="Unidade">
                             <div class="table-entity">
                                 <span class="entity-icon"><i class="bi {{ $invoice->businessUnit ? 'bi-building' : 'bi-building-x' }}" aria-hidden="true"></i></span>
                                 <span>{{ $invoice->businessUnit?->name ?? 'Nao identificada' }}</span>
                             </div>
                         </td>
-                        <td>{{ $invoice->submitter?->name }}</td>
-                        <td>{{ $invoice->created_at?->format('d/m/Y H:i') ?? '-' }}</td>
-                        <td>{{ $invoice->arrival_date?->format('d/m/Y') ?? '-' }}</td>
-                        <td>{{ $invoice->due_date?->format('d/m/Y') ?? '-' }}</td>
-                        <td><span class="badge {{ $invoice->status->badgeClass() }}">{{ $invoice->status->label() }}</span></td>
-                        <td class="text-end">
+                        <td class="col-user" data-label="Usuario">{{ $invoice->submitter?->name }}</td>
+                        <td class="col-created" data-label="Inclusao">{{ $invoice->created_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                        <td class="col-arrival" data-label="Chegada">{{ $invoice->arrival_date?->format('d/m/Y') ?? '-' }}</td>
+                        <td data-label="Vencimento">{{ $invoice->due_date?->format('d/m/Y') ?? '-' }}</td>
+                        <td data-label="Status"><span class="badge {{ $invoice->status->badgeClass() }}">{{ $invoice->status->label() }}</span></td>
+                        <td class="text-end" data-label="Acoes">
                             <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-sm btn-outline-primary" aria-label="Abrir {{ $invoice->protocol }}">
                                 <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
                             </a>

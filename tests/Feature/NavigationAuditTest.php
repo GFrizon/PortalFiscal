@@ -1070,7 +1070,7 @@ class NavigationAuditTest extends TestCase
                 'direction' => 'asc',
             ]))
             ->assertOk()
-            ->assertSee('Data de inclusao')
+            ->assertSee('Inclusao')
             ->assertSee('Vencimento')
             ->assertSee('29/07/2026 08:15')
             ->assertSee('29/07/2026 15:30')

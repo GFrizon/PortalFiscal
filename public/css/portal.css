@@ -2458,6 +2458,86 @@ textarea.form-control {
     z-index: 2;
 }
 
+@media (max-width: 1399.98px) {
+    .invoice-list-panel .col-type,
+    .invoice-list-panel .col-arrival {
+        display: none;
+    }
+}
+
+@media (max-width: 1199.98px) {
+    .invoice-list-panel .col-invoice,
+    .invoice-list-panel .col-user {
+        display: none;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .invoice-list-scroll {
+        overflow-x: visible;
+    }
+
+    .invoice-list-scroll .data-table,
+    .invoice-list-scroll .data-table thead,
+    .invoice-list-scroll .data-table tbody,
+    .invoice-list-scroll .data-table tr,
+    .invoice-list-scroll .data-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .invoice-list-scroll .data-table thead {
+        display: none;
+    }
+
+    .invoice-list-scroll .data-table tbody {
+        display: grid;
+        gap: 10px;
+    }
+
+    .invoice-list-scroll .data-table tbody tr {
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .invoice-list-scroll .data-table tbody td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--color-border);
+        text-align: right;
+    }
+
+    .invoice-list-scroll .data-table tbody td::before {
+        content: attr(data-label);
+        flex: 0 0 auto;
+        color: var(--color-text-muted);
+        font-size: .68rem;
+        font-weight: 850;
+        text-transform: uppercase;
+    }
+
+    .invoice-list-scroll .data-table tbody td:last-child {
+        border-bottom: 0;
+    }
+
+    .invoice-list-scroll .data-table tbody td:first-child {
+        align-items: flex-start;
+    }
+
+    .invoice-list-scroll .data-table .table-entity {
+        justify-content: flex-end;
+    }
+
+    .invoice-list-scroll .data-table .text-end {
+        text-align: right !important;
+    }
+}
+
 @media (min-width: 992px) {
     .invoices-index-page {
         height: calc(100vh - var(--topbar-height) - 56px);
