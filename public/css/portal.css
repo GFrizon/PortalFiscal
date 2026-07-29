@@ -2153,12 +2153,31 @@ textarea.form-control {
     text-transform: uppercase;
 }
 
+.urgent-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: #ffe8a3;
+    color: #8a5a00;
+    font-size: .82rem;
+}
+
 .status-cell {
     display: inline-flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 5px;
     max-width: 100%;
+}
+
+.invoice-list-panel .col-priority {
+    width: 34px;
+    padding-right: 4px;
+    padding-left: 4px;
+    text-align: center;
 }
 
 .table-responsive {
@@ -2569,6 +2588,10 @@ textarea.form-control {
 
     .invoice-list-scroll .data-table .table-entity {
         justify-content: flex-end;
+    }
+
+    .invoice-list-scroll .data-table .priority-empty {
+        display: none;
     }
 
     .invoice-list-scroll .data-table .text-end {

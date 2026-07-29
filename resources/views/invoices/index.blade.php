@@ -146,6 +146,7 @@
             <table class="table data-table align-middle mb-0">
                 <thead>
                 <tr>
+                    <th class="col-priority" aria-label="Prioridade"></th>
                     <th class="col-type"><a class="sort-link" href="{{ $sortLink('type') }}">Tipo <i class="bi {{ $sortIcon('type') }}" aria-hidden="true"></i></a></th>
                     <th class="col-invoice"><a class="sort-link" href="{{ $sortLink('invoice') }}">Nota <i class="bi {{ $sortIcon('invoice') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('reference') }}">OC/CTE <i class="bi {{ $sortIcon('reference') }}" aria-hidden="true"></i></a></th>
@@ -163,6 +164,14 @@
                 @forelse($invoices as $invoice)
                     @php($documentType = $invoice->documentType())
                     <tr class="{{ $invoice->is_urgent ? 'invoice-row-urgent' : '' }}">
+                        <td class="col-priority {{ $invoice->is_urgent ? '' : 'priority-empty' }}" data-label="Prioridade">
+                            @if($invoice->is_urgent)
+                                <span class="urgent-indicator" title="Urgente" aria-label="Urgente">
+                                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                                    <span class="visually-hidden">Urgente</span>
+                                </span>
+                            @endif
+                        </td>
                         <td class="col-type" data-label="Tipo">{{ $documentType->label() }}</td>
                         <td class="col-invoice" data-label="Nota">{{ $invoice->invoice_number ?? '-' }}</td>
                         <td data-label="OC/CTE">{{ $invoice->purchase_order_number ?? '-' }}</td>
@@ -180,9 +189,6 @@
                         <td data-label="Status">
                             <div class="status-cell">
                                 <span class="badge {{ $invoice->status->badgeClass() }}">{{ $invoice->status->label() }}</span>
-                                @if($invoice->is_urgent)
-                                    <span class="urgent-badge"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Urgente</span>
-                                @endif
                             </div>
                         </td>
                         <td class="text-end" data-label="Acoes">
@@ -193,7 +199,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="11" class="empty-state">Nenhuma nota nesta pasta.</td>
+                        <td colspan="12" class="empty-state">Nenhuma nota nesta pasta.</td>
                     </tr>
                 @endforelse
                 </tbody>
