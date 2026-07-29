@@ -120,9 +120,9 @@
             <div class="col-12 col-lg-2">
                 <label class="form-label" for="status">Status</label>
                 <select id="status" class="form-select" name="status">
-                    <option value="">Todos os status</option>
+                    <option value="">Fila aberta</option>
                     @foreach($statuses as $status)
-                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>{{ $status->label() }}</option>
+                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>{{ $status === \App\Enums\InvoiceStatus::Launched ? 'Lancadas' : $status->label() }}</option>
                     @endforeach
                 </select>
             </div>

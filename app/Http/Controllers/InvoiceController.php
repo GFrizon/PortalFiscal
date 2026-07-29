@@ -28,11 +28,21 @@ class InvoiceController extends Controller
     {
         $this->authorize('viewAny', Invoice::class);
 
-        $visibleStatuses = [
+        $defaultStatuses = [
             InvoiceStatus::AwaitingReview,
             InvoiceStatus::Pending,
         ];
-        $visibleStatusValues = array_map(fn (InvoiceStatus $status): string => $status->value, $visibleStatuses);
+        $filterableStatuses = [
+            InvoiceStatus::AwaitingReview,
+            InvoiceStatus::Pending,
+            InvoiceStatus::Launched,
+        ];
+        $defaultStatusValues = array_map(fn (InvoiceStatus $status): string => $status->value, $defaultStatuses);
+        $filterableStatusValues = array_map(fn (InvoiceStatus $status): string => $status->value, $filterableStatuses);
+        $selectedStatus = $request->string('status')->toString();
+        $statusValues = in_array($selectedStatus, $filterableStatusValues, true)
+            ? [$selectedStatus]
+            : $defaultStatusValues;
         $sortableColumns = [
             'protocol' => 'protocol',
             'type' => 'document_type',
@@ -53,7 +63,7 @@ class InvoiceController extends Controller
 
         $query = Invoice::query()
             ->with(['businessUnit:id,name', 'submitter:id,name', 'purchaseOrderCheck:id,invoice_id,supplier_name'])
-            ->whereIn('status', $visibleStatusValues);
+            ->whereIn('status', $statusValues);
 
         InvoiceVisibility::apply($query, $request->user());
 
@@ -71,10 +81,6 @@ class InvoiceController extends Controller
             $query->whereHas('purchaseOrderCheck', function ($query) use ($supplier): void {
                 $query->where('supplier_name', 'like', '%'.$supplier.'%');
             });
-        }
-
-        if ($request->filled('status') && in_array($request->string('status')->toString(), $visibleStatusValues, true)) {
-            $query->where('status', $request->string('status')->toString());
         }
 
         if ($request->string('business_unit_id')->toString() === 'none') {
@@ -101,7 +107,7 @@ class InvoiceController extends Controller
 
         $unitSummaryQuery = Invoice::query()
             ->with('businessUnit:id,name')
-            ->whereIn('status', $visibleStatusValues);
+            ->whereIn('status', $statusValues);
 
         InvoiceVisibility::apply($unitSummaryQuery, $request->user());
 
@@ -113,7 +119,7 @@ class InvoiceController extends Controller
         return view('invoices.index', [
             'invoices' => $query->paginate(15)->withQueryString(),
             'businessUnits' => BusinessUnit::query()->orderBy('name')->get(['id', 'name']),
-            'statuses' => $visibleStatuses,
+            'statuses' => $filterableStatuses,
             'unitSummary' => $unitSummary,
             'filters' => $request->only(['protocol', 'purchase_order_number', 'supplier', 'status', 'business_unit_id', 'sort', 'direction']),
             'sort' => $sort,

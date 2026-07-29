@@ -2,12 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Enums\UserRole;
-use App\Enums\UserStatus;
 use App\Enums\AlertLevel;
 use App\Enums\AlertType;
-use App\Models\Invoice;
+use App\Enums\InvoiceStatus;
+use App\Enums\UserRole;
+use App\Enums\UserStatus;
 use App\Models\BusinessUnit;
+use App\Models\Invoice;
 use App\Models\User;
 use App\Models\UserGroup;
 use App\Services\PdfExtractionService;
@@ -1044,14 +1045,24 @@ class NavigationAuditTest extends TestCase
         $this->actingAs($admin)
             ->get(route('invoices.index'))
             ->assertOk()
+            ->assertSee('Fila aberta')
+            ->assertSee('Lancadas')
             ->assertSee('800001')
             ->assertSee('800002')
             ->assertDontSee('800003')
             ->assertDontSee('800004')
             ->assertDontSee('800005')
-            ->assertDontSee('Lancada')
             ->assertDontSee('Cancelada')
             ->assertDontSee('Em conferencia');
+
+        $this->actingAs($admin)
+            ->get(route('invoices.index', ['status' => InvoiceStatus::Launched->value]))
+            ->assertOk()
+            ->assertSee('800003')
+            ->assertDontSee('800001')
+            ->assertDontSee('800002')
+            ->assertDontSee('800004')
+            ->assertDontSee('800005');
     }
 
     public function test_invoice_index_shows_due_date_and_sorts_by_columns(): void
