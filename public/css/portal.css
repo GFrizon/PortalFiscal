@@ -1229,6 +1229,20 @@ textarea:focus-visible {
     border-radius: var(--radius);
 }
 
+.alert-card.alert-resolved {
+    border-color: #d8e6dd;
+    background: #f6fbf8;
+    color: #496354;
+}
+
+.alert-card.alert-resolved > .bi {
+    color: #2f7a4c;
+}
+
+.alert-card.alert-resolved strong {
+    color: #365744;
+}
+
 .timeline {
     position: relative;
 }

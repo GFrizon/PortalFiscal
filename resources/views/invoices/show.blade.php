@@ -8,6 +8,7 @@
     @php($documentType = $invoice->documentType())
     @php($paymentMethod = $invoice->paymentMethod())
     @php($annotationData = $invoice->annotation?->data ?? ['strokes' => []])
+    @php($openAlerts = $invoice->alerts->where('resolved', false))
 
     <div class="invoice-detail-page">
         <div class="section-toolbar mb-3">
@@ -348,13 +349,13 @@
                     <div class="tab-content review-tab-content" id="invoiceReviewTabsContent">
                         @can('review', $invoice)
                             <div class="tab-pane fade show active" id="review-tab-pane" role="tabpanel" aria-labelledby="review-tab" tabindex="0">
-                                @if($invoice->alerts->isNotEmpty())
+                                @if($openAlerts->isNotEmpty())
                                     <div class="inline-alerts mb-3">
-                                        @foreach($invoice->alerts as $alert)
+                                        @foreach($openAlerts as $alert)
                                             <div class="inline-alert {{ $alert->level->value === 'critical' ? 'critical' : 'warning' }}">
                                                 <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
                                                 <div>
-                                                    <strong>{{ $alert->type->label() }}{{ $alert->resolved ? ' - Resolvido' : '' }}</strong>
+                                                    <strong>{{ $alert->type->label() }}</strong>
                                                     <span>{{ $alert->message }}</span>
                                                 </div>
                                             </div>
@@ -406,8 +407,8 @@
 
                         <div class="tab-pane fade @cannot('review', $invoice) show active @endcannot" id="alerts-tab-pane" role="tabpanel" aria-labelledby="alerts-tab" tabindex="0">
                             @forelse($invoice->alerts as $alert)
-                                <div class="alert alert-card {{ $alert->level->value === 'critical' ? 'alert-danger' : 'alert-warning' }} mb-2">
-                                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                                <div class="alert alert-card {{ $alert->resolved ? 'alert-resolved' : ($alert->level->value === 'critical' ? 'alert-danger' : 'alert-warning') }} mb-2">
+                                    <i class="bi {{ $alert->resolved ? 'bi-check2-circle' : 'bi-exclamation-triangle' }}" aria-hidden="true"></i>
                                     <div class="w-100">
                                         <div class="d-flex flex-wrap gap-2 justify-content-between align-items-start">
                                             <div><strong>{{ $alert->type->label() }}:</strong> {{ $alert->message }}</div>

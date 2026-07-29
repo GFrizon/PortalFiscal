@@ -12,6 +12,16 @@ class InvoiceAlertService
 {
     public function create(Invoice $invoice, AlertType $type, string $message, AlertLevel $level = AlertLevel::Warning): InvoiceAlert
     {
+        $existingAlert = $invoice->alerts()
+            ->where('resolved', false)
+            ->where('type', $type)
+            ->where('message', $message)
+            ->first();
+
+        if ($existingAlert) {
+            return $existingAlert;
+        }
+
         return $invoice->alerts()->create([
             'type' => $type,
             'message' => $message,

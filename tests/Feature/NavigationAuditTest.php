@@ -1069,6 +1069,39 @@ class NavigationAuditTest extends TestCase
         ]);
     }
 
+    public function test_invoice_review_tab_only_highlights_open_alerts(): void
+    {
+        $fiscal = User::factory()->fiscal()->create();
+        $invoice = Invoice::factory()->create([
+            'status' => 'awaiting_review',
+        ]);
+
+        $invoice->alerts()->create([
+            'type' => AlertType::CnpjMismatch,
+            'message' => 'Alerta aberto aparece na conferencia.',
+            'level' => AlertLevel::Critical,
+            'resolved' => false,
+        ]);
+
+        $invoice->alerts()->create([
+            'type' => AlertType::DuplicatePdf,
+            'message' => 'Alerta resolvido fica so na aba alertas.',
+            'level' => AlertLevel::Warning,
+            'resolved' => true,
+            'resolved_by' => $fiscal->id,
+            'resolved_at' => now(),
+        ]);
+
+        $response = $this->actingAs($fiscal)
+            ->get(route('invoices.show', $invoice))
+            ->assertOk();
+
+        $response->assertSee('Alerta aberto aparece na conferencia.');
+        $response->assertSee('Alerta resolvido fica so na aba alertas.');
+        $response->assertSee('alert-card alert-resolved', false);
+        $response->assertDontSee('<div class="inline-alert warning"', false);
+    }
+
     public function test_invoice_details_show_submitter_notes(): void
     {
         $user = User::factory()->create();
