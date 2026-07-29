@@ -149,7 +149,7 @@
                     <th><a class="sort-link" href="{{ $sortLink('protocol') }}">Protocolo <i class="bi {{ $sortIcon('protocol') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('type') }}">Tipo <i class="bi {{ $sortIcon('type') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('invoice') }}">Nota <i class="bi {{ $sortIcon('invoice') }}" aria-hidden="true"></i></a></th>
-                    <th><a class="sort-link" href="{{ $sortLink('reference') }}">Referencia <i class="bi {{ $sortIcon('reference') }}" aria-hidden="true"></i></a></th>
+                    <th><a class="sort-link" href="{{ $sortLink('reference') }}">Ordem de compra <i class="bi {{ $sortIcon('reference') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('supplier') }}">Fornecedor <i class="bi {{ $sortIcon('supplier') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('unit') }}">Unidade <i class="bi {{ $sortIcon('unit') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('user') }}">Usuario <i class="bi {{ $sortIcon('user') }}" aria-hidden="true"></i></a></th>

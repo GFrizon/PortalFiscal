@@ -121,13 +121,23 @@
     document.querySelectorAll('[data-document-type-select]').forEach((select) => {
         const form = select.closest('form');
         const label = form?.querySelector('[data-reference-label]');
+        const field = form?.querySelector('[data-reference-field]');
+        const input = form?.querySelector('[name="purchase_order_number"]');
 
         const syncReferenceLabel = () => {
-            if (! label) {
+            if (! label || ! field || ! input) {
                 return;
             }
 
+            const withoutPurchaseOrder = select.value === 'nf_no_oc';
             label.textContent = select.value === 'cte' ? 'Nota Fiscal' : 'Ordem de compra';
+            field.hidden = withoutPurchaseOrder;
+            input.disabled = withoutPurchaseOrder;
+            input.required = ! withoutPurchaseOrder;
+
+            if (withoutPurchaseOrder) {
+                input.value = '';
+            }
         };
 
         select.addEventListener('change', syncReferenceLabel);
@@ -230,7 +240,8 @@
 
         setPreviewText(preview, '[data-preview-file-name]', file.name);
         setPreviewText(preview, '[data-preview-file-size]', formatBytes(file.size));
-        setPreviewText(preview, '[data-preview-reference-label]', form.querySelector('[name="document_type"]')?.value === 'cte' ? 'Nota Fiscal' : 'Ordem');
+        const documentType = form.querySelector('[name="document_type"]')?.value || 'nf';
+        setPreviewText(preview, '[data-preview-reference-label]', documentType === 'cte' ? 'Nota Fiscal' : 'Ordem');
         setPreviewText(preview, '[data-preview-purchase-order]', form.querySelector('[name="purchase_order_number"]')?.value || '-');
         setPreviewText(preview, '[data-preview-arrival-date]', formatDate(form.querySelector('[name="arrival_date"]')?.value));
         setPreviewText(preview, '[data-preview-payment]', formatPayment(form));

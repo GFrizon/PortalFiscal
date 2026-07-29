@@ -70,10 +70,11 @@
                 <label class="form-label" for="document_type">Tipo de documento</label>
                 <select class="form-select" id="document_type" name="document_type" required data-document-type-select>
                     <option value="nf" @selected(old('document_type', 'nf') === 'nf')>NF</option>
+                    <option value="nf_no_oc" @selected(old('document_type') === 'nf_no_oc')>Nota Fiscal sem ordem de compra</option>
                     <option value="cte" @selected(old('document_type') === 'cte')>CTE</option>
                 </select>
             </div>
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-md-3" data-reference-field>
                 <label class="form-label" for="purchase_order_number" data-reference-label>Ordem de compra</label>
                 <input class="form-control" id="purchase_order_number" name="purchase_order_number" value="{{ old('purchase_order_number') }}" inputmode="numeric" pattern="[0-9]*" required data-digits-only>
             </div>

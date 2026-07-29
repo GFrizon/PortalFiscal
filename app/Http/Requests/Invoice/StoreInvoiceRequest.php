@@ -20,8 +20,8 @@ class StoreInvoiceRequest extends FormRequest
         return [
             'pdf' => ['required', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'max:'.$maxUploadKb],
             'is_urgent' => ['nullable', 'boolean'],
-            'document_type' => ['required', Rule::in(['nf', 'cte'])],
-            'purchase_order_number' => ['required', 'digits_between:1,80'],
+            'document_type' => ['required', Rule::in(['nf', 'nf_no_oc', 'cte'])],
+            'purchase_order_number' => ['required_unless:document_type,nf_no_oc', 'nullable', 'digits_between:1,80'],
             'arrival_date' => ['required', 'date'],
             'payment_method' => ['required', Rule::in(['anticipated', 'deposit', 'boleto'])],
             'payment_installments_count' => ['required_unless:payment_method,anticipated', 'nullable', 'integer', 'min:1', 'max:12'],

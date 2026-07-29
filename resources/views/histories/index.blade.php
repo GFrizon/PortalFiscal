@@ -71,7 +71,7 @@
                 <tr>
                     <th>Protocolo</th>
                     <th>Nota</th>
-                    <th>Referencia</th>
+                    <th>Ordem de compra</th>
                     <th>Unidade</th>
                     <th>Status</th>
                     <th>Ultima acao</th>

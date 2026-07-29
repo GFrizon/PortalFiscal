@@ -286,6 +286,55 @@ class NavigationAuditTest extends TestCase
         ]);
     }
 
+    public function test_invoice_without_purchase_order_does_not_require_reference_or_lookup(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => 'PDF simulado sem ordem de compra',
+                'cnpjs' => ['12345678000195'],
+                'issuer_cnpj' => '12345678000195',
+                'recipient_cnpj' => null,
+                'invoice_number' => '987654',
+                'issuer_legal_name' => null,
+                'recipient_legal_name' => null,
+                'error' => null,
+            ]);
+        });
+
+        $this->mock(PurchaseOrderService::class, function ($mock): void {
+            $mock->shouldNotReceive('find');
+        });
+
+        $this->actingAs($user)
+            ->post(route('invoices.store'), [
+                'pdf' => UploadedFile::fake()->create('nota-sem-oc.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf_no_oc',
+                'purchase_order_number' => '',
+                'arrival_date' => now()->format('Y-m-d'),
+                'payment_method' => 'anticipated',
+                'user_notes' => 'Nota fiscal sem ordem de compra.',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('invoices', [
+            'submitted_by' => $user->id,
+            'document_type' => 'nf_no_oc',
+            'purchase_order_number' => null,
+            'invoice_number' => '987654',
+        ]);
+
+        $invoice = Invoice::query()->where('submitted_by', $user->id)->firstOrFail();
+
+        $this->assertDatabaseMissing('purchase_order_checks', [
+            'invoice_id' => $invoice->id,
+        ]);
+    }
+
     public function test_boleto_upload_requires_installments_and_stores_payment_terms(): void
     {
         Storage::fake('local');
