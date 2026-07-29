@@ -22,6 +22,7 @@
                 'business_unit_id' => $filters['business_unit_id'] ?? null,
                 'protocol' => $filters['protocol'] ?? null,
                 'purchase_order_number' => $filters['purchase_order_number'] ?? null,
+                'supplier' => $filters['supplier'] ?? null,
                 'status' => $filters['status'] ?? null,
                 'sort' => $column,
                 'direction' => $nextDirection,
@@ -75,6 +76,7 @@
                         'status' => $filters['status'] ?? null,
                         'protocol' => $filters['protocol'] ?? null,
                         'purchase_order_number' => $filters['purchase_order_number'] ?? null,
+                        'supplier' => $filters['supplier'] ?? null,
                         'sort' => $filters['sort'] ?? null,
                         'direction' => $filters['direction'] ?? null,
                     ], fn ($value) => filled($value)));
@@ -103,15 +105,19 @@
                 <input type="hidden" name="business_unit_id" value="{{ $selectedUnitId }}">
             @endif
 
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-lg-2">
                 <label class="form-label" for="protocol">Protocolo</label>
                 <input id="protocol" class="form-control" name="protocol" value="{{ $filters['protocol'] ?? '' }}">
             </div>
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-lg-2">
                 <label class="form-label" for="purchase_order_number">Ordem de compra</label>
                 <input id="purchase_order_number" class="form-control" name="purchase_order_number" value="{{ $filters['purchase_order_number'] ?? '' }}">
             </div>
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-lg-3">
+                <label class="form-label" for="supplier">Fornecedor</label>
+                <input id="supplier" class="form-control" name="supplier" value="{{ $filters['supplier'] ?? '' }}">
+            </div>
+            <div class="col-12 col-lg-2">
                 <label class="form-label" for="status">Status</label>
                 <select id="status" class="form-select" name="status">
                     <option value="">Todos os status</option>
@@ -120,7 +126,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-lg-3">
                 <div class="filter-actions">
                     <button class="btn btn-outline-primary" type="submit">
                     <i class="bi bi-funnel" aria-hidden="true"></i>
@@ -144,6 +150,7 @@
                     <th><a class="sort-link" href="{{ $sortLink('type') }}">Tipo <i class="bi {{ $sortIcon('type') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('invoice') }}">Nota <i class="bi {{ $sortIcon('invoice') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('reference') }}">Referencia <i class="bi {{ $sortIcon('reference') }}" aria-hidden="true"></i></a></th>
+                    <th><a class="sort-link" href="{{ $sortLink('supplier') }}">Fornecedor <i class="bi {{ $sortIcon('supplier') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('unit') }}">Unidade <i class="bi {{ $sortIcon('unit') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('user') }}">Usuario <i class="bi {{ $sortIcon('user') }}" aria-hidden="true"></i></a></th>
                     <th><a class="sort-link" href="{{ $sortLink('arrival') }}">Chegada <i class="bi {{ $sortIcon('arrival') }}" aria-hidden="true"></i></a></th>
@@ -155,11 +162,19 @@
                 <tbody>
                 @forelse($invoices as $invoice)
                     @php($documentType = $invoice->documentType())
-                    <tr>
-                        <td><span class="protocol-code">{{ $invoice->protocol }}</span></td>
+                    <tr class="{{ $invoice->is_urgent ? 'invoice-row-urgent' : '' }}">
+                        <td>
+                            <div class="stacked-cell">
+                                <span class="protocol-code">{{ $invoice->protocol }}</span>
+                                @if($invoice->is_urgent)
+                                    <span class="urgent-badge"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Urgente</span>
+                                @endif
+                            </div>
+                        </td>
                         <td>{{ $documentType->label() }}</td>
                         <td>{{ $invoice->invoice_number ?? '-' }}</td>
                         <td>{{ $invoice->purchase_order_number ?? '-' }}</td>
+                        <td>{{ $invoice->purchaseOrderCheck?->supplier_name ?? '-' }}</td>
                         <td>
                             <div class="table-entity">
                                 <span class="entity-icon"><i class="bi {{ $invoice->businessUnit ? 'bi-building' : 'bi-building-x' }}" aria-hidden="true"></i></span>
@@ -178,7 +193,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="10" class="empty-state">Nenhuma nota nesta pasta.</td>
+                        <td colspan="11" class="empty-state">Nenhuma nota nesta pasta.</td>
                     </tr>
                 @endforelse
                 </tbody>

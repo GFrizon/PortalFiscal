@@ -57,6 +57,15 @@
             <div class="col-12">
                 <div class="form-section-label">Acompanhamento</div>
             </div>
+            <div class="col-12">
+                <label class="urgent-toggle">
+                    <input class="form-check-input" type="checkbox" name="is_urgent" value="1" @checked(old('is_urgent'))>
+                    <span>
+                        <strong>Marcar como urgente</strong>
+                        <small>Prioriza esta nota na fila de conferencia.</small>
+                    </span>
+                </label>
+            </div>
             <div class="col-12 col-md-3">
                 <label class="form-label" for="document_type">Tipo de documento</label>
                 <select class="form-select" id="document_type" name="document_type" required data-document-type-select>

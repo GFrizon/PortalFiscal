@@ -21,6 +21,7 @@ class InvoiceFactory extends Factory
             'protocol' => 'NF-'.now()->format('Y').'-'.str_pad((string) fake()->unique()->numberBetween(1, 999999), 6, '0', STR_PAD_LEFT),
             'submitted_by' => User::factory(),
             'business_unit_id' => BusinessUnit::factory(),
+            'is_urgent' => false,
             'document_type' => InvoiceDocumentType::Nf,
             'purchase_order_number' => fake()->numerify('######'),
             'invoice_number' => fake()->numerify('########'),

@@ -41,6 +41,7 @@ class InvoiceController extends Controller
             'user' => 'submitted_by',
             'arrival' => 'arrival_date',
             'due' => 'due_date',
+            'supplier' => 'supplier',
             'status' => 'status',
         ];
         $sort = array_key_exists($request->string('sort')->toString(), $sortableColumns)
@@ -49,7 +50,7 @@ class InvoiceController extends Controller
         $direction = $request->string('direction')->toString() === 'asc' ? 'asc' : 'desc';
 
         $query = Invoice::query()
-            ->with(['businessUnit:id,name', 'submitter:id,name'])
+            ->with(['businessUnit:id,name', 'submitter:id,name', 'purchaseOrderCheck:id,invoice_id,supplier_name'])
             ->whereIn('status', $visibleStatusValues);
 
         if ($request->user()->isRegularUser()) {
@@ -64,6 +65,14 @@ class InvoiceController extends Controller
             $query->where('purchase_order_number', 'like', '%'.$request->string('purchase_order_number')->toString().'%');
         }
 
+        if ($request->filled('supplier')) {
+            $supplier = $request->string('supplier')->toString();
+
+            $query->whereHas('purchaseOrderCheck', function ($query) use ($supplier): void {
+                $query->where('supplier_name', 'like', '%'.$supplier.'%');
+            });
+        }
+
         if ($request->filled('status') && in_array($request->string('status')->toString(), $visibleStatusValues, true)) {
             $query->where('status', $request->string('status')->toString());
         }
@@ -74,9 +83,21 @@ class InvoiceController extends Controller
             $query->where('business_unit_id', $request->integer('business_unit_id'));
         }
 
-        $query
-            ->orderBy($sortableColumns[$sort], $direction)
-            ->orderByDesc('id');
+        $query->orderByDesc('is_urgent');
+
+        if ($sort === 'supplier') {
+            $query->orderBy(
+                DB::table('purchase_order_checks')
+                    ->select('supplier_name')
+                    ->whereColumn('purchase_order_checks.invoice_id', 'invoices.id')
+                    ->limit(1),
+                $direction
+            );
+        } else {
+            $query->orderBy($sortableColumns[$sort], $direction);
+        }
+
+        $query->orderByDesc('id');
 
         $unitSummaryQuery = Invoice::query()
             ->with('businessUnit:id,name')
@@ -96,7 +117,7 @@ class InvoiceController extends Controller
             'businessUnits' => BusinessUnit::query()->orderBy('name')->get(['id', 'name']),
             'statuses' => $visibleStatuses,
             'unitSummary' => $unitSummary,
-            'filters' => $request->only(['protocol', 'purchase_order_number', 'status', 'business_unit_id', 'sort', 'direction']),
+            'filters' => $request->only(['protocol', 'purchase_order_number', 'supplier', 'status', 'business_unit_id', 'sort', 'direction']),
             'sort' => $sort,
             'direction' => $direction,
         ]);
@@ -153,6 +174,7 @@ class InvoiceController extends Controller
                     'protocol' => $invoiceService->nextProtocol(),
                     'submitted_by' => $request->user()->id,
                     'business_unit_id' => $businessUnit?->id,
+                    'is_urgent' => $request->boolean('is_urgent'),
                     'document_type' => $request->string('document_type')->toString(),
                     'purchase_order_number' => $request->string('purchase_order_number')->toString() ?: null,
                     'invoice_number' => $extracted['invoice_number'],

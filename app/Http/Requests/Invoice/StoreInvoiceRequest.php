@@ -19,6 +19,7 @@ class StoreInvoiceRequest extends FormRequest
 
         return [
             'pdf' => ['required', 'file', 'mimes:pdf', 'mimetypes:application/pdf', 'max:'.$maxUploadKb],
+            'is_urgent' => ['nullable', 'boolean'],
             'document_type' => ['required', Rule::in(['nf', 'cte'])],
             'purchase_order_number' => ['required', 'digits_between:1,80'],
             'arrival_date' => ['required', 'date'],
@@ -51,6 +52,7 @@ class StoreInvoiceRequest extends FormRequest
     {
         $this->merge([
             'document_type' => strtolower(trim((string) $this->input('document_type', 'nf'))),
+            'is_urgent' => $this->boolean('is_urgent'),
             'purchase_order_number' => trim((string) $this->input('purchase_order_number')),
             'payment_method' => strtolower(trim((string) $this->input('payment_method', 'anticipated'))),
             'payment_installments' => $this->normalizeInstallments((array) $this->input('payment_installments', [])),

@@ -2086,6 +2086,29 @@ textarea.form-control {
     background: #f8fafb;
 }
 
+.data-table tbody tr.invoice-row-urgent {
+    background: #fff9e8;
+}
+
+.data-table tbody tr.invoice-row-urgent:hover {
+    background: #fff4d2;
+}
+
+.urgent-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    width: fit-content;
+    margin-top: 3px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #ffe8a3;
+    color: #8a5a00;
+    font-size: .66rem;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
 .table-responsive {
     scrollbar-width: thin;
 }
@@ -2566,6 +2589,40 @@ textarea.form-control {
     color: var(--color-text);
     font-size: .84rem;
     font-weight: 720;
+}
+
+.urgent-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #f2d58b;
+    border-radius: 7px;
+    background: #fff9e8;
+    cursor: pointer;
+}
+
+.urgent-toggle .form-check-input {
+    flex: 0 0 auto;
+    width: 1.1rem;
+    height: 1.1rem;
+    margin: 0;
+}
+
+.urgent-toggle span,
+.urgent-toggle strong,
+.urgent-toggle small {
+    display: block;
+}
+
+.urgent-toggle strong {
+    font-size: .86rem;
+}
+
+.urgent-toggle small {
+    color: var(--color-text-muted);
+    font-size: .76rem;
 }
 
 .payment-installments-area[hidden] {

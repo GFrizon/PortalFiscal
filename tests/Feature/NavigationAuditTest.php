@@ -192,6 +192,7 @@ class NavigationAuditTest extends TestCase
             ->post(route('invoices.store'), [
                 'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
                 'document_type' => 'nf',
+                'is_urgent' => '1',
                 'purchase_order_number' => '123456',
                 'arrival_date' => now()->format('Y-m-d'),
                 'due_date' => now()->addDays(10)->format('Y-m-d'),
@@ -202,6 +203,7 @@ class NavigationAuditTest extends TestCase
         $this->assertDatabaseHas('invoices', [
             'submitted_by' => $user->id,
             'business_unit_id' => $unit->id,
+            'is_urgent' => true,
             'document_type' => 'nf',
             'purchase_order_number' => '123456',
             'status' => 'awaiting_review',
@@ -832,6 +834,54 @@ class NavigationAuditTest extends TestCase
             $earlier->protocol,
             $later->protocol,
         ]);
+    }
+
+    public function test_invoice_index_highlights_urgent_invoices_and_filters_supplier(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $normal = Invoice::factory()->create([
+            'protocol' => 'NF-2026-NORMAL',
+            'is_urgent' => false,
+            'due_date' => '2026-08-10',
+        ]);
+        $normal->purchaseOrderCheck()->create([
+            'purchase_order_number' => $normal->purchase_order_number,
+            'exists' => true,
+            'supplier_name' => 'Fornecedor Comum',
+        ]);
+
+        $urgent = Invoice::factory()->create([
+            'protocol' => 'NF-2026-URGENT',
+            'is_urgent' => true,
+            'due_date' => '2026-09-10',
+        ]);
+        $urgent->purchaseOrderCheck()->create([
+            'purchase_order_number' => $urgent->purchase_order_number,
+            'exists' => true,
+            'supplier_name' => 'Fornecedor Especial',
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->get(route('invoices.index', [
+                'sort' => 'due',
+                'direction' => 'asc',
+            ]))
+            ->assertOk()
+            ->assertSee('Fornecedor')
+            ->assertSee('Urgente')
+            ->assertSee('Fornecedor Especial');
+
+        $response->assertSeeInOrder([
+            $urgent->protocol,
+            $normal->protocol,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('invoices.index', ['supplier' => 'Especial']))
+            ->assertOk()
+            ->assertSee($urgent->protocol)
+            ->assertDontSee($normal->protocol);
     }
 
     public function test_admin_can_create_update_and_block_user(): void
