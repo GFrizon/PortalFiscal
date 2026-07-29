@@ -7,11 +7,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Login - Portal de Notas Fiscais BAKOF</title>
-    <link rel="icon" href="{{ asset('favicon.svg') }}?v=bakoftec-20260727" type="image/svg+xml">
-    <link rel="alternate icon" href="{{ asset('favicon.ico') }}?v=bakoftec-20260727">
-    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}?v=bakoftec-20260727">
-    <link rel="manifest" href="{{ asset('site.webmanifest') }}?v=bakoftec-20260727">
-    <meta name="theme-color" content="#213f78">
+    <link rel="icon" href="{{ asset('favicon.svg') }}?v=portal-fiscal-20260729" type="image/svg+xml">
+    <link rel="icon" href="{{ asset('favicon-32.png') }}?v=portal-fiscal-20260729" sizes="32x32" type="image/png">
+    <link rel="icon" href="{{ asset('favicon-192.png') }}?v=portal-fiscal-20260729" sizes="192x192" type="image/png">
+    <link rel="alternate icon" href="{{ asset('favicon.ico') }}?v=portal-fiscal-20260729">
+    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}?v=portal-fiscal-20260729">
+    <link rel="manifest" href="{{ asset('site.webmanifest') }}?v=portal-fiscal-20260729">
+    <meta name="theme-color" content="#1f3f77">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Portal Fiscal">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="{{ asset('css/portal.css') }}?v={{ $assetVersion }}" rel="stylesheet">

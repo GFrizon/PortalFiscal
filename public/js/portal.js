@@ -6,12 +6,15 @@
     const mobileBackdrop = document.querySelector('[data-sidebar-close]');
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let currentPreviewUrl = null;
+    let deferredInstallPrompt = null;
 
     body.classList.add('js-enhanced');
 
     requestAnimationFrame(() => {
         body.classList.add('is-ready');
     });
+
+    initPwaInstall();
 
     window.addEventListener('pageshow', () => {
         body.classList.remove('is-navigating');
@@ -905,5 +908,59 @@
         if (element) {
             element.textContent = message || '';
         }
+    }
+
+    function initPwaInstall() {
+        const installButtons = document.querySelectorAll('[data-install-app]');
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        if ('serviceWorker' in navigator && (window.isSecureContext || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+            });
+        }
+
+        if (! installButtons.length || isStandalone) {
+            return;
+        }
+
+        const showInstallButtons = () => {
+            installButtons.forEach((button) => {
+                button.hidden = false;
+            });
+        };
+
+        const hideInstallButtons = () => {
+            installButtons.forEach((button) => {
+                button.hidden = true;
+            });
+        };
+
+        window.addEventListener('beforeinstallprompt', (event) => {
+            event.preventDefault();
+            deferredInstallPrompt = event;
+            showInstallButtons();
+        });
+
+        installButtons.forEach((button) => {
+            button.addEventListener('click', async () => {
+                if (! deferredInstallPrompt) {
+                    return;
+                }
+
+                button.setAttribute('aria-busy', 'true');
+                deferredInstallPrompt.prompt();
+
+                try {
+                    await deferredInstallPrompt.userChoice;
+                } finally {
+                    deferredInstallPrompt = null;
+                    button.removeAttribute('aria-busy');
+                    hideInstallButtons();
+                }
+            });
+        });
+
+        window.addEventListener('appinstalled', hideInstallButtons);
     }
 })();
