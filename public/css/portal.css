@@ -3212,11 +3212,19 @@ textarea.form-control {
     }
 }
 
-/* Invoice detail final reading layout: PDF first, data below. */
+/* Invoice detail final reading layout: data first, PDF below. */
 .invoice-detail-page .invoice-workspace.invoice-workspace-balanced {
     display: grid !important;
     grid-template-columns: 1fr !important;
     gap: 14px;
+}
+
+.invoice-detail-page .invoice-info-column {
+    order: 1;
+}
+
+.invoice-detail-page .invoice-pdf-column {
+    order: 2;
 }
 
 .invoice-detail-page .invoice-pdf-column,
@@ -3232,8 +3240,8 @@ textarea.form-control {
 .invoice-detail-page .pdf-frame {
     display: block;
     width: 100%;
-    height: calc(100vh - var(--topbar-height) - 180px) !important;
-    min-height: 760px !important;
+    height: calc(100vh - var(--topbar-height) - 120px) !important;
+    min-height: 860px !important;
     border-radius: 7px;
 }
 
@@ -3261,8 +3269,8 @@ textarea.form-control {
 
 @media (max-width: 1199.98px) {
     .invoice-detail-page .pdf-frame {
-        height: 78vh !important;
-        min-height: 640px !important;
+        height: 82vh !important;
+        min-height: 680px !important;
     }
 
     .invoice-detail-page .invoice-info-column {
