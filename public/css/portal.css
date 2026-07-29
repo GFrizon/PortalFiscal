@@ -3288,6 +3288,7 @@ textarea.form-control {
 .pdf-draw-layer {
     position: absolute;
     inset: 0;
+    cursor: crosshair;
     touch-action: none;
 }
 

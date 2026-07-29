@@ -64,9 +64,13 @@
                     >
                         @can('review', $invoice)
                             <div class="pdf-annotation-toolbar" aria-label="Ferramentas de anotacao">
-                                <button class="btn btn-sm btn-primary" type="button" data-annotation-tool="pen">
+                                <button class="btn btn-sm btn-primary active" type="button" data-annotation-tool="pen" aria-pressed="true">
                                     <i class="bi bi-pencil" aria-hidden="true"></i>
                                     Caneta
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary" type="button" data-annotation-tool="highlight" aria-pressed="false">
+                                    <i class="bi bi-highlighter" aria-hidden="true"></i>
+                                    Marca texto
                                 </button>
                                 <button class="btn btn-sm btn-outline-secondary" type="button" data-annotation-undo>
                                     <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>

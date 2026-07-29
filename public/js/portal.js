@@ -404,6 +404,7 @@
             strokes: parseAnnotationData(root.dataset.annotations).strokes || [],
             pages: new Map(),
             drawing: null,
+            tool: 'pen',
             dirty: false,
         };
 
@@ -438,6 +439,22 @@
         if (! canAnnotate) {
             return;
         }
+
+        root.querySelectorAll('[data-annotation-tool]').forEach((button) => {
+            button.addEventListener('click', () => {
+                state.tool = button.dataset.annotationTool || 'pen';
+
+                root.querySelectorAll('[data-annotation-tool]').forEach((toolButton) => {
+                    const active = toolButton === button;
+                    toolButton.classList.toggle('active', active);
+                    toolButton.classList.toggle('btn-primary', active);
+                    toolButton.classList.toggle('btn-outline-primary', ! active);
+                    toolButton.setAttribute('aria-pressed', active ? 'true' : 'false');
+                });
+
+                setAnnotationStatus(status, state.tool === 'highlight' ? 'Marca texto ativo.' : 'Caneta ativa.');
+            });
+        });
 
         root.querySelector('[data-annotation-undo]')?.addEventListener('click', () => {
             state.strokes.pop();
@@ -531,8 +548,9 @@
             canvas.setPointerCapture(event.pointerId);
             state.drawing = {
                 page: pageNumber,
-                color: '#d92d20',
-                width: 3,
+                tool: state.tool,
+                color: state.tool === 'highlight' ? '#ffe45c' : '#d92d20',
+                width: state.tool === 'highlight' ? 18 : 3,
                 points: [normalizedPoint(canvas, event)],
             };
         });
@@ -610,6 +628,8 @@
         context.lineWidth = Number(stroke.width || 3);
         context.lineCap = 'round';
         context.lineJoin = 'round';
+        context.globalAlpha = stroke.tool === 'highlight' ? 0.45 : 1;
+        context.globalCompositeOperation = stroke.tool === 'highlight' ? 'multiply' : 'source-over';
         context.beginPath();
         context.moveTo(points[0].x * width, points[0].y * height);
 
@@ -618,6 +638,8 @@
         });
 
         context.stroke();
+        context.globalAlpha = 1;
+        context.globalCompositeOperation = 'source-over';
     }
 
     async function saveAnnotations(url, strokes) {

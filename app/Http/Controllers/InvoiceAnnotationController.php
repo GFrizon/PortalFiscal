@@ -15,6 +15,7 @@ class InvoiceAnnotationController extends Controller
         $validated = $request->validate([
             'strokes' => ['array', 'max:2000'],
             'strokes.*.page' => ['required', 'integer', 'min:1', 'max:500'],
+            'strokes.*.tool' => ['nullable', 'in:pen,highlight'],
             'strokes.*.color' => ['required', 'string', 'max:20'],
             'strokes.*.width' => ['required', 'numeric', 'min:1', 'max:24'],
             'strokes.*.points' => ['required', 'array', 'min:1', 'max:3000'],
