@@ -64,6 +64,14 @@ class HttpPurchaseOrderService
                 'number' => $number,
                 'remote_source' => $data['raw_response']['source'] ?? null,
                 'company_code' => $data['raw_response']['company_code'] ?? null,
+                'supplier_code' => $this->cleanNullableString(
+                    $data['raw_response']['supplier_code']
+                        ?? $data['raw_response']['codigo_fornecedor']
+                        ?? $data['raw_response']['cod_fornecedor']
+                        ?? $data['raw_response']['fornecedor_codigo']
+                        ?? $data['raw_response']['cd_fornecedor']
+                        ?? null
+                ),
                 'erp_status' => $data['raw_response']['erp_status'] ?? null,
             ],
         ];

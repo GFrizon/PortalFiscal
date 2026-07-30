@@ -221,6 +221,14 @@ function normalizeRow(array $row, string $number, string $source): array
             'source' => $source,
             'number' => $number,
             'purchase_order_number' => cleanNullableString($lower['purchase_order_number'] ?? null),
+            'supplier_code' => firstCleanNullableString($lower, [
+                'supplier_code',
+                'codigo_fornecedor',
+                'cod_fornecedor',
+                'fornecedor_codigo',
+                'cd_fornecedor',
+                'codigo',
+            ]),
             'erp_status' => cleanNullableString($lower['status'] ?? null),
         ],
     ];
@@ -348,4 +356,17 @@ function cleanNullableString(mixed $value): ?string
     $clean = trim((string) $value);
 
     return $clean !== '' ? $clean : null;
+}
+
+function firstCleanNullableString(array $row, array $keys): ?string
+{
+    foreach ($keys as $key) {
+        $value = cleanNullableString($row[strtolower($key)] ?? null);
+
+        if ($value !== null) {
+            return $value;
+        }
+    }
+
+    return null;
 }

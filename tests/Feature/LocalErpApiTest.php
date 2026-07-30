@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Services\HttpPurchaseOrderService;
 use App\Services\OraclePurchaseOrderService;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class LocalErpApiTest extends TestCase
@@ -43,6 +45,7 @@ class LocalErpApiTest extends TestCase
                         'source' => 'oracle',
                         'number' => '123456',
                         'company_code' => '001',
+                        'supplier_code' => 'FOR001',
                         'erp_status' => 'aberta',
                     ],
                 ]);
@@ -55,6 +58,39 @@ class LocalErpApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('exists', true)
             ->assertJsonPath('supplier_cnpj', '12345678000195')
+            ->assertJsonPath('raw_response.supplier_code', 'FOR001')
             ->assertJsonPath('raw_response.source', 'oracle');
+    }
+
+    public function test_http_purchase_order_service_keeps_supplier_code_aliases(): void
+    {
+        config([
+            'erp.http.base_url' => 'http://192.168.0.3:8088',
+            'erp.http.token' => 'secret-token',
+            'erp.http.timeout' => 8,
+            'erp.http.verify_tls' => false,
+        ]);
+
+        Http::fake([
+            'http://192.168.0.3:8088/api/local/purchase-orders/check' => Http::response([
+                'exists' => true,
+                'status' => 'aprovado',
+                'supplier_cnpj' => '91259168000171',
+                'supplier_name' => 'DISMAQUINAS ASSISTENCIA EM MAQUINAS LTDA',
+                'amount' => 1697.50,
+                'raw_response' => [
+                    'source' => 'odbc',
+                    'number' => '00103722',
+                    'codigo_fornecedor' => '904270',
+                    'erp_status' => 'aprovado',
+                ],
+            ]),
+        ]);
+
+        $result = app(HttpPurchaseOrderService::class)->find('00103722');
+
+        $this->assertTrue($result['exists']);
+        $this->assertSame('91259168000171', $result['supplier_cnpj']);
+        $this->assertSame('904270', $result['raw_response']['supplier_code']);
     }
 }

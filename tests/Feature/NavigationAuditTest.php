@@ -1303,7 +1303,7 @@ class NavigationAuditTest extends TestCase
             'amount' => 1500.00,
             'raw_response' => [
                 'purchase_order_number' => '123456',
-                'supplier_code' => 'FOR001',
+                'codigo_fornecedor' => 'FOR001',
             ],
         ]);
 

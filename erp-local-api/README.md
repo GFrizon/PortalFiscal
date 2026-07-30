@@ -136,7 +136,7 @@ ERP_DRIVER=odbc
 ODBC_DSN=CIGAM
 ODBC_USER=usuario
 ODBC_PASSWORD=senha
-ODBC_QUERY="SELECT TOP 1 numero AS purchase_order_number, status AS status, fornecedor_cnpj AS supplier_cnpj, fornecedor_nome AS supplier_name, total AS amount FROM ordens_compra WHERE numero = ?"
+ODBC_QUERY="SELECT TOP 1 numero AS purchase_order_number, status AS status, fornecedor_codigo AS supplier_code, fornecedor_cnpj AS supplier_cnpj, fornecedor_nome AS supplier_name, total AS amount FROM ordens_compra WHERE numero = ?"
 ```
 
 A consulta precisa retornar estes aliases:
@@ -144,12 +144,13 @@ A consulta precisa retornar estes aliases:
 ```text
 purchase_order_number
 status
+supplier_code
 supplier_cnpj
 supplier_name
 amount
 ```
 
-`amount` pode ser nulo.
+`supplier_code` e `amount` podem ser nulos, mas retorne o alias `supplier_code` sempre que o CIGAM tiver o codigo do fornecedor disponivel.
 
 ## Driver CSV
 

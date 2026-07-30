@@ -330,9 +330,14 @@
                                     <span>Valor</span>
                                     <strong>{{ $invoice->purchaseOrderCheck->amount !== null ? 'R$ '.number_format((float) $invoice->purchaseOrderCheck->amount, 2, ',', '.') : '-' }}</strong>
                                 </div>
+                                @php($supplierCode = data_get($invoice->purchaseOrderCheck->raw_response, 'supplier_code')
+                                    ?? data_get($invoice->purchaseOrderCheck->raw_response, 'codigo_fornecedor')
+                                    ?? data_get($invoice->purchaseOrderCheck->raw_response, 'cod_fornecedor')
+                                    ?? data_get($invoice->purchaseOrderCheck->raw_response, 'fornecedor_codigo')
+                                    ?? data_get($invoice->purchaseOrderCheck->raw_response, 'cd_fornecedor'))
                                 <div>
                                     <span>Codigo fornecedor</span>
-                                    <strong>{{ data_get($invoice->purchaseOrderCheck->raw_response, 'supplier_code', '-') }}</strong>
+                                    <strong>{{ filled($supplierCode) ? $supplierCode : '-' }}</strong>
                                 </div>
                                 <div>
                                     <span>Sistema origem</span>
