@@ -113,6 +113,30 @@ class PdfExtractionServiceTest extends TestCase
         $this->assertSame('35260705462543000225550020007754591594506574', $result['invoice_access_key']);
     }
 
+    public function test_it_extracts_cte_number_from_valid_access_key(): void
+    {
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            'CHAVE DE ACESSO CT-e 3526.0705.4625.4300.0225.5700.2000.1234.5912.3456.7893'
+        );
+
+        $this->assertSame('123459', $result['invoice_number']);
+        $this->assertSame('35260705462543000225570020001234591234567893', $result['invoice_access_key']);
+    }
+
+    public function test_it_rejects_invalid_fiscal_access_key_check_digit(): void
+    {
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            'CHAVE DE ACESSO 3526 0705 4625 4300 0225 5500 2000 7754 5915 9450 6570'
+        );
+
+        $this->assertNull($result['invoice_number']);
+        $this->assertNull($result['invoice_access_key']);
+    }
+
     public function test_it_extracts_nfse_number_from_label(): void
     {
         $service = new PdfExtractionService(new Parser());

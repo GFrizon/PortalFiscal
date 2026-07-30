@@ -199,7 +199,7 @@ class PdfExtractionService
 
     private function extractAccessKey(string $text): ?string
     {
-        preg_match_all('/(?<!\d)(\d[\d\s]{42,70}\d)(?!\d)/u', $text, $matches);
+        preg_match_all('/(?<!\d)(\d(?:\D{0,4}\d){43,70})(?!\d)/u', $text, $matches);
 
         foreach ($matches[1] ?? [] as $candidate) {
             $digits = preg_replace('/\D/', '', $candidate) ?? '';
@@ -207,11 +207,11 @@ class PdfExtractionService
             for ($offset = 0; $offset <= strlen($digits) - 44; $offset++) {
                 $key = substr($digits, $offset, 44);
 
-                if (substr($key, 20, 2) !== '55') {
+                if (! in_array(substr($key, 20, 2), ['55', '57'], true)) {
                     continue;
                 }
 
-                if (! $this->isValidNfeAccessKey($key)) {
+                if (! $this->isValidFiscalAccessKey($key)) {
                     continue;
                 }
 
@@ -222,7 +222,7 @@ class PdfExtractionService
         return null;
     }
 
-    private function isValidNfeAccessKey(string $key): bool
+    private function isValidFiscalAccessKey(string $key): bool
     {
         if (! preg_match('/^\d{44}$/', $key)) {
             return false;
