@@ -44,6 +44,7 @@ class PdfExtractionService
     {
         $cnpjs = $this->extractCnpjs($text);
         $recipientCnpj = $this->identifyRecipientCnpj($cnpjs, $text);
+        $accessKey = $this->extractAccessKey($text);
 
         return [
             'success' => true,
@@ -51,8 +52,8 @@ class PdfExtractionService
             'cnpjs' => $cnpjs,
             'issuer_cnpj' => $this->identifyIssuerCnpj($cnpjs, $recipientCnpj),
             'recipient_cnpj' => $recipientCnpj,
-            'invoice_number' => $this->extractInvoiceNumber($text),
-            'invoice_access_key' => $this->extractAccessKey($text),
+            'invoice_number' => $this->extractInvoiceNumber($text, $accessKey),
+            'invoice_access_key' => $accessKey,
             'issuer_legal_name' => null,
             'recipient_legal_name' => null,
             'error' => null,
@@ -170,9 +171,8 @@ class PdfExtractionService
             ->first(fn (string $cnpj) => $cnpj !== $recipientCnpj);
     }
 
-    private function extractInvoiceNumber(string $text): ?string
+    private function extractInvoiceNumber(string $text, ?string $accessKey = null): ?string
     {
-        $accessKey = $this->extractAccessKey($text);
         $accessKeyInvoiceNumber = $accessKey ? $this->normalizeInvoiceNumber(substr($accessKey, 25, 9)) : null;
 
         if ($accessKeyInvoiceNumber) {
@@ -180,21 +180,75 @@ class PdfExtractionService
         }
 
         $patterns = [
-            '/N.{0,3}mero\s+da\s+NFS-?e\s+(\d{1,})/iu',
-            '/N.{0,3}mero\s+(?:da\s+)?(?:Nota|NF-?e|NFS-?e)\s*[:\-]?\s*(\d{1,})/iu',
-            '/N[uú]mero\s+da\s+NFS-?e\s+(\d{1,})/iu',
-            '/N[uú]mero\s+(?:da\s+)?(?:Nota|NF-?e|NFS-?e)\s*[:\-]?\s*(\d{1,})/iu',
-            '/N(?:F|OTA)\s*(?:E|FISCAL)?\s*(?:N[ºO.]*)?\s*[:\-]?\s*(\d{3,})/iu',
-            '/Numero\s*(?:da)?\s*Nota\s*[:\-]?\s*(\d{3,})/iu',
+            [
+                'pattern' => '/N(?:.{0,3}|[uú])mero\s+da\s+NFS-?e\s*[:\-]?\s*(\d[\d\.]{0,14})/iu',
+                'blocked' => ['protocolo', 'chave de acesso', 'cnpj', 'inscricao estadual', 'inscrição estadual'],
+            ],
+            [
+                'pattern' => '/N(?:.{0,3}|[uú])mero\s+(?:da\s+)?(?:Nota\s+Fiscal|NF-?e)\s*[:\-]?\s*(\d[\d\.]{0,14})/iu',
+                'blocked' => ['retorno simbolico', 'retorno simbólico', 'protocolo', 'chave de acesso', 'cnpj', 'duplicata', 'fatura', 'rps', 'codigo de verificacao', 'código de verificação'],
+            ],
+            [
+                'pattern' => '/(?:DANFE|NF-?e).{0,120}?\bN[º°o\.]?\s*[:\-]?\s*(\d[\d\.]{2,14})\b.{0,80}?\bS[ée]rie\b/isu',
+                'blocked' => ['retorno simbolico', 'retorno simbólico', 'protocolo', 'cnpj', 'duplicata', 'fatura', 'rps'],
+            ],
+            [
+                'pattern' => '/\bN[º°o\.]?\s*[:\-]?\s*(\d[\d\.]{2,14})\b.{0,80}?\bS[ée]rie\b/isu',
+                'blocked' => ['retorno simbolico', 'retorno simbólico', 'protocolo', 'cnpj', 'duplicata', 'fatura', 'rps'],
+            ],
+            [
+                'pattern' => '/\bNota\s+Fiscal\s*(?:Eletr[oô]nica)?\s*(?:N[º°o\.])?\s*[:\-]?\s*(\d[\d\.]{2,14})/iu',
+                'blocked' => ['retorno simbolico', 'retorno simbólico', 'protocolo', 'chave de acesso', 'cnpj', 'duplicata', 'fatura', 'rps'],
+            ],
         ];
 
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $text, $match)) {
-                return $this->normalizeInvoiceNumber($match[1]);
+        foreach ($patterns as $definition) {
+            if (! preg_match_all($definition['pattern'], $text, $matches, PREG_OFFSET_CAPTURE)) {
+                continue;
+            }
+
+            foreach ($matches[1] ?? [] as [$number, $offset]) {
+                $normalized = $this->normalizeInvoiceNumber($number);
+
+                if (! $this->isPlausibleInvoiceNumber($normalized)) {
+                    continue;
+                }
+
+                if ($this->hasBlockedInvoiceNumberContext($text, $offset, $definition['blocked'])) {
+                    continue;
+                }
+
+                return $normalized;
             }
         }
 
         return null;
+    }
+
+    private function isPlausibleInvoiceNumber(string $number): bool
+    {
+        $length = strlen($number);
+
+        return $length >= 1
+            && $length <= 12
+            && ! preg_match('/^0+$/', $number)
+            && ! in_array($length, [14, 43, 44], true);
+    }
+
+    private function hasBlockedInvoiceNumberContext(string $text, int $offset, array $blockedTerms): bool
+    {
+        $context = mb_substr($text, max(0, $offset - 90), 190);
+        $normalizedContext = mb_strtolower(iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $context) ?: $context);
+
+        foreach ($blockedTerms as $term) {
+            $normalizedTerm = mb_strtolower(iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $term) ?: $term);
+
+            if ($normalizedTerm !== '' && str_contains($normalizedContext, $normalizedTerm)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function extractAccessKey(string $text): ?string

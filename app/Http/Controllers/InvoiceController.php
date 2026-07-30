@@ -238,6 +238,10 @@ class InvoiceController extends Controller
                     $alertService->create($invoice, AlertType::PdfReadError, 'Nao foi possivel ler automaticamente o PDF.', AlertLevel::Warning);
                 }
 
+                if (blank($invoice->invoice_number)) {
+                    $alertService->create($invoice, AlertType::InvoiceNumberNotIdentified, 'Numero da nota nao foi identificado automaticamente. Confira o PDF antes de lancar.', AlertLevel::Critical);
+                }
+
                 if ($businessUnit) {
                     $historyService->record($invoice, $request->user(), 'Unidade identificada', null, InvoiceStatus::AwaitingReview, $businessUnit->name, $request);
                 } else {

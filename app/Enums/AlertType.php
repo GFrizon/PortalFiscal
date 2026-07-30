@@ -10,6 +10,7 @@ enum AlertType: string
     case CnpjMismatch = 'cnpj_mismatch';
     case BusinessUnitNotIdentified = 'business_unit_not_identified';
     case PdfReadError = 'pdf_read_error';
+    case InvoiceNumberNotIdentified = 'invoice_number_not_identified';
     case DuplicatePdf = 'duplicate_pdf';
 
     public function label(): string
@@ -21,6 +22,7 @@ enum AlertType: string
             self::CnpjMismatch => 'CNPJ divergente',
             self::BusinessUnitNotIdentified => 'Unidade nao identificada',
             self::PdfReadError => 'Erro na leitura do PDF',
+            self::InvoiceNumberNotIdentified => 'Numero da nota nao identificado',
             self::DuplicatePdf => 'PDF duplicado',
         };
     }

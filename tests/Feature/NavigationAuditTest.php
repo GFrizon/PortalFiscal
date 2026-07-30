@@ -316,6 +316,49 @@ class NavigationAuditTest extends TestCase
         Storage::disk('local')->assertExists($invoice->pdf_path);
     }
 
+    public function test_invoice_upload_creates_critical_alert_when_number_is_not_identified(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => 'PDF processado sem numero confiavel',
+                'cnpjs' => [],
+                'issuer_cnpj' => null,
+                'recipient_cnpj' => null,
+                'invoice_number' => null,
+                'invoice_access_key' => null,
+                'issuer_legal_name' => null,
+                'recipient_legal_name' => null,
+                'error' => null,
+            ]);
+        });
+
+        $this->actingAs($user)
+            ->post(route('invoices.store'), [
+                'pdf' => UploadedFile::fake()->create('nota-sem-numero.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf_no_oc',
+                'purchase_order_number' => '',
+                'arrival_date' => now()->format('Y-m-d'),
+                'payment_method' => 'anticipated',
+                'user_notes' => 'Conferir numero manualmente.',
+            ])
+            ->assertRedirect();
+
+        $invoice = Invoice::query()->where('submitted_by', $user->id)->firstOrFail();
+
+        $this->assertNull($invoice->invoice_number);
+        $this->assertDatabaseHas('invoice_alerts', [
+            'invoice_id' => $invoice->id,
+            'type' => AlertType::InvoiceNumberNotIdentified->value,
+            'level' => AlertLevel::Critical->value,
+            'resolved' => false,
+        ]);
+    }
+
     public function test_invoice_upload_requires_tracking_fields_and_numeric_purchase_order(): void
     {
         Storage::fake('local');

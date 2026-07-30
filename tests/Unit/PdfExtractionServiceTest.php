@@ -137,6 +137,43 @@ class PdfExtractionServiceTest extends TestCase
         $this->assertNull($result['invoice_access_key']);
     }
 
+    public function test_it_falls_back_to_danfe_number_when_access_key_is_not_readable(): void
+    {
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "DANFE Documento Auxiliar da Nota Fiscal Eletronica\n".
+            "NF-e Nº 000.775.459 SERIE 002 Folha 1 de 1\n".
+            "CHAVE DE ACESSO ilegivel no PDF"
+        );
+
+        $this->assertSame('775459', $result['invoice_number']);
+        $this->assertNull($result['invoice_access_key']);
+    }
+
+    public function test_it_does_not_use_symbolic_return_invoice_as_main_number(): void
+    {
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            'Dados adicionais: Nota fiscal de retorno simbolico n 775458, emitida em 26/07/2026, serie 2.'
+        );
+
+        $this->assertNull($result['invoice_number']);
+    }
+
+    public function test_it_does_not_use_invoice_installment_or_rps_as_invoice_number(): void
+    {
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "FATURA/DUPLICATA 001 vencimento 30/07/2026 valor 333,33\n".
+            "Numero do RPS 999 Data de emissao 29/07/2026"
+        );
+
+        $this->assertNull($result['invoice_number']);
+    }
+
     public function test_it_extracts_nfse_number_from_label(): void
     {
         $service = new PdfExtractionService(new Parser());
@@ -146,6 +183,18 @@ class PdfExtractionServiceTest extends TestCase
         );
 
         $this->assertSame('361', $result['invoice_number']);
+        $this->assertNull($result['invoice_access_key']);
+    }
+
+    public function test_it_prefers_nfse_number_over_verification_code(): void
+    {
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            'NFS-e Codigo de Verificacao 938201 Numero da NFS-e 44449 Data e Hora da Emissao'
+        );
+
+        $this->assertSame('44449', $result['invoice_number']);
         $this->assertNull($result['invoice_access_key']);
     }
 }
