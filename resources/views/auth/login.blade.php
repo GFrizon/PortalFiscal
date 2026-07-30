@@ -3,6 +3,7 @@
 <head>
     @php
         $assetVersion = file_exists(public_path('css/portal.css')) ? filemtime(public_path('css/portal.css')) : time();
+        $jsVersion = file_exists(public_path('js/portal.js')) ? filemtime(public_path('js/portal.js')) : time();
     @endphp
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -44,7 +45,7 @@
             <div class="alert alert-success">{{ session('status') }}</div>
         @endif
 
-        <form method="POST" action="{{ route('login.store') }}" class="d-grid gap-3">
+        <form method="POST" action="{{ route('login.store') }}" class="d-grid gap-3" data-submit-loading-message="Validando acesso...">
             @csrf
             <div>
                 <label for="email" class="form-label">E-mail</label>
@@ -71,8 +72,13 @@
                 <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
                 Entrar
             </button>
+            <div class="submit-loading-state" role="status" aria-live="polite" hidden>
+                <span class="submit-loading-spinner" aria-hidden="true"></span>
+                <span data-submit-loading-text>Validando acesso...</span>
+            </div>
         </form>
     </section>
 </main>
+<script src="{{ asset('js/portal.js') }}?v={{ $jsVersion }}" defer></script>
 </body>
 </html>

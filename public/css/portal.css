@@ -806,6 +806,7 @@ textarea:focus-visible {
 
 .form-panel.is-submitting {
     overflow: hidden;
+    animation: submit-panel-breathe 1.25s ease-in-out infinite;
 }
 
 .form-panel.is-submitting::after {
@@ -816,6 +817,18 @@ textarea:focus-visible {
     background: rgba(255, 255, 255, .58);
     pointer-events: none;
     z-index: 2;
+}
+
+.form-panel.is-submitting::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 4;
+    height: 3px;
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-accent), #2e7d6b, var(--color-primary));
+    background-size: 220% 100%;
+    animation: submit-progress 1.05s ease-in-out infinite;
 }
 
 .form-panel.is-submitting .submit-loading-state {
@@ -844,6 +857,7 @@ textarea:focus-visible {
     transform: translateY(6px);
     opacity: 0;
     transition: transform .16s ease, opacity .16s ease;
+    animation: submit-toast-in .24s ease both;
 }
 
 .submit-loading-state[hidden] {
@@ -2601,19 +2615,28 @@ textarea.form-control {
 
 .login-body {
     background:
-        linear-gradient(145deg, rgba(245, 247, 250, .96), rgba(238, 243, 244, .98)),
+        linear-gradient(90deg, rgba(8, 18, 36, .26), rgba(8, 18, 36, .08) 48%, rgba(8, 18, 36, .32)),
+        url("../images/login-fiscal-background.jpg") center / cover no-repeat,
         #f5f6f8;
 }
 
+.login-shell {
+    justify-content: flex-start;
+    padding: clamp(20px, 5vw, 72px);
+}
+
 .login-panel {
-    width: min(100%, 400px);
-    padding: 24px;
-    box-shadow: 0 18px 44px rgba(16, 24, 40, .12);
+    width: min(100%, 414px);
+    padding: 26px;
+    border-color: rgba(255, 255, 255, .54);
+    background: rgba(255, 255, 255, .88);
+    box-shadow: 0 24px 70px rgba(8, 18, 36, .28);
+    backdrop-filter: blur(20px) saturate(1.1);
 }
 
 .js-enhanced.login-body .login-panel {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(12px) scale(.985);
 }
 
 .login-logo {
@@ -2622,6 +2645,14 @@ textarea.form-control {
 
 .login-panel h1 {
     font-size: 1.16rem;
+}
+
+.login-body .submit-loading-state {
+    position: static;
+    width: 100%;
+    justify-content: center;
+    margin-top: 2px;
+    box-shadow: none;
 }
 
 @keyframes page-progress {
@@ -2641,6 +2672,39 @@ textarea.form-control {
 @keyframes soft-spin {
     to {
         transform: rotate(360deg);
+    }
+}
+
+@keyframes submit-progress {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    100% {
+        background-position: 220% 50%;
+    }
+}
+
+@keyframes submit-panel-breathe {
+    0%,
+    100% {
+        box-shadow: var(--shadow-md);
+    }
+
+    50% {
+        box-shadow: 0 22px 58px rgba(33, 63, 120, .16);
+    }
+}
+
+@keyframes submit-toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
     }
 }
 
