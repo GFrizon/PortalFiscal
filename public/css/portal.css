@@ -21,6 +21,9 @@
     --sidebar-width: 280px;
     --sidebar-collapsed-width: 84px;
     --topbar-height: 86px;
+    --motion-ease: cubic-bezier(.2, .8, .2, 1);
+    --motion-fast: .16s;
+    --motion-normal: .3s;
 }
 
 * {
@@ -2700,6 +2703,207 @@ textarea.form-control {
     from {
         opacity: 0;
         transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* Smooth motion layer for the whole app. */
+body.is-ready.is-navigating .app-main {
+    opacity: .72;
+    transform: translateY(3px) scale(.998);
+    filter: saturate(.96);
+}
+
+.js-enhanced .app-main,
+.login-panel {
+    transition:
+        opacity var(--motion-normal) var(--motion-ease),
+        transform var(--motion-normal) var(--motion-ease),
+        filter var(--motion-normal) ease;
+}
+
+.js-enhanced.is-ready .app-content > * {
+    animation: surface-in .34s var(--motion-ease) both;
+}
+
+.js-enhanced.is-ready .app-content > *:nth-child(2) {
+    animation-delay: .04s;
+}
+
+.js-enhanced.is-ready .app-content > *:nth-child(3) {
+    animation-delay: .08s;
+}
+
+.js-enhanced.is-ready .app-content > *:nth-child(4) {
+    animation-delay: .12s;
+}
+
+.js-enhanced.is-ready .panel,
+.js-enhanced.is-ready .metric-card,
+.js-enhanced.is-ready .folder-card,
+.js-enhanced.is-ready .settings-item,
+.js-enhanced.is-ready .summary-card-grid > div,
+.js-enhanced.is-ready .po-summary-grid > div,
+.js-enhanced.is-ready .attachment-item,
+.js-enhanced.is-ready .alert-card {
+    animation: surface-pop .34s var(--motion-ease) both;
+}
+
+.js-enhanced.is-ready .panel:nth-of-type(2),
+.js-enhanced.is-ready .metric-card:nth-of-type(2),
+.js-enhanced.is-ready .folder-card:nth-of-type(2),
+.js-enhanced.is-ready .settings-item:nth-of-type(2) {
+    animation-delay: .035s;
+}
+
+.js-enhanced.is-ready .panel:nth-of-type(3),
+.js-enhanced.is-ready .metric-card:nth-of-type(3),
+.js-enhanced.is-ready .folder-card:nth-of-type(3),
+.js-enhanced.is-ready .settings-item:nth-of-type(3) {
+    animation-delay: .07s;
+}
+
+.js-enhanced.is-ready .panel:nth-of-type(4),
+.js-enhanced.is-ready .metric-card:nth-of-type(4),
+.js-enhanced.is-ready .folder-card:nth-of-type(4),
+.js-enhanced.is-ready .settings-item:nth-of-type(4) {
+    animation-delay: .105s;
+}
+
+.js-enhanced.is-ready .data-table tbody tr {
+    animation: table-row-in .26s var(--motion-ease) both;
+}
+
+.js-enhanced.is-ready .data-table tbody tr:nth-child(2) {
+    animation-delay: .018s;
+}
+
+.js-enhanced.is-ready .data-table tbody tr:nth-child(3) {
+    animation-delay: .036s;
+}
+
+.js-enhanced.is-ready .data-table tbody tr:nth-child(4) {
+    animation-delay: .054s;
+}
+
+.js-enhanced.is-ready .data-table tbody tr:nth-child(5) {
+    animation-delay: .072s;
+}
+
+.js-enhanced.is-ready .data-table tbody tr:nth-child(6) {
+    animation-delay: .09s;
+}
+
+.panel,
+.metric-card,
+.folder-card,
+.settings-item,
+.summary-card-grid > div,
+.po-summary-grid div,
+.alert-card,
+.upload-dropzone,
+.profile-button,
+.user-menu-button {
+    transition:
+        border-color var(--motion-fast) ease,
+        background-color var(--motion-fast) ease,
+        box-shadow var(--motion-fast) ease,
+        transform var(--motion-fast) var(--motion-ease);
+}
+
+.panel:hover,
+.metric-card:hover,
+.folder-card:hover,
+.settings-item:hover,
+.summary-card-grid > div:hover,
+.po-summary-grid div:hover {
+    transform: translateY(-2px);
+}
+
+.data-table tbody tr {
+    transition:
+        background-color var(--motion-fast) ease,
+        box-shadow var(--motion-fast) ease,
+        transform var(--motion-fast) var(--motion-ease);
+}
+
+.data-table tbody tr:hover {
+    transform: translateY(-1px);
+}
+
+.btn,
+.nav-link-item,
+.review-tabs .nav-link,
+.dropdown-item,
+.form-control,
+.form-select {
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--motion-ease);
+}
+
+.btn:active,
+.nav-link-item:active,
+.review-tabs .nav-link:active {
+    transform: translateY(0) scale(.985);
+}
+
+.dropdown-menu.show {
+    animation: menu-in .16s var(--motion-ease) both;
+    transform-origin: top right;
+}
+
+.modal.show .modal-dialog {
+    animation: modal-in .22s var(--motion-ease) both;
+}
+
+.tab-pane.active {
+    animation: tab-in .2s var(--motion-ease) both;
+}
+
+@keyframes surface-pop {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(.992);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes table-row-in {
+    from {
+        opacity: 0;
+        transform: translateX(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes menu-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px) scale(.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes modal-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(.985);
     }
 
     to {
