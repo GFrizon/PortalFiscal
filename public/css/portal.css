@@ -2621,7 +2621,7 @@ textarea.form-control {
 }
 
 .login-shell {
-    justify-content: flex-start;
+    justify-content: center;
     padding: clamp(20px, 5vw, 72px);
 }
 
