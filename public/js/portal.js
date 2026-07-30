@@ -65,6 +65,16 @@
 
     document.querySelectorAll('form').forEach((form) => {
         form.addEventListener('submit', (event) => {
+            if (form.dataset.submitting === 'true') {
+                event.preventDefault();
+
+                return;
+            }
+
+            if (typeof form.checkValidity === 'function' && ! form.checkValidity()) {
+                return;
+            }
+
             const message = event.submitter?.dataset.confirm || form.dataset.confirm;
 
             if (message && ! confirm(message)) {
@@ -74,8 +84,10 @@
             }
 
             const submitter = event.submitter;
+            form.dataset.submitting = 'true';
 
             if (submitter instanceof HTMLButtonElement) {
+                submitter.disabled = true;
                 submitter.setAttribute('aria-busy', 'true');
 
                 const icon = submitter.querySelector('i');
@@ -84,6 +96,8 @@
                     icon.className = 'bi bi-arrow-repeat';
                 }
             }
+
+            startFormSubmitLoading(form, submitter);
 
             if (! prefersReducedMotion) {
                 body.classList.add('is-navigating');
@@ -274,6 +288,47 @@
         setPreviewText(preview, '[data-preview-arrival-date]', formatDate(form.querySelector('[name="arrival_date"]')?.value));
         setPreviewText(preview, '[data-preview-payment]', formatPayment(form));
         setPreviewText(preview, '[data-preview-notes]', form.querySelector('[name="user_notes"]')?.value || '-');
+    }
+
+    function startFormSubmitLoading(form, submitter) {
+        const loadingState = form.querySelector('.submit-loading-state');
+
+        if (! form.dataset.submitLoadingMessage && ! loadingState) {
+            return;
+        }
+
+        form.classList.add('is-submitting');
+        form.setAttribute('aria-busy', 'true');
+
+        const message = form.dataset.submitLoadingMessage || 'Salvando...';
+        const loadingText = form.querySelector('[data-submit-loading-text]');
+
+        if (loadingText) {
+            loadingText.textContent = message;
+        }
+
+        if (loadingState) {
+            loadingState.hidden = false;
+        }
+
+        if (submitter instanceof HTMLButtonElement) {
+            const label = submitter.textContent?.trim() || '';
+            submitter.dataset.originalLabel = label;
+            submitter.innerHTML = `<span class="submit-loading-spinner" aria-hidden="true"></span><span>${escapeHtml(message)}</span>`;
+        }
+
+        form.querySelectorAll('button[type="submit"]').forEach((button) => {
+            if (button !== submitter) {
+                button.disabled = true;
+            }
+        });
+    }
+
+    function escapeHtml(value) {
+        const span = document.createElement('span');
+        span.textContent = value;
+
+        return span.innerHTML;
     }
 
     function setPreviewText(root, selector, value) {

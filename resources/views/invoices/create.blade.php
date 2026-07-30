@@ -26,7 +26,14 @@
     </div>
 
     <div class="invoice-create-grid">
-    <form method="POST" action="{{ $isEditing ? route('invoices.update', $invoice) : route('invoices.store') }}" enctype="multipart/form-data" class="panel form-panel upload-form" @unless($isEditing) data-pdf-preview-form @endunless>
+    <form
+        method="POST"
+        action="{{ $isEditing ? route('invoices.update', $invoice) : route('invoices.store') }}"
+        enctype="multipart/form-data"
+        class="panel form-panel upload-form"
+        data-submit-loading-message="{{ $isEditing ? 'Atualizando dados da nota...' : 'Consultando CIGAM e salvando nota...' }}"
+        @unless($isEditing) data-pdf-preview-form @endunless
+    >
         @csrf
         @if($isEditing)
             @method('PUT')
@@ -154,6 +161,10 @@
                 <i class="bi bi-x-lg" aria-hidden="true"></i>
                 Cancelar
             </a>
+        </div>
+        <div class="submit-loading-state" role="status" aria-live="polite" hidden>
+            <span class="submit-loading-spinner" aria-hidden="true"></span>
+            <span data-submit-loading-text>{{ $isEditing ? 'Atualizando dados da nota...' : 'Consultando CIGAM e salvando nota...' }}</span>
         </div>
     </form>
 

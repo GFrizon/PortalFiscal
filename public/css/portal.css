@@ -800,6 +800,72 @@ textarea:focus-visible {
     margin-top: 24px;
 }
 
+.form-panel {
+    position: relative;
+}
+
+.form-panel.is-submitting {
+    overflow: hidden;
+}
+
+.form-panel.is-submitting::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(255, 255, 255, .58);
+    pointer-events: none;
+    z-index: 2;
+}
+
+.form-panel.is-submitting .submit-loading-state {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.submit-loading-state {
+    position: sticky;
+    bottom: 14px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    width: fit-content;
+    max-width: 100%;
+    margin-top: 16px;
+    padding: 10px 14px;
+    border: 1px solid rgba(33, 63, 120, .18);
+    border-radius: var(--radius);
+    background: #fff;
+    color: var(--color-primary-dark);
+    box-shadow: var(--shadow-md);
+    font-size: .86rem;
+    font-weight: 800;
+    transform: translateY(6px);
+    opacity: 0;
+    transition: transform .16s ease, opacity .16s ease;
+}
+
+.submit-loading-state[hidden] {
+    display: none;
+}
+
+.submit-loading-spinner {
+    width: 1rem;
+    height: 1rem;
+    display: inline-block;
+    flex: 0 0 1rem;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 999px;
+    animation: soft-spin .75s linear infinite;
+}
+
+.btn .submit-loading-spinner {
+    width: .95rem;
+    height: .95rem;
+}
+
 .upload-dropzone {
     display: flex;
     align-items: center;
