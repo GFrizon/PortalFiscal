@@ -97,6 +97,22 @@ class PdfExtractionServiceTest extends TestCase
         $this->assertSame('35260754163230000109550040000314261443991849', $result['invoice_access_key']);
     }
 
+    public function test_it_ignores_protocol_digits_before_nfe_access_key(): void
+    {
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "PROTOCOLO DE AUTORIZACAO DE USO\n".
+            "13526299658726/07/2026 17:10:56\n".
+            "CHAVE DE ACESSO\n".
+            "3526 0705 4625 4300 0225 5500 2000 7754 5915 9450 6574\n".
+            "Nota fiscal de retorno simbolico n 775458, emitida em 26/07/2026, serie 2."
+        );
+
+        $this->assertSame('775459', $result['invoice_number']);
+        $this->assertSame('35260705462543000225550020007754591594506574', $result['invoice_access_key']);
+    }
+
     public function test_it_extracts_nfse_number_from_label(): void
     {
         $service = new PdfExtractionService(new Parser());

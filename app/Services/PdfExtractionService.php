@@ -211,11 +211,36 @@ class PdfExtractionService
                     continue;
                 }
 
+                if (! $this->isValidNfeAccessKey($key)) {
+                    continue;
+                }
+
                 return $key;
             }
         }
 
         return null;
+    }
+
+    private function isValidNfeAccessKey(string $key): bool
+    {
+        if (! preg_match('/^\d{44}$/', $key)) {
+            return false;
+        }
+
+        $body = substr($key, 0, 43);
+        $checkDigit = (int) substr($key, 43, 1);
+        $weights = [2, 3, 4, 5, 6, 7, 8, 9];
+        $sum = 0;
+
+        for ($position = strlen($body) - 1, $weightIndex = 0; $position >= 0; $position--, $weightIndex++) {
+            $sum += (int) $body[$position] * $weights[$weightIndex % count($weights)];
+        }
+
+        $remainder = $sum % 11;
+        $calculated = $remainder < 2 ? 0 : 11 - $remainder;
+
+        return $checkDigit === $calculated;
     }
 
     private function normalizeInvoiceNumber(string $number): string
