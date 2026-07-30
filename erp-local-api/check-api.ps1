@@ -37,4 +37,5 @@ $Order = Invoke-RestMethod `
     Status = $Order.status
     SupplierCnpj = $Order.supplier_cnpj
     SupplierName = $Order.supplier_name
+    SupplierCode = $Order.raw_response.supplier_code
 }

@@ -150,7 +150,12 @@ function findFromOdbc(string $number): array
 
     $statement = @odbc_prepare($connection, envValue('ODBC_QUERY', ''));
 
-    if (! $statement || ! @odbc_execute($statement, [$number])) {
+    $query = envValue('ODBC_QUERY', '');
+    $parameters = queryPlaceholders($query) >= 2
+        ? [$number, normalizeNumber($number)]
+        : [$number];
+
+    if (! $statement || ! @odbc_execute($statement, $parameters)) {
         @odbc_close($connection);
 
         return notFound($number, 'odbc_query_error');
@@ -187,7 +192,7 @@ function findFromOracle(string $number): array
         return notFound($number, 'oracle_query_error');
     }
 
-    oci_bind_by_name($statement, ':number', $number);
+    bindOracleQueryNumbers($statement, envValue('ORACLE_QUERY', ''), $number);
 
     if (! @oci_execute($statement, OCI_NO_AUTO_COMMIT)) {
         @oci_free_statement($statement);
@@ -228,6 +233,10 @@ function normalizeRow(array $row, string $number, string $source): array
                 'cod_fornecedor',
                 'fornecedor_codigo',
                 'cd_fornecedor',
+                'fornecedor',
+                'supplier_id',
+                'cd_empresa',
+                'business_unit_id',
                 'codigo',
             ]),
             'erp_status' => cleanNullableString($lower['status'] ?? null),
@@ -320,6 +329,29 @@ function normalizeNumber(string $value): string
     $withoutZeros = ltrim($clean, '0');
 
     return $withoutZeros !== '' ? $withoutZeros : $clean;
+}
+
+function queryPlaceholders(string $query): int
+{
+    return substr_count($query, '?');
+}
+
+function bindOracleQueryNumbers(mixed $statement, string $query, string $number): void
+{
+    $normalizedNumber = normalizeNumber($number);
+    $binds = [
+        ':number' => $number,
+        ':purchase_order_number' => $number,
+        ':po_number' => $number,
+        ':normalized_purchase_order_number' => $normalizedNumber,
+        ':po_number_normalized' => $normalizedNumber,
+    ];
+
+    foreach ($binds as $placeholder => $value) {
+        if (stripos($query, $placeholder) !== false) {
+            oci_bind_by_name($statement, $placeholder, $value);
+        }
+    }
 }
 
 function normalizeCnpj(string $cnpj): ?string
