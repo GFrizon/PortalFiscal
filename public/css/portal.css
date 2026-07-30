@@ -2019,14 +2019,34 @@ body::before {
     pointer-events: none;
 }
 
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 2190;
+    background: rgba(244, 247, 250, .38);
+    opacity: 0;
+    pointer-events: none;
+    transform: scaleY(.985);
+    transform-origin: top;
+    transition:
+        opacity .18s var(--motion-ease),
+        transform .18s var(--motion-ease);
+}
+
 body.is-navigating::before {
     opacity: 1;
     animation: page-progress .9s ease-in-out infinite;
 }
 
+body.is-navigating::after {
+    opacity: 1;
+    transform: none;
+}
+
 .js-enhanced .app-main {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(14px) scale(.995);
 }
 
 body.is-ready .app-main,
@@ -2037,7 +2057,10 @@ body.login-body.is-ready .login-panel {
 
 .js-enhanced .app-main,
 .login-panel {
-    transition: opacity .24s ease, transform .24s ease;
+    transition:
+        opacity var(--motion-normal) var(--motion-ease),
+        transform var(--motion-normal) var(--motion-ease),
+        filter var(--motion-normal) ease;
 }
 
 .app-sidebar {
@@ -2713,8 +2736,8 @@ textarea.form-control {
 
 /* Smooth motion layer for the whole app. */
 body.is-ready.is-navigating .app-main {
-    opacity: .72;
-    transform: translateY(3px) scale(.998);
+    opacity: .42;
+    transform: translateY(-8px) scale(.992);
     filter: saturate(.96);
 }
 
@@ -2727,19 +2750,19 @@ body.is-ready.is-navigating .app-main {
 }
 
 .js-enhanced.is-ready .app-content > * {
-    animation: surface-in .34s var(--motion-ease) both;
+    animation: surface-in .46s var(--motion-ease) both;
 }
 
 .js-enhanced.is-ready .app-content > *:nth-child(2) {
-    animation-delay: .04s;
+    animation-delay: .055s;
 }
 
 .js-enhanced.is-ready .app-content > *:nth-child(3) {
-    animation-delay: .08s;
+    animation-delay: .11s;
 }
 
 .js-enhanced.is-ready .app-content > *:nth-child(4) {
-    animation-delay: .12s;
+    animation-delay: .165s;
 }
 
 .js-enhanced.is-ready .panel,
@@ -2750,7 +2773,7 @@ body.is-ready.is-navigating .app-main {
 .js-enhanced.is-ready .po-summary-grid > div,
 .js-enhanced.is-ready .attachment-item,
 .js-enhanced.is-ready .alert-card {
-    animation: surface-pop .34s var(--motion-ease) both;
+    animation: surface-pop .42s var(--motion-ease) both;
 }
 
 .js-enhanced.is-ready .panel:nth-of-type(2),
@@ -2775,7 +2798,7 @@ body.is-ready.is-navigating .app-main {
 }
 
 .js-enhanced.is-ready .data-table tbody tr {
-    animation: table-row-in .26s var(--motion-ease) both;
+    animation: table-row-in .34s var(--motion-ease) both;
 }
 
 .js-enhanced.is-ready .data-table tbody tr:nth-child(2) {
@@ -2861,13 +2884,13 @@ body.is-ready.is-navigating .app-main {
 }
 
 .tab-pane.active {
-    animation: tab-in .2s var(--motion-ease) both;
+    animation: tab-in .26s var(--motion-ease) both;
 }
 
 @keyframes surface-pop {
     from {
         opacity: 0;
-        transform: translateY(8px) scale(.992);
+        transform: translateY(12px) scale(.988);
     }
 
     to {
@@ -2879,7 +2902,7 @@ body.is-ready.is-navigating .app-main {
 @keyframes table-row-in {
     from {
         opacity: 0;
-        transform: translateX(-5px);
+        transform: translateX(-8px);
     }
 
     to {
@@ -2951,19 +2974,19 @@ body.is-ready.is-navigating .app-main {
 }
 
 .js-enhanced.is-ready .app-content > * {
-    animation: surface-in .22s ease both;
+    animation: surface-in .46s var(--motion-ease) both;
 }
 
 .js-enhanced.is-ready .app-content > *:nth-child(2) {
-    animation-delay: .025s;
+    animation-delay: .055s;
 }
 
 .js-enhanced.is-ready .app-content > *:nth-child(3) {
-    animation-delay: .05s;
+    animation-delay: .11s;
 }
 
 .js-enhanced.is-ready .app-content > *:nth-child(4) {
-    animation-delay: .075s;
+    animation-delay: .165s;
 }
 
 .review-tabs .nav-link {
@@ -3021,7 +3044,7 @@ body.is-ready.is-navigating .app-main {
 @keyframes surface-in {
     from {
         opacity: 0;
-        transform: translateY(6px);
+        transform: translateY(14px) scale(.992);
     }
 
     to {

@@ -7,16 +7,20 @@
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let currentPreviewUrl = null;
     let deferredInstallPrompt = null;
+    let isPageTransitioning = false;
 
     body.classList.add('js-enhanced');
 
     requestAnimationFrame(() => {
-        body.classList.add('is-ready');
+        requestAnimationFrame(() => {
+            body.classList.add('is-ready');
+        });
     });
 
     initPwaInstall();
 
     window.addEventListener('pageshow', () => {
+        isPageTransitioning = false;
         body.classList.remove('is-navigating');
     });
 
@@ -52,14 +56,23 @@
             const opensElsewhere = link.target === '_blank' || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
             const isDownload = link.hasAttribute('download') || href.includes('/pdf/download');
             const isHashOnly = url.pathname === window.location.pathname && url.hash;
+            const isSamePage = url.pathname === window.location.pathname && url.search === window.location.search && ! url.hash;
 
-            if (opensElsewhere || isDownload || isHashOnly || url.origin !== window.location.origin) {
+            if (opensElsewhere || isDownload || isHashOnly || isSamePage || url.origin !== window.location.origin) {
                 return;
             }
 
-            if (! prefersReducedMotion) {
-                body.classList.add('is-navigating');
+            if (prefersReducedMotion || isPageTransitioning) {
+                return;
             }
+
+            event.preventDefault();
+            isPageTransitioning = true;
+            body.classList.add('is-navigating');
+
+            window.setTimeout(() => {
+                window.location.href = link.href;
+            }, 170);
         });
     });
 
