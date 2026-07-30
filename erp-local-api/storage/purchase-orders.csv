@@ -1,2 +1,3 @@
-purchase_order_number,status,supplier_cnpj,supplier_name,amount
-103635,aberta,91967067000155,BAKOF PLASTICOS LTDA,254.54
+purchase_order_number,status,supplier_code,supplier_cnpj,supplier_name,amount
+103635,aberta,904270,91967067000155,BAKOF PLASTICOS LTDA,254.54
+00103722,aprovado,904270,91259168000171,DISMAQUINAS ASSISTENCIA EM MAQUINAS LTDA,1697.50

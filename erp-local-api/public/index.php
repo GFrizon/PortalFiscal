@@ -91,6 +91,7 @@ function findSimulated(string $number): array
     return normalizeRow([
         'purchase_order_number' => $number,
         'status' => 'aberta',
+        'supplier_code' => '904270',
         'supplier_cnpj' => '91967067000155',
         'supplier_name' => 'BAKOF PLASTICOS LTDA',
         'amount' => 254.54,
@@ -114,9 +115,9 @@ function findFromCsv(string $number, string $basePath): array
         return notFound($number, 'csv_unreadable');
     }
 
-    $headers = fgetcsv($handle) ?: [];
+    $headers = fgetcsv($handle, null, ',', '"', '') ?: [];
 
-    while (($values = fgetcsv($handle)) !== false) {
+    while (($values = fgetcsv($handle, null, ',', '"', '')) !== false) {
         $row = array_combine($headers, $values);
 
         if (! is_array($row)) {

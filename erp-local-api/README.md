@@ -164,8 +164,8 @@ CSV_PATH=storage/purchase-orders.csv
 Formato do CSV:
 
 ```csv
-purchase_order_number,status,supplier_cnpj,supplier_name,amount
-103635,aberta,91967067000155,BAKOF PLASTICOS LTDA,254.54
+purchase_order_number,status,supplier_code,supplier_cnpj,supplier_name,amount
+103635,aberta,904270,91967067000155,BAKOF PLASTICOS LTDA,254.54
 ```
 
 ## Seguranca
