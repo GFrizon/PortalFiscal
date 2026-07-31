@@ -172,13 +172,15 @@
         @endunless
 
         <section class="app-content">
-            @if(session('success'))
-                <div class="alert alert-success app-alert" data-feedback="success" role="status">{{ session('success') }}</div>
-            @endif
+            @unless(trim($__env->yieldContent('suppress_global_feedback')))
+                @if(session('success'))
+                    <div class="alert alert-success app-alert" data-feedback="success" role="status">{{ session('success') }}</div>
+                @endif
 
-            @if(session('status'))
-                <div class="alert alert-success app-alert" data-feedback="success" role="status">{{ session('status') }}</div>
-            @endif
+                @if(session('status'))
+                    <div class="alert alert-success app-alert" data-feedback="success" role="status">{{ session('status') }}</div>
+                @endif
+            @endunless
 
             @if($errors->any())
                 <div class="alert alert-danger app-alert" data-feedback="error" role="alert">

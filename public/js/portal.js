@@ -133,8 +133,8 @@
             || form.dataset.actionFeedback
             || (buttonLabel ? `Executando: ${buttonLabel}...` : 'Processando acao da nota...');
 
-        panel.classList.remove('is-success', 'is-error');
-        panel.classList.add('is-active');
+        panel.classList.remove('is-idle', 'is-success', 'is-error');
+        panel.classList.add('is-visible', 'is-active');
 
         if (title) {
             title.textContent = 'Processando acao';

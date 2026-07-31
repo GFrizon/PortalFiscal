@@ -4,6 +4,7 @@
 @section('page_title', $invoice->protocol)
 @section('page_subtitle', 'Detalhes da nota fiscal')
 @section('hide_topbar', true)
+@section('suppress_global_feedback', true)
 
 @section('content')
     @php($documentType = $invoice->documentType())
@@ -27,6 +28,7 @@
             ?? data_get($purchaseOrderCheck->raw_response, 'fornecedor_codigo')
             ?? data_get($purchaseOrderCheck->raw_response, 'cd_fornecedor'))
         : null)
+    @php($actionFeedbackMessage = session('success') ?? session('status'))
 
     <div class="invoice-detail-page {{ $isPendingForSubmitter ? 'has-pending-callout' : '' }}">
         <div class="section-toolbar mb-3">
@@ -532,13 +534,13 @@
                             </div>
                         </section>
 
-                        <div class="invoice-action-feedback" data-action-feedback-panel aria-live="polite">
+                        <div class="invoice-action-feedback {{ $actionFeedbackMessage ? 'is-visible is-success' : 'is-idle' }}" data-action-feedback-panel aria-live="polite">
                             <div class="action-feedback-orb" aria-hidden="true">
-                                <i class="bi bi-lightning-charge"></i>
+                                <i class="bi {{ $actionFeedbackMessage ? 'bi-check2-circle' : 'bi-lightning-charge' }}"></i>
                             </div>
                             <div>
-                                <strong data-action-feedback-title>Pronto para conferir</strong>
-                                <span data-action-feedback-text>Ao executar uma acao, o andamento aparece aqui.</span>
+                                <strong data-action-feedback-title>{{ $actionFeedbackMessage ? 'Acao concluida' : '' }}</strong>
+                                <span data-action-feedback-text>{{ $actionFeedbackMessage ?? '' }}</span>
                             </div>
                         </div>
                     </div>
