@@ -9,7 +9,6 @@
     @php($documentType = $invoice->documentType())
     @php($paymentMethod = $invoice->paymentMethod())
     @php($annotationData = $invoice->annotation?->data ?? ['strokes' => []])
-    @php($openAlerts = $invoice->alerts->where('resolved', false))
     @php($canReviewInvoice = auth()->user()?->can('review', $invoice) ?? false)
     @php($isPendingForSubmitter = $invoice->status === \App\Enums\InvoiceStatus::Pending && ! $canReviewInvoice)
     @php($purchaseOrderCheck = $invoice->purchaseOrderCheck)
@@ -472,20 +471,6 @@
                             <div class="tab-content review-tab-content" id="invoiceReviewTabsContent">
                                 @can('review', $invoice)
                                     <div class="tab-pane fade show active" id="review-tab-pane" role="tabpanel" aria-labelledby="review-tab" tabindex="0">
-                                        @if($openAlerts->isNotEmpty())
-                                            <div class="inline-alerts mb-3">
-                                                @foreach($openAlerts as $alert)
-                                                    <div class="inline-alert {{ $alert->level->value === 'critical' ? 'critical' : 'warning' }}">
-                                                        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
-                                                        <div>
-                                                            <strong>{{ $alert->type->label() }}</strong>
-                                                            <span>{{ $alert->message }}</span>
-                                                        </div>
-                                                    </div>
-                                                @endforeach
-                                            </div>
-                                        @endif
-
                                         <form method="POST" action="{{ route('invoices.unit.update', $invoice) }}" class="mb-3">
                                             @csrf
                                             @method('PATCH')
