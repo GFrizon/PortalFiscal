@@ -392,7 +392,7 @@
                                         </div>
                                     </div>
                                 @empty
-                                    <p class="empty-state compact mb-0">Nenhum documento complementar anexado.</p>
+                                    <span class="visually-hidden">Nenhum documento complementar anexado.</span>
                                 @endforelse
                             </div>
 
