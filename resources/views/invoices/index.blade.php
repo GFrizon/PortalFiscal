@@ -72,7 +72,7 @@
         </div>
     </div>
 
-    <div class="panel mb-3">
+    <div class="panel invoice-folder-panel mb-3">
         <div class="panel-header">
             <div>
                 <div class="eyebrow">Separacao automatica</div>
