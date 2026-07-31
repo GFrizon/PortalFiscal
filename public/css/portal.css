@@ -5414,6 +5414,17 @@ body.is-navigating .app-main {
     min-height: 0;
 }
 
+.invoice-detail-page #history-tab-pane {
+    max-height: clamp(220px, 34vh, 360px);
+    overflow-y: auto;
+    padding-right: 6px;
+    scrollbar-width: thin;
+}
+
+.invoice-detail-page #history-tab-pane .timeline {
+    padding-bottom: 4px;
+}
+
 .invoice-detail-page .invoice-review-panel .alert,
 .invoice-detail-page .invoice-review-panel .empty-state {
     margin-bottom: 6px;
