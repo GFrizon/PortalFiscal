@@ -15,7 +15,9 @@
     @php($purchaseOrderCheck = $invoice->purchaseOrderCheck)
     @php($supplierName = $purchaseOrderCheck?->supplier_name ?? '-')
     @php($invoiceAmount = $purchaseOrderCheck?->amount !== null ? 'R$ '.number_format((float) $purchaseOrderCheck->amount, 2, ',', '.') : '-')
-    @php($firstInstallment = collect($invoice->payment_installments ?? [])->sortBy('due_date')->first())
+    @php($installments = collect($invoice->payment_installments ?? [])->sortBy('due_date')->values())
+    @php($firstInstallment = $installments->first())
+    @php($otherInstallments = $installments->slice(1)->values())
     @php($dueSummary = $paymentMethod->requiresInstallments()
         ? (filled($firstInstallment['due_date'] ?? null) ? \Illuminate\Support\Carbon::parse($firstInstallment['due_date'])->format('d/m/Y') : '-')
         : $paymentMethod->label())
@@ -296,17 +298,33 @@
 
                             <div class="info-support-stack">
                                 @if($paymentMethod->requiresInstallments())
-                                <section class="payment-installments-summary">
-                                    @foreach($invoice->payment_installments ?? [] as $installment)
-                                        <div>
-                                            <span>Parcela {{ $installment['number'] ?? $loop->iteration }}</span>
+                                <section class="payment-installments-summary" aria-label="Parcelas de vencimento">
+                                    @if($firstInstallment)
+                                        <div class="installment-next">
+                                            <span>Proxima parcela</span>
                                             <strong>
-                                                {{ filled($installment['due_date'] ?? null) ? \Illuminate\Support\Carbon::parse($installment['due_date'])->format('d/m/Y') : '-' }}
+                                                {{ filled($firstInstallment['due_date'] ?? null) ? \Illuminate\Support\Carbon::parse($firstInstallment['due_date'])->format('d/m/Y') : '-' }}
                                                 -
-                                                {{ isset($installment['amount']) ? 'R$ '.number_format((float) $installment['amount'], 2, ',', '.') : '-' }}
+                                                {{ isset($firstInstallment['amount']) ? 'R$ '.number_format((float) $firstInstallment['amount'], 2, ',', '.') : '-' }}
                                             </strong>
                                         </div>
-                                    @endforeach
+                                    @endif
+
+                                    @if($otherInstallments->isNotEmpty())
+                                        <div class="installment-more">
+                                            <span>Demais parcelas</span>
+                                            <div class="installment-chip-row">
+                                                @foreach($otherInstallments as $installment)
+                                                    <span class="installment-chip">
+                                                        #{{ $installment['number'] ?? $loop->iteration + 1 }}
+                                                        {{ filled($installment['due_date'] ?? null) ? \Illuminate\Support\Carbon::parse($installment['due_date'])->format('d/m/Y') : '-' }}
+                                                        -
+                                                        {{ isset($installment['amount']) ? 'R$ '.number_format((float) $installment['amount'], 2, ',', '.') : '-' }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
                                 </section>
                                 @endif
 

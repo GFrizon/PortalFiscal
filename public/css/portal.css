@@ -5150,8 +5150,7 @@ body.is-navigating .app-main {
 }
 
 .invoice-detail-page .payment-installments-summary {
-    grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
-    align-content: start;
+    grid-template-columns: 1fr;
     gap: 6px;
 }
 
@@ -5159,6 +5158,40 @@ body.is-navigating .app-main {
     min-width: 0;
     padding: 6px 8px;
     background: #fff;
+}
+
+.invoice-detail-page .payment-installments-summary .installment-next {
+    border: 1px solid rgba(33, 63, 120, .12);
+    border-radius: 6px;
+}
+
+.invoice-detail-page .payment-installments-summary .installment-more {
+    padding: 6px;
+    border: 1px dashed rgba(33, 63, 120, .16);
+    border-radius: 6px;
+    background: rgba(248, 250, 252, .72);
+}
+
+.invoice-detail-page .installment-chip-row {
+    display: flex;
+    gap: 5px;
+    margin-top: 4px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+}
+
+.invoice-detail-page .installment-chip {
+    flex: 0 0 auto;
+    padding: 3px 7px;
+    border: 1px solid rgba(33, 63, 120, .12);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--color-text);
+    font-size: .72rem;
+    font-weight: 800;
+    white-space: nowrap;
 }
 
 .invoice-detail-page .info-support-stack .payment-installments-summary {
