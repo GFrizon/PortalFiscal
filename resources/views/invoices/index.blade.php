@@ -100,6 +100,13 @@
     </div>
 
     <div class="panel filter-panel invoice-filter-panel mb-3">
+        <div class="invoice-filter-heading">
+            <div>
+                <span class="eyebrow">Busca operacional</span>
+                <strong>Encontrar nota fiscal</strong>
+            </div>
+            <span>{{ $invoices->total() }} nota{{ $invoices->total() === 1 ? '' : 's' }} na selecao</span>
+        </div>
         <form method="GET" action="{{ route('invoices.index') }}" class="invoice-filter-grid">
             @if($selectedUnitId !== '')
                 <input type="hidden" name="business_unit_id" value="{{ $selectedUnitId }}">
@@ -107,15 +114,15 @@
 
             <div class="filter-field">
                 <label class="form-label" for="protocol">Protocolo</label>
-                <input id="protocol" class="form-control" name="protocol" value="{{ $filters['protocol'] ?? '' }}">
+                <input id="protocol" class="form-control" name="protocol" value="{{ $filters['protocol'] ?? '' }}" placeholder="NF-2026...">
             </div>
             <div class="filter-field">
                 <label class="form-label" for="purchase_order_number">OC/CTE</label>
-                <input id="purchase_order_number" class="form-control" name="purchase_order_number" value="{{ $filters['purchase_order_number'] ?? '' }}">
+                <input id="purchase_order_number" class="form-control" name="purchase_order_number" value="{{ $filters['purchase_order_number'] ?? '' }}" placeholder="Numero da OC">
             </div>
             <div class="filter-field filter-field-wide">
                 <label class="form-label" for="supplier">Fornecedor</label>
-                <input id="supplier" class="form-control" name="supplier" value="{{ $filters['supplier'] ?? '' }}">
+                <input id="supplier" class="form-control" name="supplier" value="{{ $filters['supplier'] ?? '' }}" placeholder="Digite parte do fornecedor">
             </div>
             <div class="filter-field">
                 <label class="form-label" for="status">Status</label>
@@ -142,6 +149,13 @@
     </div>
 
     <div class="panel panel-table invoice-list-panel">
+        <div class="invoice-list-heading">
+            <div>
+                <span class="eyebrow">Fila de conferencia</span>
+                <strong>Notas da pasta {{ $selectedUnitName }}</strong>
+            </div>
+            <span>{{ $invoices->firstItem() ?? 0 }}-{{ $invoices->lastItem() ?? 0 }} de {{ $invoices->total() }}</span>
+        </div>
         <div class="table-responsive invoice-list-scroll">
             <table class="table data-table align-middle mb-0">
                 <thead>
@@ -180,17 +194,22 @@
                                 </span>
                             @endif
                         </td>
-                        <td class="col-type" data-label="Tipo">{{ $documentType->label() }}</td>
-                        <td class="col-invoice" data-label="Nota">{{ $invoice->invoice_number ?? '-' }}</td>
-                        <td data-label="OC/CTE">{{ $invoice->purchase_order_number ?? '-' }}</td>
-                        <td class="col-supplier" data-label="Fornecedor">{{ $invoice->purchaseOrderCheck?->supplier_name ?? '-' }}</td>
+                        <td class="col-type" data-label="Tipo"><span class="document-type-pill">{{ $documentType->label() }}</span></td>
+                        <td class="col-invoice" data-label="Nota"><span class="invoice-number-pill">{{ $invoice->invoice_number ?? '-' }}</span></td>
+                        <td data-label="OC/CTE"><span class="reference-code">{{ $invoice->purchase_order_number ?? '-' }}</span></td>
+                        <td class="col-supplier" data-label="Fornecedor">
+                            <div class="supplier-cell">
+                                <strong>{{ $invoice->purchaseOrderCheck?->supplier_name ?? '-' }}</strong>
+                                <span>{{ $invoice->protocol }}</span>
+                            </div>
+                        </td>
                         <td class="col-unit" data-label="Unidade">
                             <div class="table-entity">
                                 <span class="entity-icon"><i class="bi {{ $invoice->businessUnit ? 'bi-building' : 'bi-building-x' }}" aria-hidden="true"></i></span>
                                 <span>{{ $invoice->businessUnit?->name ?? 'Nao identificada' }}</span>
                             </div>
                         </td>
-                        <td class="col-user" data-label="Usuario">{{ $invoice->submitter?->name }}</td>
+                        <td class="col-user" data-label="Usuario"><span class="muted-cell">{{ $invoice->submitter?->name }}</span></td>
                         <td class="col-created" data-label="Inclusao">{{ $invoice->created_at?->format('d/m/Y H:i') ?? '-' }}</td>
                         <td class="col-arrival" data-label="Chegada">{{ $invoice->arrival_date?->format('d/m/Y') ?? '-' }}</td>
                         <td data-label="Vencimento">{{ $invoice->due_date?->format('d/m/Y') ?? '-' }}</td>
@@ -199,7 +218,7 @@
                                 <span class="badge {{ $invoice->status->badgeClass() }}" title="{{ $invoice->status->label() }}">{{ $invoice->status->shortLabel() }}</span>
                             </div>
                         </td>
-                        <td class="text-end" data-label="Acoes">
+                        <td class="text-end row-actions" data-label="Acoes">
                             @can('update', $invoice)
                                 <a href="{{ route('invoices.edit', $invoice) }}" class="btn btn-sm btn-outline-secondary" aria-label="Editar {{ $invoice->protocol }}">
                                     <i class="bi bi-pencil-square" aria-hidden="true"></i>
