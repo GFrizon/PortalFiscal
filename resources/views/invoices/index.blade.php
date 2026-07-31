@@ -99,25 +99,25 @@
         </div>
     </div>
 
-    <div class="panel filter-panel mb-3">
-        <form method="GET" action="{{ route('invoices.index') }}" class="row g-2 align-items-end">
+    <div class="panel filter-panel invoice-filter-panel mb-3">
+        <form method="GET" action="{{ route('invoices.index') }}" class="invoice-filter-grid">
             @if($selectedUnitId !== '')
                 <input type="hidden" name="business_unit_id" value="{{ $selectedUnitId }}">
             @endif
 
-            <div class="col-12 col-lg-2">
+            <div class="filter-field">
                 <label class="form-label" for="protocol">Protocolo</label>
                 <input id="protocol" class="form-control" name="protocol" value="{{ $filters['protocol'] ?? '' }}">
             </div>
-            <div class="col-12 col-lg-2">
+            <div class="filter-field">
                 <label class="form-label" for="purchase_order_number">OC/CTE</label>
                 <input id="purchase_order_number" class="form-control" name="purchase_order_number" value="{{ $filters['purchase_order_number'] ?? '' }}">
             </div>
-            <div class="col-12 col-lg-3">
+            <div class="filter-field filter-field-wide">
                 <label class="form-label" for="supplier">Fornecedor</label>
                 <input id="supplier" class="form-control" name="supplier" value="{{ $filters['supplier'] ?? '' }}">
             </div>
-            <div class="col-12 col-lg-2">
+            <div class="filter-field">
                 <label class="form-label" for="status">Status</label>
                 <select id="status" class="form-select" name="status">
                     <option value="">Fila aberta</option>
@@ -126,7 +126,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-12 col-lg-3">
+            <div class="filter-field filter-field-actions">
                 <div class="filter-actions">
                     <button class="btn btn-outline-primary" type="submit">
                     <i class="bi bi-funnel" aria-hidden="true"></i>
