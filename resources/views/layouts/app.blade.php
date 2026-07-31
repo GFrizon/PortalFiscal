@@ -121,7 +121,8 @@
 
     <div class="mobile-sidebar-backdrop" data-sidebar-close></div>
 
-    <main class="app-main">
+    <main class="app-main @hasSection('hide_topbar') app-main-compact @endif">
+        @unless(trim($__env->yieldContent('hide_topbar')))
         <header class="app-topbar">
             <div class="topbar-left">
                 <button class="btn icon-button d-lg-none" type="button" data-mobile-menu aria-label="Abrir menu">
@@ -168,6 +169,7 @@
                 </div>
             </div>
         </header>
+        @endunless
 
         <section class="app-content">
             @if(session('success'))

@@ -4826,6 +4826,10 @@ body.is-navigating .app-main {
 }
 
 /* Invoice detail information architecture: compact modules above the PDF. */
+.app-main-compact .app-content {
+    padding-top: 18px;
+}
+
 .invoice-detail-page .invoice-info-column {
     grid-template-columns: minmax(0, 1.05fr) minmax(360px, .95fr);
     align-items: start;
@@ -4833,7 +4837,7 @@ body.is-navigating .app-main {
 
 .invoice-detail-page .invoice-overview-panel {
     display: grid;
-    grid-template-columns: minmax(720px, 1fr) minmax(360px, .48fr);
+    grid-template-columns: minmax(650px, 1fr) minmax(430px, .7fr);
     gap: 10px 12px;
     padding: 14px;
 }
@@ -5025,8 +5029,8 @@ body.is-navigating .app-main {
 }
 
 .invoice-detail-page .invoice-details-and-attachments {
-    grid-template-columns: minmax(390px, .95fr) minmax(330px, 1.05fr);
-    gap: 12px;
+    grid-template-columns: minmax(360px, .9fr) minmax(300px, 1fr);
+    gap: 10px;
 }
 
 .invoice-info-module,
@@ -5067,20 +5071,20 @@ body.is-navigating .app-main {
 
 .invoice-detail-page .attachment-compact {
     min-height: 0;
-    padding: 9px;
+    padding: 8px;
 }
 
 .invoice-detail-page .attachment-compact-header {
-    margin-bottom: 7px;
+    margin-bottom: 5px;
 }
 
 .invoice-detail-page .attachment-form {
-    padding: 7px;
+    padding: 6px;
 }
 
 .invoice-detail-page .attachment-upload-row.compact {
-    grid-template-columns: minmax(155px, .68fr) minmax(160px, 1fr) auto;
-    gap: 7px;
+    grid-template-columns: minmax(140px, .62fr) minmax(145px, 1fr) auto;
+    gap: 6px;
 }
 
 .invoice-detail-page .attachment-upload-row.compact .form-control,
@@ -5090,18 +5094,18 @@ body.is-navigating .app-main {
 }
 
 .invoice-detail-page .attachment-list .empty-state.compact {
-    min-height: 34px;
-    padding: 8px 10px;
+    min-height: 30px;
+    padding: 6px 9px;
     border-style: dashed;
     background: #fff;
-    font-size: .82rem;
+    font-size: .8rem;
 }
 
 .invoice-secondary-row {
     display: grid;
     grid-template-columns: 1fr;
     align-content: start;
-    gap: 10px;
+    gap: 8px;
     margin-top: 0;
 }
 
@@ -5122,7 +5126,7 @@ body.is-navigating .app-main {
 }
 
 .invoice-detail-page .note-box {
-    padding: 9px 10px;
+    padding: 8px 10px;
 }
 
 .invoice-detail-page .submitter-note-box {
@@ -5177,22 +5181,48 @@ body.is-navigating .app-main {
 }
 
 .invoice-detail-page .invoice-review-panel {
-    padding: 12px;
+    padding: 10px;
+}
+
+.review-inline-module {
+    min-width: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, .04);
 }
 
 .invoice-detail-page .review-tabs {
-    margin-bottom: 10px;
-    padding: 5px;
+    margin-bottom: 8px;
+    padding: 4px;
 }
 
 .invoice-detail-page .review-tabs .nav-link {
-    min-height: 32px;
-    padding: 6px 8px;
+    min-height: 30px;
+    padding: 5px 8px;
     font-size: .76rem;
 }
 
 .invoice-detail-page .review-tab-content textarea {
-    min-height: 78px;
+    min-height: 68px;
+}
+
+.invoice-detail-page .invoice-review-panel .mb-3 {
+    margin-bottom: 8px !important;
+}
+
+.invoice-detail-page .invoice-review-panel .form-label {
+    margin-bottom: 5px;
+    font-size: .76rem;
+}
+
+.invoice-detail-page .invoice-review-panel .input-group .form-select,
+.invoice-detail-page .invoice-review-panel .input-group .btn {
+    min-height: 34px;
+}
+
+.invoice-detail-page .invoice-review-panel .fiscal-action-grid .btn {
+    min-height: 36px;
 }
 
 @media (max-width: 1399.98px) {

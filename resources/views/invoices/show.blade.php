@@ -3,6 +3,7 @@
 @section('title', $invoice->protocol.' - BAKOF')
 @section('page_title', $invoice->protocol)
 @section('page_subtitle', 'Detalhes da nota fiscal')
+@section('hide_topbar', true)
 
 @section('content')
     @php($documentType = $invoice->documentType())
@@ -395,10 +396,8 @@
                             <div class="text-body">{{ $invoice->fiscal_notes }}</div>
                         </div>
                         @endif
-                    </div>
-                </div>
 
-                <div class="panel invoice-review-panel">
+                        <section class="invoice-review-panel review-inline-module">
                     <ul class="nav nav-pills review-tabs" id="invoiceReviewTabs" role="tablist">
                         @can('review', $invoice)
                             <li class="nav-item" role="presentation">
@@ -519,6 +518,8 @@
                                 @endforelse
                             </div>
                         </div>
+                    </div>
+                        </section>
                     </div>
                 </div>
             </div>
