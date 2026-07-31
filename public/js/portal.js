@@ -11,6 +11,7 @@
     let isPageTransitioning = false;
 
     body.classList.add('js-enhanced');
+    initAppMotion();
 
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -74,7 +75,7 @@
 
             window.setTimeout(() => {
                 window.location.href = link.href;
-            }, 300);
+            }, 380);
         });
     });
 
@@ -126,6 +127,12 @@
         tab.addEventListener('shown.bs.tab', (event) => {
             const tabList = event.target.closest('[role="tablist"]');
             tabList?.classList.remove('is-switching');
+
+            const targetSelector = event.target.dataset.bsTarget || event.target.getAttribute('href');
+
+            if (targetSelector) {
+                playMotion(document.querySelector(targetSelector), 'motion-tab-reveal');
+            }
         });
     });
 
@@ -275,6 +282,68 @@
     });
 
     document.querySelectorAll('[data-installment-amount]').forEach(bindCurrencyInput);
+
+    function initAppMotion() {
+        const motionSelectors = [
+            '.app-alert',
+            '.panel',
+            '.metric-card',
+            '.folder-link',
+            '.settings-item',
+            '.summary-card-grid > div',
+            '.po-summary-grid > div',
+            '.attachment-item',
+            '.inline-alert',
+            '.alert-card',
+            '.empty-state',
+            '.data-table tbody tr',
+        ];
+
+        const markMotionItems = (root = document) => {
+            const items = root.querySelectorAll(motionSelectors.join(','));
+
+            items.forEach((item, index) => {
+                if (item.dataset.motionReady === 'true') {
+                    return;
+                }
+
+                item.dataset.motionReady = 'true';
+                item.classList.add('motion-item');
+                item.style.setProperty('--motion-order', String(Math.min(index, 10)));
+            });
+        };
+
+        markMotionItems();
+
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (! (node instanceof HTMLElement)) {
+                        return;
+                    }
+
+                    markMotionItems(node);
+                    playMotion(node, 'motion-soft-reveal');
+                });
+            });
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    function playMotion(element, className) {
+        if (! element || prefersReducedMotion) {
+            return;
+        }
+
+        element.classList.remove(className);
+        void element.offsetWidth;
+        element.classList.add(className);
+
+        window.setTimeout(() => {
+            element.classList.remove(className);
+        }, 520);
+    }
 
     function updateInlinePdfPreview(form, file) {
         const preview = document.querySelector('[data-inline-pdf-preview]');

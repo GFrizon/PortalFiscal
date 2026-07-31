@@ -4550,3 +4550,264 @@ body.is-navigating .app-main {
         margin-left: 0;
     }
 }
+
+/* App-wide motion polish v2. */
+:root {
+    --motion-fast: 190ms;
+    --motion-normal: 300ms;
+    --motion-enter: 460ms;
+    --motion-page: 380ms;
+    --motion-stagger: 34ms;
+    --motion-ease-out: cubic-bezier(.16, 1, .3, 1);
+    --motion-ease-in: cubic-bezier(.55, .06, .68, .19);
+    --motion-ease-standard: cubic-bezier(.2, .8, .2, 1);
+}
+
+.app-main {
+    position: relative;
+    transition:
+        opacity var(--motion-page) var(--motion-ease-out),
+        transform var(--motion-page) var(--motion-ease-out),
+        filter var(--motion-page) var(--motion-ease-out);
+}
+
+.app-main::before {
+    content: "";
+    position: fixed;
+    inset: 0 auto auto 0;
+    z-index: 2300;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-accent), #2e7d6b, var(--color-primary));
+    background-size: 240% 100%;
+    opacity: 0;
+    transform: scaleX(.18);
+    transform-origin: left;
+    pointer-events: none;
+}
+
+body.is-navigating::before {
+    opacity: 0 !important;
+    animation: none !important;
+}
+
+body.is-navigating .app-main::before {
+    opacity: 1;
+    animation:
+        motion-page-bar 1.15s var(--motion-ease-standard) infinite,
+        motion-page-grow var(--motion-page) var(--motion-ease-out) both;
+}
+
+body.is-navigating .app-main {
+    opacity: .82;
+    transform: translateY(-5px) scale(.998);
+    filter: saturate(.96);
+}
+
+.js-enhanced.is-ready .motion-item {
+    animation: motion-surface-soft-in var(--motion-enter) var(--motion-ease-out) both;
+    animation-delay: calc(var(--motion-order, 0) * var(--motion-stagger));
+}
+
+.motion-soft-reveal {
+    animation: motion-soft-reveal 420ms var(--motion-ease-out) both;
+}
+
+.motion-tab-reveal {
+    animation: motion-tab-reveal 360ms var(--motion-ease-out) both;
+}
+
+.tab-content > .tab-pane.fade {
+    transition:
+        opacity 320ms var(--motion-ease-out),
+        transform 320ms var(--motion-ease-out);
+    transform: translateY(8px);
+}
+
+.tab-content > .tab-pane.fade.show {
+    transform: translateY(0);
+}
+
+.review-tabs .nav-link,
+.nav-link-item,
+.profile-button,
+.dropdown-item,
+.btn,
+.form-control,
+.form-select,
+.upload-dropzone,
+.folder-link,
+.attachment-item,
+.alert-card,
+.inline-alert,
+.data-table tbody tr {
+    transition:
+        color var(--motion-fast) var(--motion-ease-standard),
+        border-color var(--motion-fast) var(--motion-ease-standard),
+        background-color var(--motion-fast) var(--motion-ease-standard),
+        box-shadow var(--motion-fast) var(--motion-ease-standard),
+        opacity var(--motion-fast) var(--motion-ease-standard),
+        transform var(--motion-fast) var(--motion-ease-standard);
+}
+
+.nav-link-item {
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-link-item::after {
+    content: "";
+    position: absolute;
+    inset: 8px auto 8px 0;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--color-accent);
+    opacity: 0;
+    transform: scaleY(.25);
+    transition:
+        opacity var(--motion-normal) var(--motion-ease-out),
+        transform var(--motion-normal) var(--motion-ease-out);
+}
+
+.nav-link-item.active::after {
+    opacity: 1;
+    transform: scaleY(1);
+}
+
+.nav-link-item:hover,
+.nav-link-item:focus-visible {
+    transform: translateX(2px);
+}
+
+.btn:hover:not(:disabled),
+.profile-button:hover,
+.folder-link:hover,
+.upload-dropzone:hover {
+    transform: translateY(-2px);
+}
+
+.panel:hover,
+.metric-card:hover,
+.summary-card-grid > div:hover,
+.po-summary-grid > div:hover,
+.attachment-item:hover {
+    transform: translateY(-2px);
+}
+
+.data-table tbody tr:hover {
+    transform: translateY(-1px);
+}
+
+.dropdown-menu.show {
+    animation: motion-menu-smooth-in 260ms var(--motion-ease-out) both;
+    transform-origin: top right;
+}
+
+.modal.fade .modal-dialog {
+    transition:
+        opacity 280ms var(--motion-ease-out),
+        transform 280ms var(--motion-ease-out);
+    transform: translateY(16px) scale(.982);
+}
+
+.modal.fade.show .modal-dialog {
+    transform: translateY(0) scale(1);
+}
+
+.modal-backdrop.show,
+.mobile-sidebar-backdrop {
+    transition: opacity var(--motion-normal) var(--motion-ease-out);
+}
+
+.app-alert,
+.empty-state {
+    animation: motion-feedback-in var(--motion-enter) var(--motion-ease-out) both;
+}
+
+@keyframes motion-page-bar {
+    from { background-position: 0 0; }
+    to { background-position: 240% 0; }
+}
+
+@keyframes motion-page-grow {
+    from { transform: scaleX(.18); }
+    to { transform: scaleX(.72); }
+}
+
+@keyframes motion-surface-soft-in {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(.992);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes motion-soft-reveal {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(.994);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes motion-tab-reveal {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes motion-menu-smooth-in {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(.975);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        transition-duration: 1ms !important;
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+    }
+
+    .app-main,
+    .js-enhanced.is-ready .motion-item,
+    .motion-soft-reveal,
+    .motion-tab-reveal,
+    .tab-content > .tab-pane.fade {
+        opacity: 1 !important;
+        transform: none !important;
+        filter: none !important;
+        animation: none !important;
+    }
+
+    .submit-loading-spinner {
+        animation: none !important;
+    }
+}
