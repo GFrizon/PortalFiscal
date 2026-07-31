@@ -11,6 +11,13 @@
     @php($openAlerts = $invoice->alerts->where('resolved', false))
     @php($canReviewInvoice = auth()->user()?->can('review', $invoice) ?? false)
     @php($isPendingForSubmitter = $invoice->status === \App\Enums\InvoiceStatus::Pending && ! $canReviewInvoice)
+    @php($purchaseOrderCheck = $invoice->purchaseOrderCheck)
+    @php($supplierName = $purchaseOrderCheck?->supplier_name ?? '-')
+    @php($invoiceAmount = $purchaseOrderCheck?->amount !== null ? 'R$ '.number_format((float) $purchaseOrderCheck->amount, 2, ',', '.') : '-')
+    @php($firstInstallment = collect($invoice->payment_installments ?? [])->sortBy('due_date')->first())
+    @php($dueSummary = $paymentMethod->requiresInstallments()
+        ? (filled($firstInstallment['due_date'] ?? null) ? \Illuminate\Support\Carbon::parse($firstInstallment['due_date'])->format('d/m/Y') : '-')
+        : $paymentMethod->label())
 
     <div class="invoice-detail-page {{ $isPendingForSubmitter ? 'has-pending-callout' : '' }}">
         <div class="section-toolbar mb-3">
@@ -135,7 +142,7 @@
             </div>
 
             <div class="review-column invoice-info-column">
-                <div class="panel mb-3">
+                <div class="panel invoice-overview-panel mb-3">
                     <div class="panel-header">
                         <div>
                             <div class="eyebrow">Protocolo {{ $invoice->protocol }}</div>
@@ -156,6 +163,18 @@
                             <span>{{ $documentType->referenceLabel() }}</span>
                             <strong>{{ $invoice->purchase_order_number ?? '-' }}</strong>
                         </div>
+                        <div>
+                            <span>Fornecedor</span>
+                            <strong>{{ $supplierName }}</strong>
+                        </div>
+                        <div>
+                            <span>Valor</span>
+                            <strong>{{ $invoiceAmount }}</strong>
+                        </div>
+                        <div>
+                            <span>Vencimento</span>
+                            <strong>{{ $dueSummary }}</strong>
+                        </div>
                     </div>
 
                     @if(filled($invoice->invoice_access_key))
@@ -173,8 +192,13 @@
                         </button>
                     @endif
 
-                    <div class="invoice-details-and-attachments">
-                        <dl class="details-grid mb-0">
+                        <div class="invoice-details-and-attachments">
+                        <section class="invoice-info-module">
+                            <div class="module-heading">
+                                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                                Informacoes
+                            </div>
+                            <dl class="details-grid mb-0">
                             <dt>Unidade</dt>
                             <dd>{{ $invoice->businessUnit?->name ?? 'Nao identificada' }}</dd>
                             <dt>Tipo</dt>
@@ -193,7 +217,8 @@
                             <dd>{{ $invoice->fiscalUser?->name ?? '-' }}</dd>
                             <dt>Lancamento</dt>
                             <dd>{{ $invoice->launched_at?->format('d/m/Y H:i') ?? '-' }}</dd>
-                        </dl>
+                            </dl>
+                        </section>
 
                         <div class="attachment-compact">
                             <div class="attachment-compact-header">
@@ -259,8 +284,9 @@
                         </div>
                     </div>
 
-                    @if($paymentMethod->requiresInstallments())
-                        <div class="payment-installments-summary mt-3">
+                    <div class="invoice-secondary-row">
+                        @if($paymentMethod->requiresInstallments())
+                        <section class="payment-installments-summary">
                             @foreach($invoice->payment_installments ?? [] as $installment)
                                 <div>
                                     <span>Parcela {{ $installment['number'] ?? $loop->iteration }}</span>
@@ -271,10 +297,10 @@
                                     </strong>
                                 </div>
                             @endforeach
-                        </div>
-                    @endif
+                        </section>
+                        @endif
 
-                    <div class="note-box mt-3">
+                        <div class="note-box">
                         <div class="note-title">
                             <i class="bi bi-chat-left-text" aria-hidden="true"></i>
                             Observacoes de {{ $invoice->submitter?->name ?? 'Usuario' }}
@@ -284,57 +310,58 @@
                         @else
                             <div class="text-secondary">Nenhuma observacao informada.</div>
                         @endif
-                    </div>
+                        </div>
 
-                    @if(filled($invoice->fiscal_notes))
-                        <div class="note-box mt-3">
+                        @if(filled($invoice->fiscal_notes))
+                        <div class="note-box">
                             <div class="note-title">
                                 <i class="bi bi-clipboard-check" aria-hidden="true"></i>
                                 Observacoes do Fiscal
                             </div>
                             <div class="text-body">{{ $invoice->fiscal_notes }}</div>
                         </div>
-                    @endif
+                        @endif
+                    </div>
                 </div>
 
-                @if($documentType === \App\Enums\InvoiceDocumentType::Nf && $invoice->purchaseOrderCheck)
-                    <div class="panel mb-3">
+                @if($documentType === \App\Enums\InvoiceDocumentType::Nf && $purchaseOrderCheck)
+                    <div class="panel invoice-cigam-panel mb-3">
                         <div class="po-summary mb-0">
                             <div class="po-summary-header">
                                 <span>
                                     <i class="bi bi-database-check" aria-hidden="true"></i>
                                     Ordem de compra no CIGAM
                                 </span>
-                                <span class="badge {{ $invoice->purchaseOrderCheck->order_exists ? 'text-bg-primary' : 'text-bg-warning' }}">
-                                    {{ $invoice->purchaseOrderCheck->order_exists ? ($invoice->purchaseOrderCheck->status ?? 'Encontrada') : 'Nao encontrada' }}
+                                <span class="badge {{ $purchaseOrderCheck->order_exists ? 'text-bg-primary' : 'text-bg-warning' }}">
+                                    {{ $purchaseOrderCheck->order_exists ? ($purchaseOrderCheck->status ?? 'Encontrada') : 'Nao encontrada' }}
                                 </span>
                             </div>
                             <div class="po-summary-grid">
                                 <div>
                                     <span>Situacao</span>
-                                    <strong>{{ $invoice->purchaseOrderCheck->order_exists ? ($invoice->purchaseOrderCheck->status ?? '-') : 'Nao encontrada' }}</strong>
+                                    <strong>{{ $purchaseOrderCheck->order_exists ? ($purchaseOrderCheck->status ?? '-') : 'Nao encontrada' }}</strong>
                                 </div>
                                 <div>
                                     <span>Numero no ERP</span>
-                                    <strong>{{ data_get($invoice->purchaseOrderCheck->raw_response, 'purchase_order_number', $invoice->purchase_order_number) }}</strong>
+                                    <strong>{{ data_get($purchaseOrderCheck->raw_response, 'purchase_order_number', $invoice->purchase_order_number) }}</strong>
                                 </div>
                                 <div>
                                     <span>Fornecedor</span>
-                                    <strong>{{ $invoice->purchaseOrderCheck->supplier_name ?? '-' }}</strong>
+                                    <strong>{{ $purchaseOrderCheck->supplier_name ?? '-' }}</strong>
                                 </div>
                                 <div>
                                     <span>CNPJ fornecedor</span>
-                                    <strong>{{ $invoice->purchaseOrderCheck->supplier_cnpj ?? '-' }}</strong>
+                                    <strong>{{ $purchaseOrderCheck->supplier_cnpj ?? '-' }}</strong>
                                 </div>
                                 <div>
                                     <span>Valor</span>
-                                    <strong>{{ $invoice->purchaseOrderCheck->amount !== null ? 'R$ '.number_format((float) $invoice->purchaseOrderCheck->amount, 2, ',', '.') : '-' }}</strong>
+                                    <strong>{{ $purchaseOrderCheck->amount !== null ? 'R$ '.number_format((float) $purchaseOrderCheck->amount, 2, ',', '.') : '-' }}</strong>
                                 </div>
-                                @php($supplierCode = data_get($invoice->purchaseOrderCheck->raw_response, 'supplier_code')
-                                    ?? data_get($invoice->purchaseOrderCheck->raw_response, 'codigo_fornecedor')
-                                    ?? data_get($invoice->purchaseOrderCheck->raw_response, 'cod_fornecedor')
-                                    ?? data_get($invoice->purchaseOrderCheck->raw_response, 'fornecedor_codigo')
-                                    ?? data_get($invoice->purchaseOrderCheck->raw_response, 'cd_fornecedor'))
+                                @php($supplierCode = data_get($purchaseOrderCheck->raw_response, 'supplier_code')
+                                    ?? data_get($purchaseOrderCheck->raw_response, 'codigo_fornecedor')
+                                    ?? data_get($purchaseOrderCheck->raw_response, 'cod_fornecedor')
+                                    ?? data_get($purchaseOrderCheck->raw_response, 'fornecedor_codigo')
+                                    ?? data_get($purchaseOrderCheck->raw_response, 'cd_fornecedor'))
                                 <div>
                                     <span>Codigo fornecedor</span>
                                     <strong>{{ filled($supplierCode) ? $supplierCode : '-' }}</strong>
@@ -348,7 +375,7 @@
                     </div>
                 @endif
 
-                <div class="panel">
+                <div class="panel invoice-review-panel">
                     <ul class="nav nav-pills review-tabs" id="invoiceReviewTabs" role="tablist">
                         @can('review', $invoice)
                             <li class="nav-item" role="presentation">

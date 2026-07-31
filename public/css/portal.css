@@ -4824,3 +4824,269 @@ body.is-navigating .app-main {
     animation-iteration-count: infinite !important;
     will-change: transform;
 }
+
+/* Invoice detail information architecture: compact modules above the PDF. */
+.invoice-detail-page .invoice-info-column {
+    grid-template-columns: minmax(0, 1.05fr) minmax(360px, .95fr);
+    align-items: start;
+}
+
+.invoice-detail-page .invoice-overview-panel {
+    display: grid;
+    grid-template-columns: minmax(720px, 1fr) minmax(360px, .48fr);
+    gap: 10px 12px;
+    padding: 14px;
+}
+
+.invoice-detail-page .invoice-overview-panel .panel-header {
+    grid-column: 1 / -1;
+    margin-bottom: 10px;
+}
+
+.invoice-detail-page .invoice-summary-strip {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(170px, 1.1fr) repeat(2, minmax(130px, .8fr)) minmax(220px, 1.25fr) minmax(120px, .7fr) minmax(125px, .7fr);
+    gap: 8px;
+    margin-bottom: 8px !important;
+}
+
+.invoice-detail-page .invoice-summary-strip > div {
+    min-height: 54px;
+    padding: 8px 10px;
+    background: #fbfcfd;
+}
+
+.invoice-detail-page .invoice-summary-strip strong {
+    font-size: .84rem;
+}
+
+.invoice-detail-page .access-key-copy {
+    grid-column: 1 / -1;
+    min-height: 42px;
+    margin-bottom: 10px !important;
+    padding: 7px 10px;
+    background: #fff;
+}
+
+.invoice-detail-page .access-key-copy span {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.invoice-detail-page .access-key-copy small {
+    flex: 0 0 auto;
+}
+
+.invoice-detail-page .access-key-copy strong {
+    margin-top: 0;
+    overflow: hidden;
+    font-size: .78rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.invoice-detail-page .invoice-details-and-attachments {
+    grid-template-columns: minmax(390px, .95fr) minmax(330px, 1.05fr);
+    gap: 12px;
+}
+
+.invoice-info-module,
+.attachment-compact,
+.note-box {
+    min-width: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 7px;
+    background: #fbfcfd;
+}
+
+.invoice-info-module {
+    padding: 10px;
+}
+
+.module-heading {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 8px;
+    color: var(--color-primary-dark);
+    font-size: .82rem;
+    font-weight: 850;
+}
+
+.invoice-detail-page .details-grid {
+    grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
+    gap: 6px 12px;
+}
+
+.invoice-detail-page .details-grid dt {
+    font-size: .73rem;
+}
+
+.invoice-detail-page .details-grid dd {
+    font-size: .83rem;
+}
+
+.invoice-detail-page .attachment-compact {
+    min-height: 0;
+    padding: 9px;
+}
+
+.invoice-detail-page .attachment-compact-header {
+    margin-bottom: 7px;
+}
+
+.invoice-detail-page .attachment-form {
+    padding: 7px;
+}
+
+.invoice-detail-page .attachment-upload-row.compact {
+    grid-template-columns: minmax(155px, .68fr) minmax(160px, 1fr) auto;
+    gap: 7px;
+}
+
+.invoice-detail-page .attachment-upload-row.compact .form-control,
+.invoice-detail-page .attachment-upload-row.compact .btn {
+    min-height: 34px;
+    font-size: .8rem;
+}
+
+.invoice-detail-page .attachment-list .empty-state.compact {
+    min-height: 34px;
+    padding: 8px 10px;
+    border-style: dashed;
+    background: #fff;
+    font-size: .82rem;
+}
+
+.invoice-secondary-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-content: start;
+    gap: 10px;
+    margin-top: 0;
+}
+
+.invoice-secondary-row .note-box:only-child {
+    grid-column: 1 / -1;
+}
+
+.invoice-detail-page .payment-installments-summary {
+    grid-template-columns: repeat(auto-fit, minmax(145px, max-content));
+    align-content: start;
+    gap: 7px;
+}
+
+.invoice-detail-page .payment-installments-summary > div {
+    min-width: 145px;
+    padding: 8px 10px;
+    background: #fff;
+}
+
+.invoice-detail-page .note-box {
+    padding: 9px 10px;
+}
+
+.invoice-detail-page .note-title {
+    margin-bottom: 4px;
+    font-size: .86rem;
+}
+
+.invoice-detail-page .note-box .text-body,
+.invoice-detail-page .note-box .text-secondary {
+    font-size: .84rem;
+}
+
+.invoice-detail-page .invoice-cigam-panel,
+.invoice-detail-page .invoice-review-panel {
+    min-height: 100%;
+}
+
+.invoice-detail-page .invoice-cigam-panel {
+    padding: 12px;
+}
+
+.invoice-detail-page .po-summary {
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.invoice-detail-page .po-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+}
+
+.invoice-detail-page .po-summary-grid div {
+    padding: 8px 9px;
+}
+
+.invoice-detail-page .invoice-review-panel {
+    padding: 12px;
+}
+
+.invoice-detail-page .review-tabs {
+    margin-bottom: 10px;
+    padding: 5px;
+}
+
+.invoice-detail-page .review-tabs .nav-link {
+    min-height: 32px;
+    padding: 6px 8px;
+    font-size: .76rem;
+}
+
+.invoice-detail-page .review-tab-content textarea {
+    min-height: 78px;
+}
+
+@media (max-width: 1399.98px) {
+    .invoice-detail-page .invoice-overview-panel {
+        grid-template-columns: 1fr;
+    }
+
+    .invoice-detail-page .invoice-summary-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .invoice-detail-page .invoice-details-and-attachments,
+    .invoice-secondary-row {
+        grid-template-columns: 1fr;
+    }
+
+    .invoice-detail-page .details-grid {
+        grid-template-columns: minmax(128px, .38fr) minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 1199.98px) {
+    .invoice-detail-page .invoice-info-column {
+        grid-template-columns: 1fr;
+    }
+
+    .invoice-detail-page .invoice-summary-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .invoice-detail-page .invoice-summary-strip {
+        grid-template-columns: 1fr;
+    }
+
+    .invoice-detail-page .access-key-copy span {
+        display: grid;
+        gap: 2px;
+    }
+
+    .invoice-detail-page .attachment-upload-row.compact {
+        grid-template-columns: 1fr;
+    }
+
+    .invoice-detail-page .po-summary-grid,
+    .invoice-detail-page .details-grid {
+        grid-template-columns: 1fr;
+    }
+}
