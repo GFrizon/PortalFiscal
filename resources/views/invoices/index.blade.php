@@ -39,6 +39,27 @@
             <div class="eyebrow">Pasta selecionada</div>
             <div class="section-title">{{ $selectedUnitName }}</div>
         </div>
+        <form method="GET" action="{{ route('invoices.index') }}" class="invoice-toolbar-filter" aria-label="Filtros da lista de notas">
+            @if($selectedUnitId !== '')
+                <input type="hidden" name="business_unit_id" value="{{ $selectedUnitId }}">
+            @endif
+
+            <input class="form-control" name="purchase_order_number" value="{{ $filters['purchase_order_number'] ?? '' }}" placeholder="OC/CTE" aria-label="Filtrar por OC ou CTE">
+            <input class="form-control" name="supplier" value="{{ $filters['supplier'] ?? '' }}" placeholder="Fornecedor" aria-label="Filtrar por fornecedor">
+            <select class="form-select" name="status" aria-label="Filtrar por status">
+                <option value="">Fila aberta</option>
+                @foreach($statuses as $status)
+                    <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>{{ $status === \App\Enums\InvoiceStatus::Launched ? 'Lancadas' : $status->label() }}</option>
+                @endforeach
+            </select>
+            <button class="btn btn-outline-primary btn-sm" type="submit">
+                <i class="bi bi-funnel" aria-hidden="true"></i>
+                Filtrar
+            </button>
+            <a class="btn btn-outline-secondary btn-sm" href="{{ $selectedUnitId !== '' ? route('invoices.index', ['business_unit_id' => $selectedUnitId]) : route('invoices.index') }}">
+                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+            </a>
+        </form>
         <div class="toolbar-actions">
             <a href="{{ route('histories.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-clock-history" aria-hidden="true"></i>
@@ -95,51 +116,6 @@
                 <div class="empty-state compact">Nenhuma nota separada por unidade ainda.</div>
             @endforelse
         </div>
-    </div>
-
-    <div class="panel filter-panel invoice-filter-panel mb-3">
-        <div class="invoice-filter-heading">
-            <div>
-                <span class="eyebrow">Busca operacional</span>
-                <strong>Encontrar nota fiscal</strong>
-            </div>
-            <span>{{ $invoices->total() }} nota{{ $invoices->total() === 1 ? '' : 's' }} na selecao</span>
-        </div>
-        <form method="GET" action="{{ route('invoices.index') }}" class="invoice-filter-grid">
-            @if($selectedUnitId !== '')
-                <input type="hidden" name="business_unit_id" value="{{ $selectedUnitId }}">
-            @endif
-
-            <div class="filter-field">
-                <label class="form-label" for="purchase_order_number">OC/CTE</label>
-                <input id="purchase_order_number" class="form-control" name="purchase_order_number" value="{{ $filters['purchase_order_number'] ?? '' }}" placeholder="Numero da OC">
-            </div>
-            <div class="filter-field filter-field-wide">
-                <label class="form-label" for="supplier">Fornecedor</label>
-                <input id="supplier" class="form-control" name="supplier" value="{{ $filters['supplier'] ?? '' }}" placeholder="Digite parte do fornecedor">
-            </div>
-            <div class="filter-field">
-                <label class="form-label" for="status">Status</label>
-                <select id="status" class="form-select" name="status">
-                    <option value="">Fila aberta</option>
-                    @foreach($statuses as $status)
-                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>{{ $status === \App\Enums\InvoiceStatus::Launched ? 'Lancadas' : $status->label() }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="filter-field filter-field-actions">
-                <div class="filter-actions">
-                    <button class="btn btn-outline-primary" type="submit">
-                    <i class="bi bi-funnel" aria-hidden="true"></i>
-                        Filtrar
-                    </button>
-                    <a class="btn btn-outline-secondary" href="{{ $selectedUnitId !== '' ? route('invoices.index', ['business_unit_id' => $selectedUnitId]) : route('invoices.index') }}">
-                        <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-                        Limpar
-                    </a>
-                </div>
-            </div>
-        </form>
     </div>
 
     <div class="panel panel-table invoice-list-panel">
@@ -213,13 +189,8 @@
                             </div>
                         </td>
                         <td class="text-end row-actions" data-label="Acoes">
-                            @can('update', $invoice)
-                                <a href="{{ route('invoices.edit', $invoice) }}" class="btn btn-sm btn-outline-secondary" aria-label="Editar {{ $invoice->protocol }}">
-                                    <i class="bi bi-pencil-square" aria-hidden="true"></i>
-                                </a>
-                            @endcan
-                            <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-sm btn-outline-primary" aria-label="Abrir {{ $invoice->protocol }}">
-                                <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                            <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-sm btn-outline-primary btn-open-invoice" aria-label="Abrir {{ $invoice->protocol }}">
+                                Abrir
                             </a>
                         </td>
                     </tr>
