@@ -41,10 +41,12 @@
                     <i class="bi bi-arrow-left" aria-hidden="true"></i>
                     Voltar
                 </a>
-                <a href="{{ route('invoices.create') }}" class="btn btn-outline-primary">
-                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
-                    Anexar
-                </a>
+                @can('review', $invoice)
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#invoiceAttachmentModal">
+                        <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                        Anexar
+                    </button>
+                @endcan
                 @can('update', $invoice)
                     <a href="{{ route('invoices.edit', $invoice) }}" class="btn {{ $isPendingForSubmitter ? 'btn-warning' : 'btn-outline-primary' }}">
                         <i class="bi {{ $isPendingForSubmitter ? 'bi-reply' : 'bi-pencil-square' }}" aria-hidden="true"></i>
@@ -256,7 +258,7 @@
                         </div>
                     @endif
 
-                        <div class="invoice-details-and-attachments">
+                    <div class="invoice-details-and-attachments">
                         <section class="invoice-info-module">
                             <div class="module-heading">
                                 <i class="bi bi-info-circle" aria-hidden="true"></i>
@@ -351,71 +353,8 @@
                                 </div>
                                 @endif
                             </div>
-                        </section>
 
-                        <div class="attachment-compact">
-                            <div class="attachment-compact-header">
-                                <div>
-                                    <span>Documentos complementares</span>
-                                    <small>{{ $invoice->attachments->count() }} anexo{{ $invoice->attachments->count() === 1 ? '' : 's' }}</small>
-                                </div>
-                            </div>
-
-                            @can('review', $invoice)
-                                <form method="POST" action="{{ route('invoices.attachments.store', $invoice) }}" enctype="multipart/form-data" class="attachment-form compact mb-2">
-                                    @csrf
-                                    <div class="attachment-upload-row compact">
-                                        <input class="form-control" id="attachment" type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" required aria-label="Documento complementar">
-                                        <input class="form-control" id="attachment_notes" name="notes" value="{{ old('notes') }}" maxlength="2000" placeholder="Observacao">
-                                        <button class="btn btn-primary" type="submit" data-action-feedback="Anexando documento complementar...">
-                                            <i class="bi bi-paperclip" aria-hidden="true"></i>
-                                            Anexar
-                                        </button>
-                                    </div>
-                                </form>
-                            @endcan
-
-                            <div class="attachment-list compact">
-                                @forelse($invoice->attachments->sortByDesc('created_at') as $attachment)
-                                    <div class="attachment-item compact">
-                                        <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>
-                                        <div class="attachment-copy">
-                                            <div class="attachment-main-line">
-                                                <a href="{{ route('invoices.attachments.show', [$invoice, $attachment]) }}" class="attachment-name" target="_blank" rel="noopener">
-                                                    {{ $attachment->original_name }}
-                                                </a>
-                                                <div class="attachment-actions">
-                                                    <a href="{{ route('invoices.attachments.show', [$invoice, $attachment]) }}" class="btn btn-sm btn-outline-primary btn-icon-only" target="_blank" rel="noopener" aria-label="Visualizar {{ $attachment->original_name }}">
-                                                        <i class="bi bi-eye" aria-hidden="true"></i>
-                                                    </a>
-                                                    <a href="{{ route('invoices.attachments.download', [$invoice, $attachment]) }}" class="btn btn-sm btn-outline-secondary btn-icon-only" aria-label="Baixar {{ $attachment->original_name }}">
-                                                        <i class="bi bi-download" aria-hidden="true"></i>
-                                                    </a>
-                                                    @can('review', $invoice)
-                                                        <form method="POST" action="{{ route('invoices.attachments.destroy', [$invoice, $attachment]) }}" class="d-inline" data-confirm="Excluir este documento complementar?">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button class="btn btn-sm btn-outline-danger btn-icon-only" type="submit" aria-label="Excluir {{ $attachment->original_name }}">
-                                                                <i class="bi bi-trash" aria-hidden="true"></i>
-                                                            </button>
-                                                        </form>
-                                                    @endcan
-                                                </div>
-                                            </div>
-                                            <div class="attachment-meta">
-                                                {{ $attachment->formattedSize() }} - {{ $attachment->created_at?->format('d/m/Y H:i') }} - {{ $attachment->uploader?->name ?? 'Fiscal' }}
-                                            </div>
-                                            @if(filled($attachment->notes))
-                                                <div class="attachment-notes">{{ $attachment->notes }}</div>
-                                            @endif
-                                        </div>
-                                    </div>
-                                @empty
-                                    <span class="visually-hidden">Nenhum documento complementar anexado.</span>
-                                @endforelse
-                            </div>
-
-                            <div class="invoice-alerts-module">
+                            <div class="invoice-alerts-module embedded-alerts-module">
                                 <div class="attachment-compact-header">
                                     <div>
                                         <span>Alertas</span>
@@ -454,7 +393,7 @@
                                     @endforelse
                                 </div>
                             </div>
-                        </div>
+                        </section>
                     </div>
 
                     <div class="invoice-secondary-row">
@@ -547,6 +486,82 @@
                 </div>
             </div>
         </div>
+
+        @can('review', $invoice)
+            <div class="modal fade attachment-modal" id="invoiceAttachmentModal" tabindex="-1" aria-labelledby="invoiceAttachmentModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <div>
+                                <div class="eyebrow">Documentos complementares</div>
+                                <h2 class="modal-title fs-5" id="invoiceAttachmentModalLabel">Anexos da {{ $invoice->protocol }}</h2>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form method="POST" action="{{ route('invoices.attachments.store', $invoice) }}" enctype="multipart/form-data" class="attachment-form modal-attachment-form mb-3">
+                                @csrf
+                                <label class="form-label" for="attachment">Arquivo</label>
+                                <input class="form-control mb-2" id="attachment" type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" required>
+                                <label class="form-label" for="attachment_notes">Observacao</label>
+                                <input class="form-control" id="attachment_notes" name="notes" value="{{ old('notes') }}" maxlength="2000" placeholder="Descreva o documento anexado">
+                                <button class="btn btn-primary mt-3" type="submit" data-action-feedback="Anexando documento complementar...">
+                                    <i class="bi bi-paperclip" aria-hidden="true"></i>
+                                    Anexar documento
+                                </button>
+                            </form>
+
+                            <div class="attachment-compact modal-attachment-list">
+                                <div class="attachment-compact-header">
+                                    <div>
+                                        <span>Arquivos anexados</span>
+                                        <small>{{ $invoice->attachments->count() }} anexo{{ $invoice->attachments->count() === 1 ? '' : 's' }}</small>
+                                    </div>
+                                </div>
+
+                                <div class="attachment-list compact">
+                                    @forelse($invoice->attachments->sortByDesc('created_at') as $attachment)
+                                        <div class="attachment-item compact">
+                                            <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>
+                                            <div class="attachment-copy">
+                                                <div class="attachment-main-line">
+                                                    <a href="{{ route('invoices.attachments.show', [$invoice, $attachment]) }}" class="attachment-name" target="_blank" rel="noopener">
+                                                        {{ $attachment->original_name }}
+                                                    </a>
+                                                    <div class="attachment-actions">
+                                                        <a href="{{ route('invoices.attachments.show', [$invoice, $attachment]) }}" class="btn btn-sm btn-outline-primary btn-icon-only" target="_blank" rel="noopener" aria-label="Visualizar {{ $attachment->original_name }}">
+                                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                                        </a>
+                                                        <a href="{{ route('invoices.attachments.download', [$invoice, $attachment]) }}" class="btn btn-sm btn-outline-secondary btn-icon-only" aria-label="Baixar {{ $attachment->original_name }}">
+                                                            <i class="bi bi-download" aria-hidden="true"></i>
+                                                        </a>
+                                                        <form method="POST" action="{{ route('invoices.attachments.destroy', [$invoice, $attachment]) }}" class="d-inline" data-confirm="Excluir este documento complementar?">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button class="btn btn-sm btn-outline-danger btn-icon-only" type="submit" aria-label="Excluir {{ $attachment->original_name }}">
+                                                                <i class="bi bi-trash" aria-hidden="true"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                                <div class="attachment-meta">
+                                                    {{ $attachment->formattedSize() }} - {{ $attachment->created_at?->format('d/m/Y H:i') }} - {{ $attachment->uploader?->name ?? 'Fiscal' }}
+                                                </div>
+                                                @if(filled($attachment->notes))
+                                                    <div class="attachment-notes">{{ $attachment->notes }}</div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <p class="empty-state compact mb-0">Nenhum documento complementar anexado.</p>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endcan
     </div>
 @endsection
 

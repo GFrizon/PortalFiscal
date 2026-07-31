@@ -5040,8 +5040,8 @@ body.is-navigating .app-main {
 }
 
 .invoice-detail-page .invoice-details-and-attachments {
-    grid-template-columns: minmax(360px, .9fr) minmax(300px, 1fr);
-    gap: 10px;
+    grid-template-columns: 1fr;
+    gap: 0;
 }
 
 .invoice-info-module,
@@ -5055,6 +5055,10 @@ body.is-navigating .app-main {
 
 .invoice-info-module {
     padding: 10px;
+}
+
+.invoice-detail-page .invoice-info-module {
+    padding: 12px;
 }
 
 .module-heading {
@@ -5080,48 +5084,14 @@ body.is-navigating .app-main {
     font-size: .83rem;
 }
 
-.invoice-detail-page .attachment-compact {
-    min-height: 0;
-    padding: 8px;
-}
-
-.invoice-detail-page .attachment-compact-header {
-    margin-bottom: 5px;
-}
-
-.invoice-detail-page .attachment-form {
-    padding: 5px;
-}
-
-.invoice-detail-page .attachment-upload-row.compact {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 5px;
-}
-
-.invoice-detail-page .attachment-upload-row.compact .form-control,
-.invoice-detail-page .attachment-upload-row.compact .btn {
-    min-width: 0;
-    min-height: 31px;
-    font-size: .78rem;
-}
-
-.invoice-detail-page .attachment-upload-row.compact input[name="notes"] {
-    grid-column: 1 / -1;
-    min-height: 30px;
-}
-
-.invoice-detail-page .attachment-list .empty-state.compact {
-    min-height: 30px;
-    padding: 6px 9px;
-    border-style: dashed;
-    background: #fff;
-    font-size: .8rem;
-}
-
 .invoice-detail-page .invoice-alerts-module {
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid rgba(33, 63, 120, .1);
+}
+
+.invoice-detail-page .embedded-alerts-module {
+    margin-top: 10px;
 }
 
 .invoice-detail-page .invoice-alerts-module .attachment-compact-header {
@@ -5155,7 +5125,7 @@ body.is-navigating .app-main {
 }
 
 .invoice-detail-page .payment-installments-summary {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(180px, .55fr) minmax(0, 1fr);
     gap: 6px;
 }
 
@@ -5179,12 +5149,9 @@ body.is-navigating .app-main {
 
 .invoice-detail-page .installment-chip-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 5px;
     margin-top: 4px;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    padding-bottom: 2px;
-    scrollbar-width: thin;
 }
 
 .invoice-detail-page .installment-chip {
@@ -5236,6 +5203,44 @@ body.is-navigating .app-main {
 .invoice-detail-page .note-box .text-body,
 .invoice-detail-page .note-box .text-secondary {
     font-size: .84rem;
+}
+
+.attachment-modal .modal-content {
+    border: 1px solid rgba(33, 63, 120, .14);
+    border-radius: 10px;
+    background:
+        linear-gradient(180deg, rgba(241, 246, 250, .94), #fff 155px),
+        #fff;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, .18);
+}
+
+.attachment-modal .modal-header {
+    align-items: flex-start;
+    border-bottom-color: rgba(33, 63, 120, .1);
+}
+
+.modal-attachment-form {
+    padding: 12px;
+    border: 1px solid rgba(33, 63, 120, .12);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .84);
+}
+
+.modal-attachment-form .btn {
+    min-width: 170px;
+}
+
+.modal-attachment-list {
+    min-height: 0;
+    padding: 10px;
+    background:
+        linear-gradient(180deg, rgba(248, 250, 252, .86), #fff);
+}
+
+.modal-attachment-list .attachment-list {
+    max-height: min(320px, 44vh);
+    overflow: auto;
+    padding-right: 2px;
 }
 
 .invoice-detail-page .compact-note .note-title {
@@ -5506,6 +5511,10 @@ body.is-navigating .app-main {
 
     .invoice-detail-page .invoice-details-and-attachments,
     .invoice-secondary-row {
+        grid-template-columns: 1fr;
+    }
+
+    .invoice-detail-page .payment-installments-summary {
         grid-template-columns: 1fr;
     }
 
