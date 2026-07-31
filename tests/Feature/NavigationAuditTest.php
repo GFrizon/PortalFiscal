@@ -813,7 +813,7 @@ class NavigationAuditTest extends TestCase
         Storage::disk('local')->assertExists($invoice->pdf_path);
     }
 
-    public function test_launched_invoice_cannot_be_deleted(): void
+    public function test_regular_user_cannot_delete_launched_invoice(): void
     {
         Storage::fake('local');
 
@@ -835,6 +835,29 @@ class NavigationAuditTest extends TestCase
         ]);
 
         Storage::disk('local')->assertExists($invoice->pdf_path);
+    }
+
+    public function test_admin_can_delete_launched_invoice(): void
+    {
+        Storage::fake('local');
+
+        $admin = User::factory()->admin()->create();
+        $invoice = Invoice::factory()->create([
+            'status' => 'launched',
+            'pdf_path' => 'notas/teste/admin-delete-launched.pdf',
+        ]);
+
+        Storage::disk('local')->put($invoice->pdf_path, 'PDF fake');
+
+        $this->actingAs($admin)
+            ->delete(route('invoices.destroy', $invoice))
+            ->assertRedirect(route('invoices.index'));
+
+        $this->assertDatabaseMissing('invoices', [
+            'id' => $invoice->id,
+        ]);
+
+        Storage::disk('local')->assertMissing($invoice->pdf_path);
     }
 
     public function test_duplicate_pdf_upload_creates_warning_alert(): void

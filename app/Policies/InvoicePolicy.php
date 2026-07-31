@@ -39,11 +39,15 @@ class InvoicePolicy
 
     public function delete(User $user, Invoice $invoice): bool
     {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
         if ($invoice->status === InvoiceStatus::Launched) {
             return false;
         }
 
-        return $user->isAdmin() || ($user->isRegularUser() && $invoice->submitted_by === $user->id);
+        return $user->isRegularUser() && $invoice->submitted_by === $user->id;
     }
 
     public function review(User $user, Invoice $invoice): bool
