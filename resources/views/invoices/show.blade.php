@@ -440,93 +440,93 @@
 
                     <div class="invoice-secondary-row">
                         <section class="invoice-review-panel review-inline-module">
-                    <ul class="nav nav-pills review-tabs" id="invoiceReviewTabs" role="tablist">
-                        @can('review', $invoice)
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="review-tab" data-bs-toggle="tab" data-bs-target="#review-tab-pane" type="button" role="tab" aria-controls="review-tab-pane" aria-selected="true">Conferencia</button>
-                            </li>
-                        @endcan
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link @cannot('review', $invoice) active @endcannot" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-tab-pane" type="button" role="tab" aria-controls="history-tab-pane" aria-selected="@cannot('review', $invoice) true @else false @endcannot">Historico</button>
-                        </li>
-                    </ul>
+                            <ul class="nav nav-pills review-tabs" id="invoiceReviewTabs" role="tablist">
+                                @can('review', $invoice)
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="review-tab" data-bs-toggle="tab" data-bs-target="#review-tab-pane" type="button" role="tab" aria-controls="review-tab-pane" aria-selected="true">Conferencia</button>
+                                    </li>
+                                @endcan
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link @cannot('review', $invoice) active @endcannot" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-tab-pane" type="button" role="tab" aria-controls="history-tab-pane" aria-selected="@cannot('review', $invoice) true @else false @endcannot">Historico</button>
+                                </li>
+                            </ul>
 
-                    <div class="tab-content review-tab-content" id="invoiceReviewTabsContent">
-                        @can('review', $invoice)
-                            <div class="tab-pane fade show active" id="review-tab-pane" role="tabpanel" aria-labelledby="review-tab" tabindex="0">
-                                @if($openAlerts->isNotEmpty())
-                                    <div class="inline-alerts mb-3">
-                                        @foreach($openAlerts as $alert)
-                                            <div class="inline-alert {{ $alert->level->value === 'critical' ? 'critical' : 'warning' }}">
-                                                <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
-                                                <div>
-                                                    <strong>{{ $alert->type->label() }}</strong>
-                                                    <span>{{ $alert->message }}</span>
-                                                </div>
+                            <div class="tab-content review-tab-content" id="invoiceReviewTabsContent">
+                                @can('review', $invoice)
+                                    <div class="tab-pane fade show active" id="review-tab-pane" role="tabpanel" aria-labelledby="review-tab" tabindex="0">
+                                        @if($openAlerts->isNotEmpty())
+                                            <div class="inline-alerts mb-3">
+                                                @foreach($openAlerts as $alert)
+                                                    <div class="inline-alert {{ $alert->level->value === 'critical' ? 'critical' : 'warning' }}">
+                                                        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+                                                        <div>
+                                                            <strong>{{ $alert->type->label() }}</strong>
+                                                            <span>{{ $alert->message }}</span>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
                                             </div>
-                                        @endforeach
-                                    </div>
-                                @endif
+                                        @endif
 
-                                <form method="POST" action="{{ route('invoices.unit.update', $invoice) }}" class="mb-3">
-                                    @csrf
-                                    @method('PATCH')
-                                    <label class="form-label" for="business_unit_id">Unidade de negocio</label>
-                                    <div class="input-group">
-                                        <select class="form-select" id="business_unit_id" name="business_unit_id" required>
-                                            @foreach($businessUnits as $unit)
-                                                <option value="{{ $unit->id }}" @selected($invoice->business_unit_id === $unit->id)>{{ $unit->name }}</option>
-                                            @endforeach
-                                        </select>
-                                        <button class="btn btn-outline-primary" type="submit">Atualizar</button>
-                                    </div>
-                                </form>
+                                        <form method="POST" action="{{ route('invoices.unit.update', $invoice) }}" class="mb-3">
+                                            @csrf
+                                            @method('PATCH')
+                                            <label class="form-label" for="business_unit_id">Unidade de negocio</label>
+                                            <div class="input-group">
+                                                <select class="form-select" id="business_unit_id" name="business_unit_id" required>
+                                                    @foreach($businessUnits as $unit)
+                                                        <option value="{{ $unit->id }}" @selected($invoice->business_unit_id === $unit->id)>{{ $unit->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                                <button class="btn btn-outline-primary" type="submit">Atualizar</button>
+                                            </div>
+                                        </form>
 
-                                @if($invoice->status === \App\Enums\InvoiceStatus::Launched)
-                                    <div class="alert alert-success mb-0">
-                                        Nota lancada por {{ $invoice->fiscalUser?->name ?? 'Fiscal' }} em {{ $invoice->launched_at?->format('d/m/Y H:i') }}.
-                                    </div>
-                                @elseif($invoice->status === \App\Enums\InvoiceStatus::Cancelled)
-                                    <div class="alert alert-danger mb-0">
-                                        Nota cancelada. {{ filled($invoice->fiscal_notes) ? $invoice->fiscal_notes : '' }}
-                                    </div>
-                                @else
-                                    <form method="POST" action="{{ route('invoices.mark-as-launched', $invoice) }}">
-                                        @csrf
-                                        <label class="form-label" for="fiscal_notes">Observacoes do Fiscal</label>
-                                        <textarea class="form-control mb-3" id="fiscal_notes" name="fiscal_notes" rows="2">{{ old('fiscal_notes', $invoice->fiscal_notes) }}</textarea>
-                                        <div class="fiscal-action-grid">
-                                            <button class="btn btn-warning" type="submit" formaction="{{ route('invoices.mark-as-pending', $invoice) }}">
-                                                <i class="bi bi-exclamation-diamond" aria-hidden="true"></i>
-                                                Pendencia
-                                            </button>
-                                            <button class="btn btn-success" type="submit" data-confirm="Marcar esta nota como lancada?">
-                                                <i class="bi bi-check2-circle" aria-hidden="true"></i>
-                                                Lancar
-                                            </button>
-                                        </div>
-                                    </form>
-                                @endif
-                            </div>
-                        @endcan
-
-                        <div class="tab-pane fade @cannot('review', $invoice) show active @endcannot" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
-                            <div class="timeline">
-                                @forelse($invoice->histories->sortByDesc('created_at') as $history)
-                                    <div class="timeline-item">
-                                        <div class="timeline-dot"></div>
-                                        <div class="fw-semibold">{{ $history->action }}</div>
-                                        <div class="small text-secondary">{{ $history->created_at?->format('d/m/Y H:i') }} - {{ $history->user?->name ?? 'Sistema' }}</div>
-                                        @if($history->note)
-                                            <div class="small">{{ $history->note }}</div>
+                                        @if($invoice->status === \App\Enums\InvoiceStatus::Launched)
+                                            <div class="alert alert-success mb-0">
+                                                Nota lancada por {{ $invoice->fiscalUser?->name ?? 'Fiscal' }} em {{ $invoice->launched_at?->format('d/m/Y H:i') }}.
+                                            </div>
+                                        @elseif($invoice->status === \App\Enums\InvoiceStatus::Cancelled)
+                                            <div class="alert alert-danger mb-0">
+                                                Nota cancelada. {{ filled($invoice->fiscal_notes) ? $invoice->fiscal_notes : '' }}
+                                            </div>
+                                        @else
+                                            <form method="POST" action="{{ route('invoices.mark-as-launched', $invoice) }}">
+                                                @csrf
+                                                <label class="form-label" for="fiscal_notes">Observacoes do Fiscal</label>
+                                                <textarea class="form-control mb-3" id="fiscal_notes" name="fiscal_notes" rows="2">{{ old('fiscal_notes', $invoice->fiscal_notes) }}</textarea>
+                                                <div class="fiscal-action-grid">
+                                                    <button class="btn btn-warning" type="submit" formaction="{{ route('invoices.mark-as-pending', $invoice) }}">
+                                                        <i class="bi bi-exclamation-diamond" aria-hidden="true"></i>
+                                                        Pendencia
+                                                    </button>
+                                                    <button class="btn btn-success" type="submit" data-confirm="Marcar esta nota como lancada?">
+                                                        <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                                                        Lancar
+                                                    </button>
+                                                </div>
+                                            </form>
                                         @endif
                                     </div>
-                                @empty
-                                    <div class="empty-state compact">Nenhum historico registrado.</div>
-                                @endforelse
+                                @endcan
+
+                                <div class="tab-pane fade @cannot('review', $invoice) show active @endcannot" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
+                                    <div class="timeline">
+                                        @forelse($invoice->histories->sortByDesc('created_at') as $history)
+                                            <div class="timeline-item">
+                                                <div class="timeline-dot"></div>
+                                                <div class="fw-semibold">{{ $history->action }}</div>
+                                                <div class="small text-secondary">{{ $history->created_at?->format('d/m/Y H:i') }} - {{ $history->user?->name ?? 'Sistema' }}</div>
+                                                @if($history->note)
+                                                    <div class="small">{{ $history->note }}</div>
+                                                @endif
+                                            </div>
+                                        @empty
+                                            <div class="empty-state compact">Nenhum historico registrado.</div>
+                                        @endforelse
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
                         </section>
                     </div>
                 </div>
