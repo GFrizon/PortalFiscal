@@ -4,7 +4,8 @@
     const sidebarToggle = document.querySelector('[data-sidebar-toggle]');
     const mobileMenuButton = document.querySelector('[data-mobile-menu]');
     const mobileBackdrop = document.querySelector('[data-sidebar-close]');
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const prefersReducedMotion = motionPreference.matches;
     let currentPreviewUrl = null;
     let deferredInstallPrompt = null;
     let isPageTransitioning = false;
@@ -62,17 +63,18 @@
                 return;
             }
 
-            if (prefersReducedMotion || isPageTransitioning) {
+            if (prefersReducedMotion || isPageTransitioning || link.dataset.transitioning === 'true') {
                 return;
             }
 
             event.preventDefault();
             isPageTransitioning = true;
+            link.dataset.transitioning = 'true';
             body.classList.add('is-navigating');
 
             window.setTimeout(() => {
                 window.location.href = link.href;
-            }, 360);
+            }, 240);
         });
     });
 
@@ -103,19 +105,30 @@
                 submitter.disabled = true;
                 submitter.setAttribute('aria-busy', 'true');
 
-                const icon = submitter.querySelector('i');
-
-                if (icon) {
-                    icon.className = 'bi bi-arrow-repeat';
-                }
             }
 
             startFormSubmitLoading(form, submitter);
 
-            if (! prefersReducedMotion) {
-                body.classList.add('is-navigating');
-            }
         });
+    });
+
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach((tab) => {
+        tab.addEventListener('show.bs.tab', (event) => {
+            const tabList = event.target.closest('[role="tablist"]');
+            tabList?.classList.add('is-switching');
+        });
+
+        tab.addEventListener('shown.bs.tab', (event) => {
+            const tabList = event.target.closest('[role="tablist"]');
+            tabList?.classList.remove('is-switching');
+        });
+    });
+
+    document.querySelectorAll('.modal').forEach((modal) => {
+        modal.addEventListener('show.bs.modal', () => modal.classList.add('is-opening'));
+        modal.addEventListener('shown.bs.modal', () => modal.classList.remove('is-opening'));
+        modal.addEventListener('hidden.bs.modal', () => modal.classList.remove('is-opening', 'is-closing'));
+        modal.addEventListener('hide.bs.modal', () => modal.classList.add('is-closing'));
     });
 
     document.querySelectorAll('[data-file-input]').forEach((input) => {
@@ -305,29 +318,30 @@
 
     function startFormSubmitLoading(form, submitter) {
         const loadingState = form.querySelector('.submit-loading-state');
+        const message = form.dataset.submitLoadingMessage || 'Processando...';
 
-        if (! form.dataset.submitLoadingMessage && ! loadingState) {
-            return;
-        }
-
-        form.classList.add('is-submitting');
         form.setAttribute('aria-busy', 'true');
 
-        const message = form.dataset.submitLoadingMessage || 'Salvando...';
-        const loadingText = form.querySelector('[data-submit-loading-text]');
-
-        if (loadingText) {
-            loadingText.textContent = message;
+        if (form.dataset.submitLoadingMessage || loadingState) {
+            form.classList.add('is-submitting');
         }
 
         if (loadingState) {
+            const loadingText = form.querySelector('[data-submit-loading-text]');
+
+            if (loadingText) {
+                loadingText.textContent = message;
+            }
+
             loadingState.hidden = false;
         }
 
         if (submitter instanceof HTMLButtonElement) {
-            const label = submitter.textContent?.trim() || '';
-            submitter.dataset.originalLabel = label;
-            submitter.innerHTML = `<span class="submit-loading-spinner" aria-hidden="true"></span><span>${escapeHtml(message)}</span>`;
+            submitter.dataset.originalHtml = submitter.innerHTML;
+            submitter.dataset.originalWidth = String(Math.ceil(submitter.getBoundingClientRect().width));
+            submitter.style.minWidth = `${submitter.dataset.originalWidth}px`;
+            submitter.classList.add('is-loading');
+            submitter.setAttribute('data-loading-label', message);
         }
 
         form.querySelectorAll('button[type="submit"]').forEach((button) => {
@@ -335,13 +349,6 @@
                 button.disabled = true;
             }
         });
-    }
-
-    function escapeHtml(value) {
-        const span = document.createElement('span');
-        span.textContent = value;
-
-        return span.innerHTML;
     }
 
     function setPreviewText(root, selector, value) {

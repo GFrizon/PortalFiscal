@@ -171,15 +171,15 @@
 
         <section class="app-content">
             @if(session('success'))
-                <div class="alert alert-success app-alert">{{ session('success') }}</div>
+                <div class="alert alert-success app-alert" data-feedback="success" role="status">{{ session('success') }}</div>
             @endif
 
             @if(session('status'))
-                <div class="alert alert-success app-alert">{{ session('status') }}</div>
+                <div class="alert alert-success app-alert" data-feedback="success" role="status">{{ session('status') }}</div>
             @endif
 
             @if($errors->any())
-                <div class="alert alert-danger app-alert">
+                <div class="alert alert-danger app-alert" data-feedback="error" role="alert">
                     <strong>Revise os dados informados.</strong>
                     <ul class="mb-0">
                         @foreach($errors->all() as $error)

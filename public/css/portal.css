@@ -3060,6 +3060,269 @@ body.is-ready.is-navigating .app-main {
     gap: 22px;
 }
 
+/* Final motion system: one predictable layer for page, tab and feedback states. */
+:root {
+    --motion-ease-out: cubic-bezier(.16, 1, .3, 1);
+    --motion-ease-in: cubic-bezier(.7, 0, .84, 0);
+    --motion-ease-standard: cubic-bezier(.2, .8, .2, 1);
+    --motion-fast: 150ms;
+    --motion-normal: 220ms;
+    --motion-enter: 320ms;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body::after {
+    display: none;
+}
+
+body.is-navigating::before {
+    animation-duration: 900ms;
+}
+
+.js-enhanced .app-main,
+.js-enhanced.login-body .login-panel {
+    opacity: 1;
+    transform: none;
+    filter: none;
+}
+
+.js-enhanced.is-ready .app-content > * {
+    animation: motion-surface-in var(--motion-enter) var(--motion-ease-out) both;
+}
+
+.js-enhanced.is-ready .app-content > *:nth-child(n + 5) {
+    animation-delay: 0ms;
+}
+
+.js-enhanced.is-ready .app-content > *:nth-child(2) { animation-delay: 35ms; }
+.js-enhanced.is-ready .app-content > *:nth-child(3) { animation-delay: 70ms; }
+.js-enhanced.is-ready .app-content > *:nth-child(4) { animation-delay: 105ms; }
+
+.js-enhanced.login-body.is-ready .login-panel {
+    animation: motion-login-in var(--motion-enter) var(--motion-ease-out) both;
+}
+
+body.is-navigating .app-main {
+    opacity: .88;
+    transform: translateY(-3px);
+    transition: opacity var(--motion-normal) var(--motion-ease-out), transform var(--motion-normal) var(--motion-ease-out);
+}
+
+.btn,
+.nav-link-item,
+.review-tabs .nav-link,
+.dropdown-item,
+.profile-button,
+.form-control,
+.form-select,
+.upload-dropzone,
+.folder-link,
+.data-table tbody tr,
+.alert-card {
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--motion-ease-standard);
+}
+
+.btn {
+    position: relative;
+    min-width: 0;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+.btn:hover:not(:disabled),
+.btn:focus-visible:not(:disabled) {
+    transform: translateY(-1px) translateZ(0);
+}
+
+.btn:active:not(:disabled) {
+    transform: translateY(0) scale(.985) translateZ(0);
+    transition-duration: 80ms;
+}
+
+.btn:disabled {
+    cursor: wait;
+}
+
+.btn.is-loading {
+    gap: 8px;
+    pointer-events: none;
+}
+
+.btn.is-loading > i {
+    display: none;
+}
+
+.btn.is-loading::before {
+    content: "";
+    width: .92rem;
+    height: .92rem;
+    flex: 0 0 .92rem;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: motion-spin 700ms linear infinite;
+}
+
+.submit-loading-state {
+    animation: motion-feedback-in var(--motion-normal) var(--motion-ease-out) both;
+}
+
+.form-panel.is-submitting {
+    animation: none;
+}
+
+.form-panel.is-submitting::after {
+    background: rgba(255, 255, 255, .42);
+    animation: motion-overlay-in var(--motion-normal) var(--motion-ease-out) both;
+}
+
+.form-panel.is-submitting::before {
+    animation: motion-progress 1100ms linear infinite;
+}
+
+.app-alert {
+    animation: motion-feedback-in var(--motion-normal) var(--motion-ease-out) both;
+}
+
+.app-alert[data-feedback="success"] {
+    animation-duration: var(--motion-enter);
+}
+
+.review-tabs {
+    position: relative;
+}
+
+.review-tabs .nav-link {
+    position: relative;
+    overflow: hidden;
+    transform: translateZ(0);
+}
+
+.review-tabs .nav-link::after {
+    content: "";
+    position: absolute;
+    right: 14px;
+    bottom: 0;
+    left: 14px;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--color-primary);
+    opacity: 0;
+    transform: scaleX(.35);
+    transition: opacity var(--motion-normal) var(--motion-ease-out), transform var(--motion-normal) var(--motion-ease-out);
+}
+
+.review-tabs .nav-link.active::after {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+.review-tabs.is-switching .nav-link.active::after {
+    transform: scaleX(.7);
+}
+
+.review-tab-content .tab-pane {
+    will-change: opacity, transform;
+}
+
+.review-tab-content .tab-pane.fade {
+    transition: opacity var(--motion-normal) var(--motion-ease-out), transform var(--motion-normal) var(--motion-ease-out);
+    transform: translateY(4px);
+}
+
+.review-tab-content .tab-pane.fade.show {
+    transform: translateY(0);
+}
+
+.dropdown-menu {
+    transform-origin: top right;
+}
+
+.dropdown-menu.show {
+    animation: motion-menu-in var(--motion-normal) var(--motion-ease-out) both;
+}
+
+.modal.fade .modal-dialog {
+    transform: translateY(10px) scale(.985);
+    transition: transform var(--motion-normal) var(--motion-ease-out);
+}
+
+.modal.fade.show .modal-dialog {
+    transform: translateY(0) scale(1);
+}
+
+.data-table tbody tr {
+    animation: none;
+}
+
+.js-enhanced.is-ready .data-table tbody tr {
+    animation: motion-row-in var(--motion-normal) var(--motion-ease-out) both;
+}
+
+.data-table tbody tr:hover {
+    transform: translateY(-1px);
+}
+
+@keyframes motion-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes motion-progress {
+    from { background-position: 0 0; }
+    to { background-position: 220% 0; }
+}
+
+@keyframes motion-surface-in {
+    from { opacity: 0; transform: translateY(7px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes motion-login-in {
+    from { opacity: 0; transform: translateY(10px) scale(.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes motion-feedback-in {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes motion-overlay-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes motion-row-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes motion-menu-in {
+    from { opacity: 0; transform: translateY(-4px) scale(.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+
+    body.is-navigating .app-main,
+    .js-enhanced.is-ready .app-content > *,
+    .js-enhanced.is-ready .login-panel,
+    .js-enhanced.is-ready .data-table tbody tr {
+        opacity: 1;
+        transform: none;
+        animation: none;
+    }
+
+    .btn.is-loading::before {
+        animation: none;
+    }
+}
+
 .invoices-index-page {
     min-height: calc(100vh - var(--topbar-height) - 56px);
     display: flex;
