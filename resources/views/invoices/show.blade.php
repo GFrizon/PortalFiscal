@@ -395,6 +395,46 @@
                                     <p class="empty-state compact mb-0">Nenhum documento complementar anexado.</p>
                                 @endforelse
                             </div>
+
+                            <div class="invoice-alerts-module">
+                                <div class="attachment-compact-header">
+                                    <div>
+                                        <span>Alertas</span>
+                                        <small>{{ $invoice->alerts->where('resolved', false)->count() }} aberto{{ $invoice->alerts->where('resolved', false)->count() === 1 ? '' : 's' }}</small>
+                                    </div>
+                                </div>
+
+                                <div class="invoice-alerts-list">
+                                    @forelse($invoice->alerts as $alert)
+                                        <div class="alert alert-card {{ $alert->resolved ? 'alert-resolved' : ($alert->level->value === 'critical' ? 'alert-danger' : 'alert-warning') }} mb-2">
+                                            <i class="bi {{ $alert->resolved ? 'bi-check2-circle' : 'bi-exclamation-triangle' }}" aria-hidden="true"></i>
+                                            <div class="w-100">
+                                                <div class="d-flex flex-wrap gap-2 justify-content-between align-items-start">
+                                                    <div><strong>{{ $alert->type->label() }}:</strong> {{ $alert->message }}</div>
+                                                    @if($alert->resolved)
+                                                        <span class="badge text-bg-success">Resolvido</span>
+                                                    @else
+                                                        <span class="badge text-bg-secondary">Aberto</span>
+                                                    @endif
+                                                </div>
+                                                @can('review', $invoice)
+                                                    @if(! $alert->resolved)
+                                                        <form method="POST" action="{{ route('invoices.alerts.resolve', [$invoice, $alert]) }}" class="mt-2">
+                                                            @csrf
+                                                            <button class="btn btn-sm btn-outline-success" type="submit">
+                                                                <i class="bi bi-check2" aria-hidden="true"></i>
+                                                                Resolver alerta
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                @endcan
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <p class="empty-state compact mb-0">Nenhum alerta registrado.</p>
+                                    @endforelse
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -407,10 +447,7 @@
                             </li>
                         @endcan
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link @cannot('review', $invoice) active @endcannot" id="alerts-tab" data-bs-toggle="tab" data-bs-target="#alerts-tab-pane" type="button" role="tab" aria-controls="alerts-tab-pane" aria-selected="@cannot('review', $invoice) true @else false @endcannot">Alertas</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-tab-pane" type="button" role="tab" aria-controls="history-tab-pane" aria-selected="false">Historico</button>
+                            <button class="nav-link @cannot('review', $invoice) active @endcannot" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-tab-pane" type="button" role="tab" aria-controls="history-tab-pane" aria-selected="@cannot('review', $invoice) true @else false @endcannot">Historico</button>
                         </li>
                     </ul>
 
@@ -473,38 +510,7 @@
                             </div>
                         @endcan
 
-                        <div class="tab-pane fade @cannot('review', $invoice) show active @endcannot" id="alerts-tab-pane" role="tabpanel" aria-labelledby="alerts-tab" tabindex="0">
-                            @forelse($invoice->alerts as $alert)
-                                <div class="alert alert-card {{ $alert->resolved ? 'alert-resolved' : ($alert->level->value === 'critical' ? 'alert-danger' : 'alert-warning') }} mb-2">
-                                    <i class="bi {{ $alert->resolved ? 'bi-check2-circle' : 'bi-exclamation-triangle' }}" aria-hidden="true"></i>
-                                    <div class="w-100">
-                                        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-start">
-                                            <div><strong>{{ $alert->type->label() }}:</strong> {{ $alert->message }}</div>
-                                            @if($alert->resolved)
-                                                <span class="badge text-bg-success">Resolvido</span>
-                                            @else
-                                                <span class="badge text-bg-secondary">Aberto</span>
-                                            @endif
-                                        </div>
-                                        @can('review', $invoice)
-                                            @if(! $alert->resolved)
-                                                <form method="POST" action="{{ route('invoices.alerts.resolve', [$invoice, $alert]) }}" class="mt-2">
-                                                    @csrf
-                                                    <button class="btn btn-sm btn-outline-success" type="submit">
-                                                        <i class="bi bi-check2" aria-hidden="true"></i>
-                                                        Resolver alerta
-                                                    </button>
-                                                </form>
-                                            @endif
-                                        @endcan
-                                    </div>
-                                </div>
-                            @empty
-                                <p class="empty-state compact">Nenhum alerta registrado.</p>
-                            @endforelse
-                        </div>
-
-                        <div class="tab-pane fade" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
+                        <div class="tab-pane fade @cannot('review', $invoice) show active @endcannot" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
                             <div class="timeline">
                                 @forelse($invoice->histories->sortByDesc('created_at') as $history)
                                     <div class="timeline-item">

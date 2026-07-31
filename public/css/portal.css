@@ -5107,6 +5107,30 @@ body.is-navigating .app-main {
     font-size: .8rem;
 }
 
+.invoice-detail-page .invoice-alerts-module {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(33, 63, 120, .1);
+}
+
+.invoice-detail-page .invoice-alerts-module .attachment-compact-header {
+    margin-bottom: 6px;
+}
+
+.invoice-detail-page .invoice-alerts-list .alert-card {
+    margin-bottom: 6px !important;
+    padding: 8px 9px;
+    font-size: .8rem;
+}
+
+.invoice-detail-page .invoice-alerts-list .alert-card > .bi {
+    margin-top: 2px;
+}
+
+.invoice-detail-page .invoice-alerts-list .badge {
+    font-size: .68rem;
+}
+
 .invoice-secondary-row {
     display: grid;
     grid-template-columns: 1fr;
