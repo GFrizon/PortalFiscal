@@ -5649,7 +5649,7 @@ body.is-navigating .app-main {
 
 .invoice-filter-grid {
     display: grid;
-    grid-template-columns: minmax(140px, .8fr) minmax(140px, .8fr) minmax(260px, 1.45fr) minmax(180px, .85fr) auto;
+    grid-template-columns: minmax(150px, .85fr) minmax(320px, 1.6fr) minmax(180px, .85fr) auto;
     gap: 8px;
     align-items: end;
 }
@@ -5708,19 +5708,19 @@ body.is-navigating .app-main {
 
 .invoice-list-scroll .data-table {
     border-collapse: separate;
-    border-spacing: 0 7px;
+    border-spacing: 0 4px;
 }
 
 .invoice-list-scroll .data-table thead th {
-    padding-top: 11px;
-    padding-bottom: 8px;
+    padding-top: 8px;
+    padding-bottom: 6px;
     border-bottom: 0;
     background: transparent;
 }
 
 .invoice-list-scroll .data-table tbody td {
-    padding-top: 12px;
-    padding-bottom: 12px;
+    padding-top: 7px;
+    padding-bottom: 7px;
     border-top: 1px solid rgba(33, 63, 120, .1);
     border-bottom: 1px solid rgba(33, 63, 120, .1);
     background: #fff;
@@ -5743,7 +5743,7 @@ body.is-navigating .app-main {
 }
 
 .invoice-list-scroll .data-table tbody tr:hover {
-    box-shadow: 0 10px 24px rgba(15, 23, 42, .075);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, .06);
 }
 
 .invoice-list-scroll .data-table tbody tr:hover td {
@@ -5765,14 +5765,14 @@ body.is-navigating .app-main {
 
 .supplier-cell {
     display: grid;
-    gap: 2px;
+    gap: 0;
     min-width: 0;
 }
 
 .supplier-cell strong {
     overflow: hidden;
     color: var(--color-text);
-    font-size: .85rem;
+    font-size: .8rem;
     font-weight: 900;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -5780,7 +5780,7 @@ body.is-navigating .app-main {
 
 .supplier-cell span {
     color: var(--color-text-muted);
-    font-size: .72rem;
+    font-size: .68rem;
     font-weight: 800;
 }
 
@@ -5789,13 +5789,13 @@ body.is-navigating .app-main {
 .reference-code {
     display: inline-flex;
     align-items: center;
-    min-height: 26px;
-    border-radius: 7px;
+    min-height: 22px;
+    border-radius: 6px;
     font-weight: 850;
 }
 
 .document-type-pill {
-    padding: 3px 8px;
+    padding: 2px 7px;
     background: rgba(31, 79, 112, .08);
     color: var(--color-primary-dark);
 }
@@ -5817,8 +5817,8 @@ body.is-navigating .app-main {
 .invoice-list-scroll .entity-icon,
 .invoice-list-scroll .urgent-indicator,
 .invoice-list-scroll .launched-indicator {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
 }
 
 .invoice-list-scroll .status-cell .badge {
@@ -5831,22 +5831,73 @@ body.is-navigating .app-main {
 }
 
 .invoice-list-scroll .text-end .btn-sm {
-    width: 29px;
-    height: 29px;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    font-size: .78rem;
+}
+
+.invoice-list-scroll .badge {
+    padding: .26rem .48rem;
+    font-size: .64rem;
+}
+
+.invoice-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid rgba(33, 63, 120, .1);
+    background: #fff;
+}
+
+.invoice-pagination > span {
+    color: var(--color-text-muted);
+    font-size: .72rem;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.invoice-pagination nav {
+    margin-left: auto;
+}
+
+.invoice-pagination .pagination {
+    gap: 4px;
+    margin-bottom: 0;
+}
+
+.invoice-pagination .page-link {
+    min-width: 30px;
     border-radius: 7px;
+    border-color: rgba(33, 63, 120, .16);
+    color: var(--color-primary-dark);
+    font-size: .8rem;
+    font-weight: 800;
+    text-align: center;
+}
+
+.invoice-pagination .page-item.active .page-link {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: #fff;
+}
+
+.invoice-pagination .page-item.disabled .page-link {
+    color: #9aa7b5;
 }
 
 @media (max-width: 1399.98px) {
     .invoice-filter-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .invoice-filter-grid .filter-field-wide {
-        grid-column: span 2;
+        grid-column: span 1;
     }
 
     .invoice-filter-grid .filter-field-actions {
-        grid-column: span 2;
+        grid-column: 1 / -1;
     }
 }
 

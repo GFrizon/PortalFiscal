@@ -20,7 +20,6 @@
 
             return route('invoices.index', array_filter([
                 'business_unit_id' => $filters['business_unit_id'] ?? null,
-                'protocol' => $filters['protocol'] ?? null,
                 'purchase_order_number' => $filters['purchase_order_number'] ?? null,
                 'supplier' => $filters['supplier'] ?? null,
                 'status' => $filters['status'] ?? null,
@@ -74,7 +73,6 @@
                     $folderRoute = route('invoices.index', array_filter([
                         'business_unit_id' => $folderValue,
                         'status' => $filters['status'] ?? null,
-                        'protocol' => $filters['protocol'] ?? null,
                         'purchase_order_number' => $filters['purchase_order_number'] ?? null,
                         'supplier' => $filters['supplier'] ?? null,
                         'sort' => $filters['sort'] ?? null,
@@ -112,10 +110,6 @@
                 <input type="hidden" name="business_unit_id" value="{{ $selectedUnitId }}">
             @endif
 
-            <div class="filter-field">
-                <label class="form-label" for="protocol">Protocolo</label>
-                <input id="protocol" class="form-control" name="protocol" value="{{ $filters['protocol'] ?? '' }}" placeholder="NF-2026...">
-            </div>
             <div class="filter-field">
                 <label class="form-label" for="purchase_order_number">OC/CTE</label>
                 <input id="purchase_order_number" class="form-control" name="purchase_order_number" value="{{ $filters['purchase_order_number'] ?? '' }}" placeholder="Numero da OC">
@@ -237,7 +231,10 @@
                 </tbody>
             </table>
         </div>
-        <div class="panel-pagination">{{ $invoices->links() }}</div>
+        <div class="panel-pagination invoice-pagination">
+            <span>Paginas</span>
+            {{ $invoices->links() }}
+        </div>
     </div>
     </div>
 @endsection
