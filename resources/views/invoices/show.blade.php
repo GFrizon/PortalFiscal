@@ -160,10 +160,6 @@
                             <strong>{{ $invoice->invoice_number ?? '-' }}</strong>
                         </div>
                         <div>
-                            <span>{{ $documentType->referenceLabel() }}</span>
-                            <strong>{{ $invoice->purchase_order_number ?? '-' }}</strong>
-                        </div>
-                        <div>
                             <span>Fornecedor</span>
                             <strong>{{ $supplierName }}</strong>
                         </div>
@@ -177,20 +173,13 @@
                         </div>
                     </div>
 
-                    @if(filled($invoice->invoice_access_key))
-                        <button
-                            type="button"
-                            class="access-key-copy mb-3"
-                            data-copy-text="{{ $invoice->invoice_access_key }}"
-                            aria-label="Copiar chave de acesso da NF"
-                        >
-                            <span>
-                                <small>Chave de acesso</small>
-                                <strong>{{ $invoice->invoice_access_key }}</strong>
-                            </span>
-                            <i class="bi bi-clipboard" aria-hidden="true"></i>
-                        </button>
-                    @endif
+                    <section class="reference-focus-card">
+                        <div>
+                            <span>{{ $documentType->referenceLabel() }}</span>
+                            <strong>{{ $invoice->purchase_order_number ?? '-' }}</strong>
+                        </div>
+                        <small>Referencia usada para validar fornecedor, valor e conferencia no CIGAM.</small>
+                    </section>
 
                         <div class="invoice-details-and-attachments">
                         <section class="invoice-info-module">
@@ -218,6 +207,20 @@
                             <dt>Lancamento</dt>
                             <dd>{{ $invoice->launched_at?->format('d/m/Y H:i') ?? '-' }}</dd>
                             </dl>
+                            @if(filled($invoice->invoice_access_key))
+                                <button
+                                    type="button"
+                                    class="access-key-copy"
+                                    data-copy-text="{{ $invoice->invoice_access_key }}"
+                                    aria-label="Copiar chave de acesso da NF"
+                                >
+                                    <span>
+                                        <small>Chave de acesso</small>
+                                        <strong>{{ $invoice->invoice_access_key }}</strong>
+                                    </span>
+                                    <i class="bi bi-clipboard" aria-hidden="true"></i>
+                                </button>
+                            @endif
                         </section>
 
                         <div class="attachment-compact">
@@ -300,7 +303,7 @@
                         </section>
                         @endif
 
-                        <div class="note-box">
+                        <div class="note-box submitter-note-box">
                         <div class="note-title">
                             <i class="bi bi-chat-left-text" aria-hidden="true"></i>
                             Observacoes de {{ $invoice->submitter?->name ?? 'Usuario' }}
