@@ -4861,50 +4861,133 @@ body.is-navigating .app-main {
     font-size: .84rem;
 }
 
-.reference-focus-card {
-    grid-column: 2;
-    grid-row: 2;
-    display: flex;
-    align-items: flex-start;
-    flex-direction: column;
-    justify-content: space-between;
+.document-compare-card {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 34px minmax(0, 1fr);
+    align-items: stretch;
     gap: 8px;
-    min-height: 100%;
-    padding: 12px;
-    border: 1px solid rgba(31, 79, 112, .26);
-    border-left: 4px solid var(--color-primary);
-    border-radius: 7px;
+    padding: 9px;
+    border: 1px solid rgba(33, 63, 120, .14);
+    border-radius: 8px;
     background:
-        linear-gradient(90deg, rgba(31, 79, 112, .08), rgba(255, 255, 255, .92)),
+        linear-gradient(90deg, rgba(31, 79, 112, .04), rgba(255, 255, 255, .9) 48%, rgba(255, 196, 0, .07)),
         #fff;
 }
 
-.reference-focus-card span,
-.reference-focus-card strong,
-.reference-focus-card small {
-    display: block;
+.compare-document {
+    min-width: 0;
+    padding: 9px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .82);
 }
 
-.reference-focus-card span {
-    color: var(--color-text-muted);
-    font-size: .68rem;
-    font-weight: 850;
+.compare-document-nf {
+    border-left: 3px solid var(--color-primary);
+}
+
+.compare-document-cigam {
+    border-left: 3px solid var(--color-accent);
+}
+
+.compare-document-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 7px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid rgba(33, 63, 120, .1);
+}
+
+.compare-document-header > div {
+    min-width: 0;
+}
+
+.compare-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--color-primary-dark);
+    font-size: .75rem;
+    font-weight: 900;
     text-transform: uppercase;
 }
 
-.reference-focus-card strong {
+.compare-document-header strong {
+    display: block;
     margin-top: 2px;
-    color: var(--color-primary-dark);
-    font-size: 1.12rem;
-    font-weight: 900;
-    letter-spacing: 0;
+    color: var(--color-text);
+    font-size: 1rem;
+    font-weight: 920;
 }
 
-.reference-focus-card small {
-    max-width: none;
+.compare-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin: 0;
+}
+
+.compare-list > div {
+    display: grid;
+    gap: 2px;
+    align-content: start;
+    min-width: 0;
+    min-height: 54px;
+    padding: 7px 8px;
+    border-radius: 6px;
+}
+
+.compare-list > div:nth-child(odd) {
+    background: rgba(248, 250, 252, .86);
+}
+
+.compare-list > .compare-row-emphasis {
+    border: 1px solid rgba(226, 176, 44, .18);
+    background: rgba(255, 250, 239, .86);
+}
+
+.compare-list dt {
     color: var(--color-text-muted);
-    font-size: .8rem;
-    text-align: left;
+    font-size: .66rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.compare-list dd {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--color-text);
+    font-size: .82rem;
+    font-weight: 850;
+}
+
+.compare-divider {
+    display: grid;
+    grid-template-rows: 1fr 30px 1fr;
+    justify-items: center;
+    align-items: center;
+    color: var(--color-primary-dark);
+}
+
+.compare-divider span {
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(180deg, transparent, rgba(33, 63, 120, .18), transparent);
+}
+
+.compare-divider i {
+    display: inline-grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--color-primary-dark);
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(23, 45, 89, .18);
 }
 
 .invoice-detail-page .invoice-details-and-attachments {
@@ -5071,7 +5154,7 @@ body.is-navigating .app-main {
 
 .invoice-detail-page .invoice-cigam-panel,
 .invoice-detail-page .invoice-review-panel {
-    min-height: 100%;
+    align-self: start;
 }
 
 .invoice-detail-page .invoice-cigam-panel {
@@ -5122,11 +5205,27 @@ body.is-navigating .app-main {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .reference-focus-card,
+    .document-compare-card,
     .invoice-detail-page .invoice-details-and-attachments,
     .invoice-secondary-row {
         grid-column: 1;
         grid-row: auto;
+    }
+
+    .document-compare-card {
+        grid-template-columns: 1fr;
+    }
+
+    .compare-divider {
+        grid-template-rows: none;
+        grid-template-columns: 1fr 30px 1fr;
+        min-height: 30px;
+    }
+
+    .compare-divider span {
+        width: 100%;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(33, 63, 120, .18), transparent);
     }
 
     .invoice-detail-page .invoice-details-and-attachments,
@@ -5159,15 +5258,8 @@ body.is-navigating .app-main {
         gap: 2px;
     }
 
-    .reference-focus-card {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .reference-focus-card small {
-        max-width: none;
-        text-align: left;
+    .compare-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .invoice-detail-page .attachment-upload-row.compact {

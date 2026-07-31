@@ -18,6 +18,13 @@
     @php($dueSummary = $paymentMethod->requiresInstallments()
         ? (filled($firstInstallment['due_date'] ?? null) ? \Illuminate\Support\Carbon::parse($firstInstallment['due_date'])->format('d/m/Y') : '-')
         : $paymentMethod->label())
+    @php($supplierCode = $purchaseOrderCheck
+        ? (data_get($purchaseOrderCheck->raw_response, 'supplier_code')
+            ?? data_get($purchaseOrderCheck->raw_response, 'codigo_fornecedor')
+            ?? data_get($purchaseOrderCheck->raw_response, 'cod_fornecedor')
+            ?? data_get($purchaseOrderCheck->raw_response, 'fornecedor_codigo')
+            ?? data_get($purchaseOrderCheck->raw_response, 'cd_fornecedor'))
+        : null)
 
     <div class="invoice-detail-page {{ $isPendingForSubmitter ? 'has-pending-callout' : '' }}">
         <div class="section-toolbar mb-3">
@@ -146,40 +153,104 @@
                     <div class="panel-header">
                         <div>
                             <div class="eyebrow">Protocolo {{ $invoice->protocol }}</div>
-                            <h2 class="panel-title">Dados da nota</h2>
+                            <h2 class="panel-title">Conferencia de documentos</h2>
                         </div>
                     </div>
 
-                    <div class="invoice-summary-strip mb-3">
-                        <div>
-                            <span>Status</span>
-                            <strong><span class="badge {{ $invoice->status->badgeClass() }}">{{ $invoice->status->label() }}</span></strong>
-                        </div>
-                        <div>
-                            <span>Nota</span>
-                            <strong>{{ $invoice->invoice_number ?? '-' }}</strong>
-                        </div>
-                        <div>
-                            <span>Fornecedor</span>
-                            <strong>{{ $supplierName }}</strong>
-                        </div>
-                        <div>
-                            <span>Valor</span>
-                            <strong>{{ $invoiceAmount }}</strong>
-                        </div>
-                        <div>
-                            <span>Vencimento</span>
-                            <strong>{{ $dueSummary }}</strong>
-                        </div>
-                    </div>
+                    @if($documentType === \App\Enums\InvoiceDocumentType::Nf && $purchaseOrderCheck)
+                        <section class="document-compare-card mb-3" aria-label="Comparacao entre nota fiscal e ordem de compra">
+                            <div class="compare-document compare-document-nf">
+                                <div class="compare-document-header">
+                                    <div>
+                                        <span class="compare-kicker"><i class="bi bi-file-earmark-text" aria-hidden="true"></i> Nota fiscal</span>
+                                        <strong>{{ $invoice->invoice_number ?? '-' }}</strong>
+                                    </div>
+                                    <span class="badge {{ $invoice->status->badgeClass() }}">{{ $invoice->status->label() }}</span>
+                                </div>
+                                <dl class="compare-list">
+                                    <div>
+                                        <dt>{{ $documentType->referenceLabel() }}</dt>
+                                        <dd>{{ $invoice->purchase_order_number ?? '-' }}</dd>
+                                    </div>
+                                    <div class="compare-row-emphasis">
+                                        <dt>Fornecedor</dt>
+                                        <dd>{{ $supplierName }}</dd>
+                                    </div>
+                                    <div class="compare-row-emphasis">
+                                        <dt>Valor</dt>
+                                        <dd>{{ $invoiceAmount }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Vencimento</dt>
+                                        <dd>{{ $dueSummary }}</dd>
+                                    </div>
+                                </dl>
+                            </div>
 
-                    <section class="reference-focus-card">
-                        <div>
-                            <span>{{ $documentType->referenceLabel() }}</span>
-                            <strong>{{ $invoice->purchase_order_number ?? '-' }}</strong>
+                            <div class="compare-divider" aria-hidden="true">
+                                <span></span>
+                                <i class="bi bi-arrow-left-right"></i>
+                                <span></span>
+                            </div>
+
+                            <div class="compare-document compare-document-cigam">
+                                <div class="compare-document-header">
+                                    <div>
+                                        <span class="compare-kicker"><i class="bi bi-database-check" aria-hidden="true"></i> Ordem de compra no CIGAM</span>
+                                        <strong>{{ data_get($purchaseOrderCheck->raw_response, 'purchase_order_number', $invoice->purchase_order_number) }}</strong>
+                                    </div>
+                                    <span class="badge {{ $purchaseOrderCheck->order_exists ? 'text-bg-primary' : 'text-bg-warning' }}">
+                                        {{ $purchaseOrderCheck->order_exists ? ($purchaseOrderCheck->status ?? 'Encontrada') : 'Nao encontrada' }}
+                                    </span>
+                                </div>
+                                <dl class="compare-list">
+                                    <div>
+                                        <dt>Codigo fornecedor</dt>
+                                        <dd>{{ filled($supplierCode) ? $supplierCode : '-' }}</dd>
+                                    </div>
+                                    <div class="compare-row-emphasis">
+                                        <dt>Fornecedor</dt>
+                                        <dd>{{ $purchaseOrderCheck->supplier_name ?? '-' }}</dd>
+                                    </div>
+                                    <div class="compare-row-emphasis">
+                                        <dt>Valor</dt>
+                                        <dd>{{ $purchaseOrderCheck->amount !== null ? 'R$ '.number_format((float) $purchaseOrderCheck->amount, 2, ',', '.') : '-' }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>CNPJ</dt>
+                                        <dd>{{ $purchaseOrderCheck->supplier_cnpj ?? '-' }}</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </section>
+                    @else
+                        <div class="invoice-summary-strip mb-3">
+                            <div>
+                                <span>Status</span>
+                                <strong><span class="badge {{ $invoice->status->badgeClass() }}">{{ $invoice->status->label() }}</span></strong>
+                            </div>
+                            <div>
+                                <span>Nota</span>
+                                <strong>{{ $invoice->invoice_number ?? '-' }}</strong>
+                            </div>
+                            <div>
+                                <span>{{ $documentType->referenceLabel() }}</span>
+                                <strong>{{ $invoice->purchase_order_number ?? '-' }}</strong>
+                            </div>
+                            <div>
+                                <span>Fornecedor</span>
+                                <strong>{{ $supplierName }}</strong>
+                            </div>
+                            <div>
+                                <span>Valor</span>
+                                <strong>{{ $invoiceAmount }}</strong>
+                            </div>
+                            <div>
+                                <span>Vencimento</span>
+                                <strong>{{ $dueSummary }}</strong>
+                            </div>
                         </div>
-                        <small>Referencia usada para validar fornecedor, valor e conferencia no CIGAM.</small>
-                    </section>
+                    @endif
 
                         <div class="invoice-details-and-attachments">
                         <section class="invoice-info-module">
@@ -326,57 +397,6 @@
                         @endif
                     </div>
                 </div>
-
-                @if($documentType === \App\Enums\InvoiceDocumentType::Nf && $purchaseOrderCheck)
-                    <div class="panel invoice-cigam-panel mb-3">
-                        <div class="po-summary mb-0">
-                            <div class="po-summary-header">
-                                <span>
-                                    <i class="bi bi-database-check" aria-hidden="true"></i>
-                                    Ordem de compra no CIGAM
-                                </span>
-                                <span class="badge {{ $purchaseOrderCheck->order_exists ? 'text-bg-primary' : 'text-bg-warning' }}">
-                                    {{ $purchaseOrderCheck->order_exists ? ($purchaseOrderCheck->status ?? 'Encontrada') : 'Nao encontrada' }}
-                                </span>
-                            </div>
-                            <div class="po-summary-grid">
-                                <div>
-                                    <span>Situacao</span>
-                                    <strong>{{ $purchaseOrderCheck->order_exists ? ($purchaseOrderCheck->status ?? '-') : 'Nao encontrada' }}</strong>
-                                </div>
-                                <div>
-                                    <span>Numero no ERP</span>
-                                    <strong>{{ data_get($purchaseOrderCheck->raw_response, 'purchase_order_number', $invoice->purchase_order_number) }}</strong>
-                                </div>
-                                <div>
-                                    <span>Fornecedor</span>
-                                    <strong>{{ $purchaseOrderCheck->supplier_name ?? '-' }}</strong>
-                                </div>
-                                <div>
-                                    <span>CNPJ fornecedor</span>
-                                    <strong>{{ $purchaseOrderCheck->supplier_cnpj ?? '-' }}</strong>
-                                </div>
-                                <div>
-                                    <span>Valor</span>
-                                    <strong>{{ $purchaseOrderCheck->amount !== null ? 'R$ '.number_format((float) $purchaseOrderCheck->amount, 2, ',', '.') : '-' }}</strong>
-                                </div>
-                                @php($supplierCode = data_get($purchaseOrderCheck->raw_response, 'supplier_code')
-                                    ?? data_get($purchaseOrderCheck->raw_response, 'codigo_fornecedor')
-                                    ?? data_get($purchaseOrderCheck->raw_response, 'cod_fornecedor')
-                                    ?? data_get($purchaseOrderCheck->raw_response, 'fornecedor_codigo')
-                                    ?? data_get($purchaseOrderCheck->raw_response, 'cd_fornecedor'))
-                                <div>
-                                    <span>Codigo fornecedor</span>
-                                    <strong>{{ filled($supplierCode) ? $supplierCode : '-' }}</strong>
-                                </div>
-                                <div>
-                                    <span>Sistema origem</span>
-                                    <strong>CIGAM</strong>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
 
                 <div class="panel invoice-review-panel">
                     <ul class="nav nav-pills review-tabs" id="invoiceReviewTabs" role="tablist">
