@@ -4807,7 +4807,20 @@ body.is-navigating .app-main {
         animation: none !important;
     }
 
-    .submit-loading-spinner {
-        animation: none !important;
+    .submit-loading-spinner,
+    .btn.is-loading::before {
+        animation: motion-spin 900ms linear infinite !important;
+        animation-duration: 900ms !important;
+        animation-iteration-count: infinite !important;
     }
+}
+
+/* Loading indicators are essential feedback and must keep moving. */
+.form-panel.is-submitting .submit-loading-spinner,
+.login-panel.is-submitting .submit-loading-spinner,
+.submit-loading-state:not(.is-success):not(.is-error) .submit-loading-spinner {
+    animation: motion-spin 760ms linear infinite !important;
+    animation-duration: 760ms !important;
+    animation-iteration-count: infinite !important;
+    will-change: transform;
 }
