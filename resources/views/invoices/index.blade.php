@@ -126,92 +126,82 @@
             </div>
             <span>{{ $invoices->firstItem() ?? 0 }}-{{ $invoices->lastItem() ?? 0 }} de {{ $invoices->total() }}</span>
         </div>
-        <div class="invoice-sort-strip" aria-label="Ordenacao da lista">
-            <span>Ordenar</span>
-            <a @class(['sort-link', 'active' => $sort === 'type']) href="{{ $sortLink('type') }}">Tipo <i class="bi {{ $sortIcon('type') }}" aria-hidden="true"></i></a>
-            <a @class(['sort-link', 'active' => $sort === 'invoice']) href="{{ $sortLink('invoice') }}">Nota <i class="bi {{ $sortIcon('invoice') }}" aria-hidden="true"></i></a>
-            <a @class(['sort-link', 'active' => $sort === 'reference']) href="{{ $sortLink('reference') }}">OC/CTE <i class="bi {{ $sortIcon('reference') }}" aria-hidden="true"></i></a>
-            <a @class(['sort-link', 'active' => $sort === 'supplier']) href="{{ $sortLink('supplier') }}">Fornecedor <i class="bi {{ $sortIcon('supplier') }}" aria-hidden="true"></i></a>
-            <a @class(['sort-link', 'active' => $sort === 'unit']) href="{{ $sortLink('unit') }}">Unidade <i class="bi {{ $sortIcon('unit') }}" aria-hidden="true"></i></a>
-            <a @class(['sort-link', 'active' => $sort === 'user']) href="{{ $sortLink('user') }}">Usuario <i class="bi {{ $sortIcon('user') }}" aria-hidden="true"></i></a>
-            <a @class(['sort-link', 'active' => $sort === 'created']) href="{{ $sortLink('created') }}">Inclusao <i class="bi {{ $sortIcon('created') }}" aria-hidden="true"></i></a>
-            <a @class(['sort-link', 'active' => $sort === 'arrival']) href="{{ $sortLink('arrival') }}">Chegada <i class="bi {{ $sortIcon('arrival') }}" aria-hidden="true"></i></a>
-            <a @class(['sort-link', 'active' => $sort === 'due']) href="{{ $sortLink('due') }}">Vencimento <i class="bi {{ $sortIcon('due') }}" aria-hidden="true"></i></a>
-            <a @class(['sort-link', 'active' => $sort === 'status']) href="{{ $sortLink('status') }}">Status <i class="bi {{ $sortIcon('status') }}" aria-hidden="true"></i></a>
+        <div class="table-responsive invoice-list-scroll">
+            <table class="table data-table align-middle mb-0">
+                <thead>
+                <tr>
+                    <th class="col-priority" aria-label="Prioridade"></th>
+                    <th class="col-type"><a class="sort-link" href="{{ $sortLink('type') }}">Tipo <i class="bi {{ $sortIcon('type') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-invoice"><a class="sort-link" href="{{ $sortLink('invoice') }}">Nota <i class="bi {{ $sortIcon('invoice') }}" aria-hidden="true"></i></a></th>
+                    <th><a class="sort-link" href="{{ $sortLink('reference') }}">OC/CTE <i class="bi {{ $sortIcon('reference') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-supplier"><a class="sort-link" href="{{ $sortLink('supplier') }}">Fornecedor <i class="bi {{ $sortIcon('supplier') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-unit"><a class="sort-link" href="{{ $sortLink('unit') }}">Unidade <i class="bi {{ $sortIcon('unit') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-user"><a class="sort-link" href="{{ $sortLink('user') }}">Usuario <i class="bi {{ $sortIcon('user') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-created"><a class="sort-link" href="{{ $sortLink('created') }}">Inclusao <i class="bi {{ $sortIcon('created') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-arrival"><a class="sort-link" href="{{ $sortLink('arrival') }}">Chegada <i class="bi {{ $sortIcon('arrival') }}" aria-hidden="true"></i></a></th>
+                    <th><a class="sort-link" href="{{ $sortLink('due') }}">Vencimento <i class="bi {{ $sortIcon('due') }}" aria-hidden="true"></i></a></th>
+                    <th><a class="sort-link" href="{{ $sortLink('status') }}">Status <i class="bi {{ $sortIcon('status') }}" aria-hidden="true"></i></a></th>
+                    <th class="text-end">Acoes</th>
+                </tr>
+                </thead>
+                <tbody>
+                @forelse($invoices as $invoice)
+                    @php($documentType = $invoice->documentType())
+                    <tr @class([
+                        'invoice-row-urgent' => $invoice->is_urgent,
+                        'invoice-row-launched' => $invoice->status === \App\Enums\InvoiceStatus::Launched,
+                    ])>
+                        <td class="col-priority {{ $invoice->is_urgent || $invoice->status === \App\Enums\InvoiceStatus::Launched ? '' : 'priority-empty' }}" data-label="Prioridade">
+                            @if($invoice->status === \App\Enums\InvoiceStatus::Launched)
+                                <span class="launched-indicator" title="Lancada" aria-label="Lancada">
+                                    <i class="bi bi-archive" aria-hidden="true"></i>
+                                    <span class="visually-hidden">Lancada</span>
+                                </span>
+                            @elseif($invoice->is_urgent)
+                                <span class="urgent-indicator" title="Urgente" aria-label="Urgente">
+                                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                                    <span class="visually-hidden">Urgente</span>
+                                </span>
+                            @endif
+                        </td>
+                        <td class="col-type" data-label="Tipo"><span class="document-type-pill">{{ $documentType->label() }}</span></td>
+                        <td class="col-invoice" data-label="Nota"><span class="invoice-number-pill">{{ $invoice->invoice_number ?? '-' }}</span></td>
+                        <td data-label="OC/CTE"><span class="reference-code">{{ $invoice->purchase_order_number ?? '-' }}</span></td>
+                        <td class="col-supplier" data-label="Fornecedor">
+                            <div class="supplier-cell">
+                                <strong>{{ $invoice->purchaseOrderCheck?->supplier_name ?? '-' }}</strong>
+                                <span>{{ $invoice->protocol }}</span>
+                            </div>
+                        </td>
+                        <td class="col-unit" data-label="Unidade">
+                            <div class="table-entity">
+                                <span class="entity-icon"><i class="bi {{ $invoice->businessUnit ? 'bi-building' : 'bi-building-x' }}" aria-hidden="true"></i></span>
+                                <span>{{ $invoice->businessUnit?->name ?? 'Nao identificada' }}</span>
+                            </div>
+                        </td>
+                        <td class="col-user" data-label="Usuario"><span class="muted-cell">{{ $invoice->submitter?->name }}</span></td>
+                        <td class="col-created" data-label="Inclusao">{{ $invoice->created_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                        <td class="col-arrival" data-label="Chegada">{{ $invoice->arrival_date?->format('d/m/Y') ?? '-' }}</td>
+                        <td data-label="Vencimento">{{ $invoice->due_date?->format('d/m/Y') ?? '-' }}</td>
+                        <td data-label="Status">
+                            <div class="status-cell">
+                                <span class="badge {{ $invoice->status->badgeClass() }}" title="{{ $invoice->status->label() }}">{{ $invoice->status->shortLabel() }}</span>
+                            </div>
+                        </td>
+                        <td class="text-end row-actions" data-label="Acoes">
+                            <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-sm btn-outline-primary btn-open-invoice" aria-label="Abrir {{ $invoice->protocol }}">
+                                Abrir
+                            </a>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="12" class="empty-state">Nenhuma nota nesta pasta.</td>
+                    </tr>
+                @endforelse
+                </tbody>
+            </table>
         </div>
-
-        <div class="invoice-queue-list">
-            @forelse($invoices as $invoice)
-                @php($documentType = $invoice->documentType())
-                <article @class([
-                    'invoice-queue-item',
-                    'is-urgent' => $invoice->is_urgent,
-                    'is-launched' => $invoice->status === \App\Enums\InvoiceStatus::Launched,
-                ])>
-                    <div class="invoice-queue-marker">
-                        @if($invoice->status === \App\Enums\InvoiceStatus::Launched)
-                            <span class="launched-indicator" title="Lancada" aria-label="Lancada">
-                                <i class="bi bi-archive" aria-hidden="true"></i>
-                            </span>
-                        @elseif($invoice->is_urgent)
-                            <span class="urgent-indicator" title="Urgente" aria-label="Urgente">
-                                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
-                            </span>
-                        @else
-                            <span class="queue-dot" aria-hidden="true"></span>
-                        @endif
-                    </div>
-
-                    <div class="invoice-queue-main">
-                        <div class="invoice-queue-title">
-                            <span class="document-type-pill">{{ $documentType->label() }}</span>
-                            <strong>{{ $invoice->invoice_number ?? 'Sem numero' }}</strong>
-                            <span class="reference-code">{{ $invoice->purchase_order_number ?? '-' }}</span>
-                        </div>
-                        <div class="supplier-cell">
-                            <strong>{{ $invoice->purchaseOrderCheck?->supplier_name ?? '-' }}</strong>
-                            <span>{{ $invoice->protocol }}</span>
-                        </div>
-                    </div>
-
-                    <div class="invoice-queue-meta">
-                        <div>
-                            <span>Unidade</span>
-                            <strong>{{ $invoice->businessUnit?->name ?? 'Nao identificada' }}</strong>
-                        </div>
-                        <div>
-                            <span>Usuario</span>
-                            <strong>{{ $invoice->submitter?->name }}</strong>
-                        </div>
-                        <div>
-                            <span>Inclusao</span>
-                            <strong>{{ $invoice->created_at?->format('d/m/Y H:i') ?? '-' }}</strong>
-                        </div>
-                        <div>
-                            <span>Chegada</span>
-                            <strong>{{ $invoice->arrival_date?->format('d/m/Y') ?? '-' }}</strong>
-                        </div>
-                        <div>
-                            <span>Vencimento</span>
-                            <strong>{{ $invoice->due_date?->format('d/m/Y') ?? '-' }}</strong>
-                        </div>
-                    </div>
-
-                    <div class="invoice-queue-status">
-                        <span class="badge {{ $invoice->status->badgeClass() }}" title="{{ $invoice->status->label() }}">{{ $invoice->status->shortLabel() }}</span>
-                    </div>
-
-                    <div class="invoice-queue-action">
-                        <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-sm btn-outline-primary btn-open-invoice" aria-label="Abrir {{ $invoice->protocol }}">
-                            Abrir
-                        </a>
-                    </div>
-                </article>
-            @empty
-                <div class="empty-state">Nenhuma nota nesta pasta.</div>
-            @endforelse
-        </div>
-
         <div class="panel-pagination invoice-pagination">
             <span>Paginas</span>
             {{ $invoices->links() }}
