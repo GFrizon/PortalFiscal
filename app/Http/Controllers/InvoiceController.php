@@ -288,7 +288,7 @@ class InvoiceController extends Controller
         }
 
         return redirect()
-            ->route('invoices.show', $invoice)
+            ->route('invoices.index')
             ->with('success', 'Nota anexada com sucesso.');
     }
 

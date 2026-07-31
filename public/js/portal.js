@@ -72,7 +72,7 @@
 
             window.setTimeout(() => {
                 window.location.href = link.href;
-            }, 260);
+            }, 360);
         });
     });
 

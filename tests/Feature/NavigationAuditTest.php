@@ -296,7 +296,7 @@ class NavigationAuditTest extends TestCase
                 'due_date' => now()->addDays(10)->format('Y-m-d'),
                 'user_notes' => 'Nota enviada em teste.',
             ])
-            ->assertRedirect();
+            ->assertRedirect(route('invoices.index'));
 
         $this->assertDatabaseHas('invoices', [
             'submitted_by' => $user->id,
