@@ -293,6 +293,45 @@
                                     <i class="bi bi-clipboard" aria-hidden="true"></i>
                                 </button>
                             @endif
+
+                            <div class="info-support-stack">
+                                @if($paymentMethod->requiresInstallments())
+                                <section class="payment-installments-summary">
+                                    @foreach($invoice->payment_installments ?? [] as $installment)
+                                        <div>
+                                            <span>Parcela {{ $installment['number'] ?? $loop->iteration }}</span>
+                                            <strong>
+                                                {{ filled($installment['due_date'] ?? null) ? \Illuminate\Support\Carbon::parse($installment['due_date'])->format('d/m/Y') : '-' }}
+                                                -
+                                                {{ isset($installment['amount']) ? 'R$ '.number_format((float) $installment['amount'], 2, ',', '.') : '-' }}
+                                            </strong>
+                                        </div>
+                                    @endforeach
+                                </section>
+                                @endif
+
+                                <div class="note-box submitter-note-box compact-note">
+                                    <div class="note-title">
+                                        <i class="bi bi-chat-left-text" aria-hidden="true"></i>
+                                        Observacoes de {{ $invoice->submitter?->name ?? 'Usuario' }}
+                                    </div>
+                                    @if(filled($invoice->user_notes))
+                                        <div class="text-body">{{ $invoice->user_notes }}</div>
+                                    @else
+                                        <div class="text-secondary">Nenhuma observacao informada.</div>
+                                    @endif
+                                </div>
+
+                                @if(filled($invoice->fiscal_notes))
+                                <div class="note-box compact-note">
+                                    <div class="note-title">
+                                        <i class="bi bi-clipboard-check" aria-hidden="true"></i>
+                                        Observacoes do Fiscal
+                                    </div>
+                                    <div class="text-body">{{ $invoice->fiscal_notes }}</div>
+                                </div>
+                                @endif
+                            </div>
                         </section>
 
                         <div class="attachment-compact">
@@ -360,43 +399,6 @@
                     </div>
 
                     <div class="invoice-secondary-row">
-                        @if($paymentMethod->requiresInstallments())
-                        <section class="payment-installments-summary">
-                            @foreach($invoice->payment_installments ?? [] as $installment)
-                                <div>
-                                    <span>Parcela {{ $installment['number'] ?? $loop->iteration }}</span>
-                                    <strong>
-                                        {{ filled($installment['due_date'] ?? null) ? \Illuminate\Support\Carbon::parse($installment['due_date'])->format('d/m/Y') : '-' }}
-                                        -
-                                        {{ isset($installment['amount']) ? 'R$ '.number_format((float) $installment['amount'], 2, ',', '.') : '-' }}
-                                    </strong>
-                                </div>
-                            @endforeach
-                        </section>
-                        @endif
-
-                        <div class="note-box submitter-note-box">
-                        <div class="note-title">
-                            <i class="bi bi-chat-left-text" aria-hidden="true"></i>
-                            Observacoes de {{ $invoice->submitter?->name ?? 'Usuario' }}
-                        </div>
-                        @if(filled($invoice->user_notes))
-                            <div class="text-body">{{ $invoice->user_notes }}</div>
-                        @else
-                            <div class="text-secondary">Nenhuma observacao informada.</div>
-                        @endif
-                        </div>
-
-                        @if(filled($invoice->fiscal_notes))
-                        <div class="note-box">
-                            <div class="note-title">
-                                <i class="bi bi-clipboard-check" aria-hidden="true"></i>
-                                Observacoes do Fiscal
-                            </div>
-                            <div class="text-body">{{ $invoice->fiscal_notes }}</div>
-                        </div>
-                        @endif
-
                         <section class="invoice-review-panel review-inline-module">
                     <ul class="nav nav-pills review-tabs" id="invoiceReviewTabs" role="tablist">
                         @can('review', $invoice)

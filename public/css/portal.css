@@ -5028,6 +5028,12 @@ body.is-navigating .app-main {
     white-space: nowrap;
 }
 
+.invoice-detail-page .info-support-stack {
+    display: grid;
+    gap: 7px;
+    margin-top: 8px;
+}
+
 .invoice-detail-page .invoice-details-and-attachments {
     grid-template-columns: minmax(360px, .9fr) minmax(300px, 1fr);
     gap: 10px;
@@ -5114,19 +5120,27 @@ body.is-navigating .app-main {
 }
 
 .invoice-detail-page .payment-installments-summary {
-    grid-template-columns: repeat(auto-fit, minmax(145px, max-content));
+    grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
     align-content: start;
-    gap: 7px;
+    gap: 6px;
 }
 
 .invoice-detail-page .payment-installments-summary > div {
-    min-width: 145px;
-    padding: 8px 10px;
+    min-width: 0;
+    padding: 6px 8px;
     background: #fff;
+}
+
+.invoice-detail-page .info-support-stack .payment-installments-summary {
+    margin-top: 0;
 }
 
 .invoice-detail-page .note-box {
     padding: 8px 10px;
+}
+
+.invoice-detail-page .compact-note {
+    padding: 7px 9px;
 }
 
 .invoice-detail-page .submitter-note-box {
@@ -5154,6 +5168,17 @@ body.is-navigating .app-main {
 .invoice-detail-page .note-box .text-body,
 .invoice-detail-page .note-box .text-secondary {
     font-size: .84rem;
+}
+
+.invoice-detail-page .compact-note .note-title {
+    margin-bottom: 3px;
+    font-size: .8rem;
+}
+
+.invoice-detail-page .compact-note .text-body,
+.invoice-detail-page .compact-note .text-secondary {
+    font-size: .8rem;
+    line-height: 1.35;
 }
 
 .invoice-detail-page .invoice-cigam-panel,
