@@ -4880,16 +4880,18 @@ body.is-navigating .app-main {
     border: 1px solid rgba(33, 63, 120, .14);
     border-radius: 8px;
     background:
-        linear-gradient(90deg, rgba(31, 79, 112, .04), rgba(255, 255, 255, .9) 48%, rgba(255, 196, 0, .07)),
+        linear-gradient(90deg, rgba(31, 79, 112, .05), rgba(255, 255, 255, .92) 52%, rgba(107, 141, 164, .08)),
         #fff;
 }
 
 .compare-document {
     min-width: 0;
     padding: 9px;
-    border: 1px solid var(--color-border);
+    border: 1px solid rgba(33, 63, 120, .13);
     border-radius: 8px;
-    background: rgba(255, 255, 255, .82);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .95), rgba(248, 251, 253, .88)),
+        #fff;
 }
 
 .compare-document-nf {
@@ -4897,7 +4899,7 @@ body.is-navigating .app-main {
 }
 
 .compare-document-cigam {
-    border-left: 3px solid var(--color-accent);
+    border-left: 3px solid #6b8da4;
 }
 
 .compare-document-header {
@@ -4950,12 +4952,13 @@ body.is-navigating .app-main {
 }
 
 .compare-list > div:nth-child(odd) {
-    background: rgba(248, 250, 252, .86);
+    background: rgba(244, 248, 251, .86);
 }
 
 .compare-list > .compare-row-emphasis {
-    border: 1px solid rgba(226, 176, 44, .18);
-    background: rgba(255, 250, 239, .86);
+    border: 1px solid rgba(33, 63, 120, .1);
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, .92), rgba(239, 246, 250, .72));
 }
 
 .compare-list dt {
@@ -5048,9 +5051,11 @@ body.is-navigating .app-main {
 .attachment-compact,
 .note-box {
     min-width: 0;
-    border: 1px solid var(--color-border);
+    border: 1px solid rgba(33, 63, 120, .12);
     border-radius: 7px;
-    background: #fbfcfd;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .95), rgba(248, 251, 253, .86)),
+        #fff;
 }
 
 .invoice-info-module {
@@ -5179,14 +5184,14 @@ body.is-navigating .app-main {
 }
 
 .invoice-detail-page .submitter-note-box {
-    border-color: rgba(226, 176, 44, .42);
+    border-color: rgba(31, 79, 112, .2);
     background:
-        linear-gradient(135deg, rgba(255, 196, 0, .12), rgba(255, 255, 255, .92)),
+        linear-gradient(135deg, rgba(231, 240, 245, .88), rgba(255, 255, 255, .94)),
         #fff;
 }
 
 .invoice-detail-page .submitter-note-box .note-title {
-    color: #4d3705;
+    color: var(--color-primary-dark);
 }
 
 .invoice-detail-page .submitter-note-box .text-body {
