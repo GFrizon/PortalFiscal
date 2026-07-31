@@ -109,6 +109,7 @@
             }
 
             startFormSubmitLoading(form, submitter);
+            updateActionFeedback(form, submitter);
 
             if (form.dataset.submitLoadingMessage && window.fetch && window.FormData) {
                 event.preventDefault();
@@ -117,6 +118,32 @@
 
         });
     });
+
+    function updateActionFeedback(form, submitter) {
+        const panel = form.closest('.invoice-detail-page')?.querySelector('[data-action-feedback-panel]');
+
+        if (! panel) {
+            return;
+        }
+
+        const title = panel.querySelector('[data-action-feedback-title]');
+        const text = panel.querySelector('[data-action-feedback-text]');
+        const buttonLabel = submitter?.textContent?.trim()?.replace(/\s+/g, ' ');
+        const message = submitter?.dataset.actionFeedback
+            || form.dataset.actionFeedback
+            || (buttonLabel ? `Executando: ${buttonLabel}...` : 'Processando acao da nota...');
+
+        panel.classList.remove('is-success', 'is-error');
+        panel.classList.add('is-active');
+
+        if (title) {
+            title.textContent = 'Processando acao';
+        }
+
+        if (text) {
+            text.textContent = message;
+        }
+    }
 
     document.querySelectorAll('[data-bs-toggle="tab"]').forEach((tab) => {
         tab.addEventListener('show.bs.tab', (event) => {

@@ -365,7 +365,7 @@
                                     <div class="attachment-upload-row compact">
                                         <input class="form-control" id="attachment" type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" required aria-label="Documento complementar">
                                         <input class="form-control" id="attachment_notes" name="notes" value="{{ old('notes') }}" maxlength="2000" placeholder="Observacao">
-                                        <button class="btn btn-primary" type="submit">
+                                        <button class="btn btn-primary" type="submit" data-action-feedback="Anexando documento complementar...">
                                             <i class="bi bi-paperclip" aria-hidden="true"></i>
                                             Anexar
                                         </button>
@@ -438,7 +438,7 @@
                                                     @if(! $alert->resolved)
                                                         <form method="POST" action="{{ route('invoices.alerts.resolve', [$invoice, $alert]) }}" class="mt-2">
                                                             @csrf
-                                                            <button class="btn btn-sm btn-outline-success" type="submit">
+                                                            <button class="btn btn-sm btn-outline-success" type="submit" data-action-feedback="Resolvendo alerta da nota...">
                                                                 <i class="bi bi-check2" aria-hidden="true"></i>
                                                                 Resolver alerta
                                                             </button>
@@ -481,7 +481,7 @@
                                                         <option value="{{ $unit->id }}" @selected($invoice->business_unit_id === $unit->id)>{{ $unit->name }}</option>
                                                     @endforeach
                                                 </select>
-                                                <button class="btn btn-outline-primary" type="submit">Atualizar</button>
+                                                <button class="btn btn-outline-primary" type="submit" data-action-feedback="Atualizando unidade da nota...">Atualizar</button>
                                             </div>
                                         </form>
 
@@ -499,11 +499,11 @@
                                                 <label class="form-label" for="fiscal_notes">Observacoes do Fiscal</label>
                                                 <textarea class="form-control mb-3" id="fiscal_notes" name="fiscal_notes" rows="2">{{ old('fiscal_notes', $invoice->fiscal_notes) }}</textarea>
                                                 <div class="fiscal-action-grid">
-                                                    <button class="btn btn-warning" type="submit" formaction="{{ route('invoices.mark-as-pending', $invoice) }}">
+                                                    <button class="btn btn-warning" type="submit" formaction="{{ route('invoices.mark-as-pending', $invoice) }}" data-action-feedback="Registrando pendencia e notificando o usuario...">
                                                         <i class="bi bi-exclamation-diamond" aria-hidden="true"></i>
                                                         Pendencia
                                                     </button>
-                                                    <button class="btn btn-success" type="submit" data-confirm="Marcar esta nota como lancada?">
+                                                    <button class="btn btn-success" type="submit" data-confirm="Marcar esta nota como lancada?" data-action-feedback="Marcando nota como lancada...">
                                                         <i class="bi bi-check2-circle" aria-hidden="true"></i>
                                                         Lancar
                                                     </button>
@@ -531,6 +531,16 @@
                                 </div>
                             </div>
                         </section>
+
+                        <div class="invoice-action-feedback" data-action-feedback-panel aria-live="polite">
+                            <div class="action-feedback-orb" aria-hidden="true">
+                                <i class="bi bi-lightning-charge"></i>
+                            </div>
+                            <div>
+                                <strong data-action-feedback-title>Pronto para conferir</strong>
+                                <span data-action-feedback-text>Ao executar uma acao, o andamento aparece aqui.</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
