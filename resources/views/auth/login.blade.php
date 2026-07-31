@@ -45,7 +45,14 @@
             <div class="alert alert-success">{{ session('status') }}</div>
         @endif
 
-        <form method="POST" action="{{ route('login.store') }}" class="d-grid gap-3" data-submit-loading-message="Validando acesso...">
+        <form
+            method="POST"
+            action="{{ route('login.store') }}"
+            class="d-grid gap-3"
+            data-submit-loading-message="Validando acesso..."
+            data-submit-success-message="Acesso autorizado. Abrindo o portal..."
+            data-submit-error-message="Nao foi possivel entrar. Verifique sua conexao e tente novamente."
+        >
             @csrf
             <div>
                 <label for="email" class="form-label">E-mail</label>

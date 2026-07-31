@@ -22,6 +22,7 @@ use App\Services\PdfStorageService;
 use App\Services\PurchaseOrderService;
 use App\Support\InvoiceVisibility;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -163,7 +164,7 @@ class InvoiceController extends Controller
         PurchaseOrderService $purchaseOrderService,
         InvoiceHistoryService $historyService,
         InvoiceAlertService $alertService
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
         $uploadedFile = $request->file('pdf');
         $extracted = $pdfExtractionService->extract($uploadedFile->getPathname());
 
@@ -287,9 +288,14 @@ class InvoiceController extends Controller
             throw $exception;
         }
 
-        return redirect()
-            ->route('invoices.index')
-            ->with('success', 'Nota anexada com sucesso.');
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Nota anexada com sucesso.',
+                'redirect' => route('invoices.index'),
+            ]);
+        }
+
+        return redirect()->route('invoices.index')->with('success', 'Nota anexada com sucesso.');
     }
 
     public function update(
@@ -299,7 +305,7 @@ class InvoiceController extends Controller
         PdfExtractionService $pdfExtractionService,
         InvoiceAlertService $alertService,
         InvoiceHistoryService $historyService
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
         $this->authorize('update', $invoice);
 
         $notifyFiscalTeam = false;
@@ -342,9 +348,14 @@ class InvoiceController extends Controller
             $this->notifyFiscalTeamPendingWasResolved($invoice->refresh(), $request->user(), $historyService, $request);
         }
 
-        return redirect()
-            ->route('invoices.show', $invoice)
-            ->with('success', 'Dados da nota atualizados com sucesso.');
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Dados da nota atualizados com sucesso.',
+                'redirect' => route('invoices.show', $invoice),
+            ]);
+        }
+
+        return redirect()->route('invoices.show', $invoice)->with('success', 'Dados da nota atualizados com sucesso.');
     }
 
     public function show(Invoice $invoice, InvoiceHistoryService $historyService, Request $request): View

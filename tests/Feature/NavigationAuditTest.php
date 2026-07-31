@@ -295,8 +295,12 @@ class NavigationAuditTest extends TestCase
                 'arrival_date' => now()->format('Y-m-d'),
                 'due_date' => now()->addDays(10)->format('Y-m-d'),
                 'user_notes' => 'Nota enviada em teste.',
+            ], [
+                'Accept' => 'application/json',
+                'X-Requested-With' => 'XMLHttpRequest',
             ])
-            ->assertRedirect(route('invoices.index'));
+            ->assertOk()
+            ->assertJsonPath('redirect', route('invoices.index'));
 
         $this->assertDatabaseHas('invoices', [
             'submitted_by' => $user->id,

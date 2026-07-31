@@ -4390,3 +4390,91 @@ body.is-navigating .app-main {
         grid-template-columns: 1fr;
     }
 }
+
+/* Async feedback keeps animation frames alive while Laravel processes uploads. */
+:root {
+    --motion-fast: 170ms;
+    --motion-normal: 260ms;
+    --motion-enter: 380ms;
+}
+
+.form-panel.is-submitting::after {
+    display: none;
+}
+
+.submit-loading-state[hidden] {
+    display: inline-flex;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.submit-loading-state:not([hidden]) {
+    visibility: visible;
+}
+
+.submit-loading-spinner,
+.btn.is-loading::before {
+    animation: motion-spin 760ms linear infinite !important;
+    will-change: transform;
+}
+
+.submit-loading-state.is-success,
+.submit-loading-state.is-error {
+    animation: motion-feedback-settle 360ms var(--motion-ease-out) both;
+}
+
+.submit-loading-state.is-success {
+    border-color: rgba(46, 125, 107, .28);
+    color: #216455;
+    background: #f1faf7;
+}
+
+.submit-loading-state.is-error {
+    border-color: rgba(180, 35, 24, .24);
+    color: var(--color-danger);
+    background: #fff5f4;
+}
+
+.submit-loading-state.is-success .submit-loading-spinner,
+.submit-loading-state.is-error .submit-loading-spinner {
+    display: grid;
+    place-items: center;
+    border: 0;
+    animation: none !important;
+}
+
+.submit-loading-state.is-success .submit-loading-spinner::before {
+    content: "\2713";
+}
+
+.submit-loading-state.is-error .submit-loading-spinner::before {
+    content: "!";
+}
+
+.btn.is-success::before,
+.btn.is-error::before {
+    display: grid;
+    width: .92rem;
+    height: .92rem;
+    flex: 0 0 .92rem;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    animation: none;
+    font-weight: 900;
+}
+
+.btn.is-success::before {
+    content: "\2713";
+}
+
+.btn.is-error::before {
+    content: "!";
+}
+
+@keyframes motion-feedback-settle {
+    0% { opacity: 0; transform: translateY(5px) scale(.985); }
+    65% { opacity: 1; transform: translateY(-1px) scale(1.005); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}

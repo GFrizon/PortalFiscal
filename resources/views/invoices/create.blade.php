@@ -32,6 +32,8 @@
         enctype="multipart/form-data"
         class="panel form-panel upload-form"
         data-submit-loading-message="{{ $isEditing ? 'Atualizando dados da nota...' : 'Consultando CIGAM e salvando nota...' }}"
+        data-submit-success-message="{{ $isEditing ? 'Alteracoes salvas. Abrindo a nota...' : 'Nota salva com sucesso. Abrindo a lista...' }}"
+        data-submit-error-message="Nao foi possivel salvar a nota. Confira sua conexao e tente novamente."
         @unless($isEditing) data-pdf-preview-form @endunless
     >
         @csrf

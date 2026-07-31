@@ -43,6 +43,22 @@ class ExampleTest extends TestCase
         $this->assertAuthenticatedAs($admin);
     }
 
+    public function test_async_login_returns_json_redirect(): void
+    {
+        $admin = User::factory()->admin()->create([
+            'email' => 'ajax@bakof.local',
+        ]);
+
+        $this->postJson('/login', [
+            'email' => 'ajax@bakof.local',
+            'password' => 'password',
+        ])
+            ->assertOk()
+            ->assertJsonPath('redirect', route('dashboard'));
+
+        $this->assertAuthenticatedAs($admin);
+    }
+
     public function test_inactive_user_cannot_login(): void
     {
         User::factory()->inactive()->create([

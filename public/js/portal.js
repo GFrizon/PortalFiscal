@@ -74,7 +74,7 @@
 
             window.setTimeout(() => {
                 window.location.href = link.href;
-            }, 240);
+            }, 300);
         });
     });
 
@@ -108,6 +108,11 @@
             }
 
             startFormSubmitLoading(form, submitter);
+
+            if (form.dataset.submitLoadingMessage && window.fetch && window.FormData) {
+                event.preventDefault();
+                submitFormWithFetch(form, submitter);
+            }
 
         });
     });
@@ -320,6 +325,7 @@
         const loadingState = form.querySelector('.submit-loading-state');
         const message = form.dataset.submitLoadingMessage || 'Processando...';
 
+        form.classList.remove('submit-success', 'submit-error');
         form.setAttribute('aria-busy', 'true');
 
         if (form.dataset.submitLoadingMessage || loadingState) {
@@ -328,6 +334,7 @@
 
         if (loadingState) {
             const loadingText = form.querySelector('[data-submit-loading-text]');
+            loadingState.classList.remove('is-success', 'is-error');
 
             if (loadingText) {
                 loadingText.textContent = message;
@@ -340,6 +347,7 @@
             submitter.dataset.originalHtml = submitter.innerHTML;
             submitter.dataset.originalWidth = String(Math.ceil(submitter.getBoundingClientRect().width));
             submitter.style.minWidth = `${submitter.dataset.originalWidth}px`;
+            submitter.classList.remove('is-success', 'is-error');
             submitter.classList.add('is-loading');
             submitter.setAttribute('data-loading-label', message);
         }
@@ -349,6 +357,91 @@
                 button.disabled = true;
             }
         });
+    }
+
+    async function submitFormWithFetch(form, submitter) {
+        const startedAt = performance.now();
+        const action = submitter?.hasAttribute('formaction') ? submitter.formAction : form.action;
+        const method = (
+            submitter?.hasAttribute('formmethod') ? submitter.formMethod : (form.method || 'POST')
+        ).toUpperCase();
+
+        try {
+            const response = await fetch(action, {
+                method,
+                body: new FormData(form),
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            const payload = await response.json().catch(() => ({}));
+
+            await waitForMinimumFeedbackTime(startedAt, 650);
+
+            if (! response.ok) {
+                const validationMessage = Object.values(payload.errors || {}).flat()[0];
+                throw new Error(validationMessage || payload.message || 'Nao foi possivel concluir. Tente novamente.');
+            }
+
+            const successMessage = form.dataset.submitSuccessMessage || payload.message || 'Salvo com sucesso. Abrindo...';
+            setFormSubmitResult(form, submitter, 'success', successMessage);
+            await delay(prefersReducedMotion ? 80 : 720);
+            window.location.assign(payload.redirect || response.url || action);
+        } catch (error) {
+            await waitForMinimumFeedbackTime(startedAt, 650);
+            const errorMessage = error instanceof TypeError
+                ? (form.dataset.submitErrorMessage || 'Falha de conexao. Tente novamente.')
+                : error instanceof Error && error.message
+                ? error.message
+                : (form.dataset.submitErrorMessage || 'Nao foi possivel concluir. Tente novamente.');
+            setFormSubmitResult(form, submitter, 'error', errorMessage);
+        }
+    }
+
+    function setFormSubmitResult(form, submitter, state, message) {
+        const loadingState = form.querySelector('.submit-loading-state');
+        const loadingText = form.querySelector('[data-submit-loading-text]');
+
+        form.classList.remove('is-submitting');
+        form.classList.add(`submit-${state}`);
+        form.removeAttribute('aria-busy');
+        delete form.dataset.submitting;
+
+        if (loadingState) {
+            loadingState.hidden = false;
+            loadingState.classList.remove('is-success', 'is-error');
+            loadingState.classList.add(`is-${state}`);
+        }
+
+        if (loadingText) {
+            loadingText.textContent = message;
+        }
+
+        if (submitter instanceof HTMLButtonElement) {
+            submitter.classList.remove('is-loading', 'is-success', 'is-error');
+            submitter.classList.add(`is-${state}`);
+            submitter.removeAttribute('aria-busy');
+
+            if (state === 'error') {
+                submitter.disabled = false;
+            }
+        }
+
+        if (state === 'error') {
+            form.querySelectorAll('button[type="submit"]').forEach((button) => {
+                button.disabled = false;
+            });
+        }
+    }
+
+    function waitForMinimumFeedbackTime(startedAt, minimumDuration) {
+        return delay(Math.max(0, minimumDuration - (performance.now() - startedAt)));
+    }
+
+    function delay(duration) {
+        return new Promise((resolve) => window.setTimeout(resolve, duration));
     }
 
     function setPreviewText(root, selector, value) {
