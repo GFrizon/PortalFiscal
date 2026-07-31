@@ -455,7 +455,7 @@
                                     <form method="POST" action="{{ route('invoices.mark-as-launched', $invoice) }}">
                                         @csrf
                                         <label class="form-label" for="fiscal_notes">Observacoes do Fiscal</label>
-                                        <textarea class="form-control mb-3" id="fiscal_notes" name="fiscal_notes" rows="3">{{ old('fiscal_notes', $invoice->fiscal_notes) }}</textarea>
+                                        <textarea class="form-control mb-3" id="fiscal_notes" name="fiscal_notes" rows="2">{{ old('fiscal_notes', $invoice->fiscal_notes) }}</textarea>
                                         <div class="fiscal-action-grid">
                                             <button class="btn btn-warning" type="submit" formaction="{{ route('invoices.mark-as-pending', $invoice) }}">
                                                 <i class="bi bi-exclamation-diamond" aria-hidden="true"></i>

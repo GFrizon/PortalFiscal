@@ -5204,11 +5204,11 @@ body.is-navigating .app-main {
 }
 
 .invoice-detail-page .review-tab-content textarea {
-    min-height: 68px;
+    min-height: 50px;
 }
 
 .invoice-detail-page .invoice-review-panel .mb-3 {
-    margin-bottom: 8px !important;
+    margin-bottom: 6px !important;
 }
 
 .invoice-detail-page .invoice-review-panel .form-label {
@@ -5218,11 +5218,30 @@ body.is-navigating .app-main {
 
 .invoice-detail-page .invoice-review-panel .input-group .form-select,
 .invoice-detail-page .invoice-review-panel .input-group .btn {
-    min-height: 34px;
+    min-height: 32px;
+    font-size: .8rem;
 }
 
 .invoice-detail-page .invoice-review-panel .fiscal-action-grid .btn {
-    min-height: 36px;
+    min-height: 32px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-size: .8rem;
+}
+
+.invoice-detail-page .invoice-review-panel .review-tab-content {
+    min-height: 0;
+}
+
+.invoice-detail-page .invoice-review-panel .tab-pane {
+    min-height: 0;
+}
+
+.invoice-detail-page .invoice-review-panel .alert,
+.invoice-detail-page .invoice-review-panel .empty-state {
+    margin-bottom: 6px;
+    padding: 8px 10px;
+    font-size: .8rem;
 }
 
 @media (max-width: 1399.98px) {
