@@ -163,10 +163,10 @@
                 <i class="bi bi-x-lg" aria-hidden="true"></i>
                 Cancelar
             </a>
-        </div>
-        <div class="submit-loading-state" role="status" aria-live="polite" hidden>
-            <span class="submit-loading-spinner" aria-hidden="true"></span>
-            <span data-submit-loading-text>{{ $isEditing ? 'Atualizando dados da nota...' : 'Consultando CIGAM e salvando nota...' }}</span>
+            <div class="submit-loading-state submit-loading-state-inline" role="status" aria-live="polite" hidden>
+                <span class="submit-loading-spinner" aria-hidden="true"></span>
+                <span data-submit-loading-text>{{ $isEditing ? 'Atualizando dados da nota...' : 'Consultando CIGAM e salvando nota...' }}</span>
+            </div>
         </div>
     </form>
 

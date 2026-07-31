@@ -4478,3 +4478,75 @@ body.is-navigating .app-main {
     65% { opacity: 1; transform: translateY(-1px) scale(1.005); }
     100% { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* Single async submit feedback: keep buttons stable and show one clear status rail. */
+.btn.is-loading,
+.btn.is-success,
+.btn.is-error {
+    pointer-events: none;
+}
+
+.btn.is-loading > i,
+.btn.is-success > i,
+.btn.is-error > i {
+    display: inline-block;
+}
+
+.btn.is-loading::before,
+.btn.is-success::before,
+.btn.is-error::before {
+    display: none;
+    content: none;
+}
+
+.form-actions .submit-loading-state-inline {
+    align-self: center;
+    margin-top: 0;
+    margin-left: 4px;
+}
+
+.submit-loading-state {
+    overflow: hidden;
+    min-height: 38px;
+    border-color: rgba(31, 79, 112, .22);
+    background:
+        linear-gradient(90deg, rgba(31, 79, 112, .08), rgba(226, 176, 44, .14), rgba(31, 79, 112, .08)),
+        #fff;
+    background-size: 240% 100%, auto;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, .1);
+}
+
+.form-panel.is-submitting .submit-loading-state {
+    animation:
+        motion-feedback-in var(--motion-normal) var(--motion-ease-out) both,
+        motion-status-sheen 1.55s var(--motion-ease-standard) infinite;
+}
+
+.submit-loading-state[hidden] {
+    display: none;
+}
+
+.submit-loading-state:not([hidden]) {
+    display: inline-flex;
+}
+
+.submit-loading-spinner {
+    box-shadow: 0 0 0 3px rgba(31, 79, 112, .08);
+}
+
+.submit-loading-state.is-success,
+.submit-loading-state.is-error {
+    animation: motion-feedback-settle 360ms var(--motion-ease-out) both;
+}
+
+@keyframes motion-status-sheen {
+    0% { background-position: 0 0, 0 0; }
+    100% { background-position: 240% 0, 0 0; }
+}
+
+@media (max-width: 575.98px) {
+    .form-actions .submit-loading-state-inline {
+        width: 100%;
+        margin-left: 0;
+    }
+}
