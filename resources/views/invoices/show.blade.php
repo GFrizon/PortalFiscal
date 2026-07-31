@@ -439,15 +439,18 @@
                                                 @csrf
                                                 <label class="form-label" for="fiscal_notes">Observacoes do Fiscal</label>
                                                 <textarea class="form-control mb-3" id="fiscal_notes" name="fiscal_notes" rows="2">{{ old('fiscal_notes', $invoice->fiscal_notes) }}</textarea>
-                                                <div class="fiscal-action-grid">
-                                                    <button class="btn btn-warning" type="submit" formaction="{{ route('invoices.mark-as-pending', $invoice) }}" data-action-feedback="Registrando pendencia e notificando o usuario...">
+                                                <div class="fiscal-decision-row">
+                                                    <span>Ação fiscal</span>
+                                                    <div class="fiscal-decision-actions">
+                                                    <button class="btn btn-outline-warning btn-fiscal-pending" type="submit" formaction="{{ route('invoices.mark-as-pending', $invoice) }}" data-action-feedback="Registrando pendencia e notificando o usuario...">
                                                         <i class="bi bi-exclamation-diamond" aria-hidden="true"></i>
-                                                        Pendencia
+                                                        Registrar pendencia
                                                     </button>
-                                                    <button class="btn btn-success" type="submit" data-confirm="Marcar esta nota como lancada?" data-action-feedback="Marcando nota como lancada...">
+                                                    <button class="btn btn-success btn-fiscal-launch" type="submit" data-confirm="Marcar esta nota como lancada?" data-action-feedback="Marcando nota como lancada...">
                                                         <i class="bi bi-check2-circle" aria-hidden="true"></i>
-                                                        Lancar
+                                                        Lancar nota
                                                     </button>
+                                                    </div>
                                                 </div>
                                             </form>
                                         @endif
