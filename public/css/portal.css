@@ -2573,6 +2573,24 @@ textarea.form-control {
     background: #fff4d2;
 }
 
+.data-table tbody tr.invoice-row-draft {
+    background: #f4f7fb;
+    box-shadow: inset 3px 0 0 #8aa0b8;
+}
+
+.data-table tbody tr.invoice-row-draft:hover {
+    background: #eef3f8;
+}
+
+.data-table tbody tr.invoice-row-draft.invoice-row-urgent {
+    background: #f4f7fb;
+    box-shadow: inset 3px 0 0 #8aa0b8;
+}
+
+.data-table tbody tr.invoice-row-draft.invoice-row-urgent:hover {
+    background: #eef3f8;
+}
+
 .data-table tbody tr.invoice-row-launched {
     background: #f4faf7;
     box-shadow: inset 3px 0 0 #5ba979;
@@ -2614,6 +2632,18 @@ textarea.form-control {
     border-radius: 999px;
     background: #ffe8a3;
     color: #8a5a00;
+    font-size: .82rem;
+}
+
+.draft-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: #e6edf5;
+    color: #52677e;
     font-size: .82rem;
 }
 
@@ -6011,6 +6041,22 @@ body.is-navigating .app-main {
     background: #fff8e3;
 }
 
+.invoice-list-scroll .data-table tbody tr.invoice-row-draft td {
+    background: #f4f7fb;
+}
+
+.invoice-list-scroll .data-table tbody tr.invoice-row-draft:hover td {
+    background: #eef3f8;
+}
+
+.invoice-list-scroll .data-table tbody tr.invoice-row-draft.invoice-row-urgent td {
+    background: #f4f7fb;
+}
+
+.invoice-list-scroll .data-table tbody tr.invoice-row-draft.invoice-row-urgent:hover td {
+    background: #eef3f8;
+}
+
 .invoice-list-scroll .data-table tbody tr.invoice-row-launched td {
     background: #f5fbf7;
 }
@@ -6072,6 +6118,7 @@ body.is-navigating .app-main {
 
 .invoice-list-scroll .entity-icon,
 .invoice-list-scroll .urgent-indicator,
+.invoice-list-scroll .draft-indicator,
 .invoice-list-scroll .launched-indicator {
     width: 24px;
     height: 24px;

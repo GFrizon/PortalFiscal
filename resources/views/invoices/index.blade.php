@@ -163,11 +163,17 @@
                 @forelse($invoices as $invoice)
                     @php($documentType = $invoice->documentType())
                     <tr @class([
+                        'invoice-row-draft' => $invoice->status === \App\Enums\InvoiceStatus::Draft,
                         'invoice-row-urgent' => $invoice->is_urgent,
                         'invoice-row-launched' => $invoice->status === \App\Enums\InvoiceStatus::Launched,
                     ])>
-                        <td class="col-priority {{ $invoice->is_urgent || $invoice->status === \App\Enums\InvoiceStatus::Launched ? '' : 'priority-empty' }}" data-label="Prioridade">
-                            @if($invoice->status === \App\Enums\InvoiceStatus::Launched)
+                        <td class="col-priority {{ $invoice->is_urgent || in_array($invoice->status, [\App\Enums\InvoiceStatus::Draft, \App\Enums\InvoiceStatus::Launched], true) ? '' : 'priority-empty' }}" data-label="Prioridade">
+                            @if($invoice->status === \App\Enums\InvoiceStatus::Draft)
+                                <span class="draft-indicator" title="Rascunho" aria-label="Rascunho">
+                                    <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+                                    <span class="visually-hidden">Rascunho</span>
+                                </span>
+                            @elseif($invoice->status === \App\Enums\InvoiceStatus::Launched)
                                 <span class="launched-indicator" title="Lancada" aria-label="Lancada">
                                     <i class="bi bi-archive" aria-hidden="true"></i>
                                     <span class="visually-hidden">Lancada</span>
