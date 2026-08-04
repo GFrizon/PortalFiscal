@@ -3772,7 +3772,7 @@ body.is-navigating .app-main {
 
 .installment-row {
     display: grid;
-    grid-template-columns: 44px minmax(160px, 1fr) minmax(160px, 1fr);
+    grid-template-columns: 44px minmax(180px, 260px);
     gap: 10px;
     align-items: end;
     padding: 10px;
@@ -4210,7 +4210,7 @@ body.is-navigating .app-main {
 }
 
 .payment-installments-area .installment-row {
-    grid-template-columns: 34px minmax(0, 1fr) minmax(0, .82fr);
+    grid-template-columns: 34px minmax(0, 180px);
     gap: 7px;
     padding: 7px;
     background: #fff;

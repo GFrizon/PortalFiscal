@@ -315,8 +315,6 @@
                                             <span>Proxima parcela</span>
                                             <strong>
                                                 {{ filled($firstInstallment['due_date'] ?? null) ? \Illuminate\Support\Carbon::parse($firstInstallment['due_date'])->format('d/m/Y') : '-' }}
-                                                -
-                                                {{ isset($firstInstallment['amount']) ? 'R$ '.number_format((float) $firstInstallment['amount'], 2, ',', '.') : '-' }}
                                             </strong>
                                         </div>
                                     @endif
@@ -329,8 +327,6 @@
                                                     <span class="installment-chip">
                                                         #{{ $installment['number'] ?? $loop->iteration + 1 }}
                                                         {{ filled($installment['due_date'] ?? null) ? \Illuminate\Support\Carbon::parse($installment['due_date'])->format('d/m/Y') : '-' }}
-                                                        -
-                                                        {{ isset($installment['amount']) ? 'R$ '.number_format((float) $installment['amount'], 2, ',', '.') : '-' }}
                                                     </span>
                                                 @endforeach
                                             </div>

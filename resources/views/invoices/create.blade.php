@@ -141,10 +141,6 @@
                                 <label class="form-label" for="payment_installments_{{ $index }}_due_date">Vencimento</label>
                                 <input class="form-control" id="payment_installments_{{ $index }}_due_date" type="date" name="payment_installments[{{ $index }}][due_date]" value="{{ $oldInstallments[$index]['due_date'] ?? '' }}" data-installment-due-date>
                             </div>
-                            <div>
-                                <label class="form-label" for="payment_installments_{{ $index }}_amount">Valor</label>
-                                <input class="form-control" id="payment_installments_{{ $index }}_amount" name="payment_installments[{{ $index }}][amount]" value="{{ $oldInstallments[$index]['amount'] ?? '' }}" inputmode="decimal" data-installment-amount>
-                            </div>
                         </div>
                     @endfor
                 </div>

@@ -28,7 +28,6 @@ class StoreInvoiceRequest extends FormRequest
             'payment_installments_count' => ['required_unless:payment_method,anticipated', 'nullable', 'integer', 'min:1', 'max:12'],
             'payment_installments' => ['required_unless:payment_method,anticipated', 'nullable', 'array'],
             'payment_installments.*.due_date' => ['required_unless:payment_method,anticipated', 'nullable', 'date'],
-            'payment_installments.*.amount' => ['required_unless:payment_method,anticipated', 'nullable', 'numeric', 'min:0.01'],
             'user_notes' => ['nullable', 'string', 'max:5000'],
         ];
     }
@@ -92,15 +91,10 @@ class StoreInvoiceRequest extends FormRequest
     {
         return array_values(array_map(function (mixed $installment, int $index): array {
             $installment = is_array($installment) ? $installment : [];
-            $amount = trim((string) ($installment['amount'] ?? ''));
-            $amount = str_contains($amount, ',')
-                ? str_replace(['.', ','], ['', '.'], $amount)
-                : $amount;
 
             return [
                 'number' => $index + 1,
                 'due_date' => trim((string) ($installment['due_date'] ?? '')),
-                'amount' => $amount,
             ];
         }, $installments, array_keys($installments)));
     }

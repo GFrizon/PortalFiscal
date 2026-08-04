@@ -281,8 +281,6 @@
                 row.querySelector('.installment-number').textContent = `#${index + 1}`;
 
                 const dueDate = row.querySelector('[data-installment-due-date]');
-                const amount = row.querySelector('[data-installment-amount]');
-
                 if (dueDate) {
                     dueDate.name = `payment_installments[${index}][due_date]`;
                     dueDate.id = `payment_installments_${index}_due_date`;
@@ -291,15 +289,6 @@
                     dueDate.required = requiresInstallments;
                     row.querySelector('label[for$="_due_date"]')?.setAttribute('for', dueDate.id);
                 }
-
-                if (amount) {
-                    amount.name = `payment_installments[${index}][amount]`;
-                    amount.id = `payment_installments_${index}_amount`;
-                    amount.disabled = ! requiresInstallments;
-                    amount.required = requiresInstallments;
-                    row.querySelector('label[for$="_amount"]')?.setAttribute('for', amount.id);
-                    bindCurrencyInput(amount);
-                }
             });
         };
 
@@ -307,8 +296,6 @@
         countInput?.addEventListener('change', syncInstallments);
         syncInstallments();
     });
-
-    document.querySelectorAll('[data-installment-amount]').forEach(bindCurrencyInput);
 
     function initAppMotion() {
         const motionSelectors = [
@@ -613,10 +600,6 @@
                 <label class="form-label" for="payment_installments_${index}_due_date">Vencimento</label>
                 <input class="form-control" id="payment_installments_${index}_due_date" type="date" name="payment_installments[${index}][due_date]" data-installment-due-date>
             </div>
-            <div>
-                <label class="form-label" for="payment_installments_${index}_amount">Valor</label>
-                <input class="form-control" id="payment_installments_${index}_amount" name="payment_installments[${index}][amount]" inputmode="decimal" data-installment-amount>
-            </div>
         `;
 
         return row;
@@ -643,32 +626,6 @@
         const day = String(date.getDate()).padStart(2, '0');
 
         return `${year}-${month}-${day}`;
-    }
-
-    function bindCurrencyInput(input) {
-        if (input.dataset.currencyBound === 'true') {
-            return;
-        }
-
-        input.dataset.currencyBound = 'true';
-        input.addEventListener('input', () => {
-            input.value = formatCurrencyDigits(input.value);
-        });
-    }
-
-    function formatCurrencyDigits(value) {
-        const digits = value.replace(/\D/g, '');
-
-        if (! digits) {
-            return '';
-        }
-
-        const amount = Number.parseInt(digits, 10) / 100;
-
-        return amount.toLocaleString('pt-BR', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        });
     }
 
     function formatPayment(form) {

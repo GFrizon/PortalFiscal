@@ -510,8 +510,8 @@ class NavigationAuditTest extends TestCase
                 'payment_method' => 'boleto',
                 'payment_installments_count' => 2,
                 'payment_installments' => [
-                    ['due_date' => '2026-08-10', 'amount' => '100,50'],
-                    ['due_date' => '2026-09-10', 'amount' => '200.75'],
+                    ['due_date' => '2026-08-10'],
+                    ['due_date' => '2026-09-10'],
                 ],
             ])
             ->assertRedirect();
@@ -520,8 +520,9 @@ class NavigationAuditTest extends TestCase
 
         $this->assertSame('boleto', $invoice->payment_method->value);
         $this->assertSame('2026-08-10', $invoice->due_date?->format('Y-m-d'));
-        $this->assertSame(100.50, (float) $invoice->payment_installments[0]['amount']);
-        $this->assertSame(200.75, (float) $invoice->payment_installments[1]['amount']);
+        $this->assertSame('2026-08-10', $invoice->payment_installments[0]['due_date']);
+        $this->assertSame('2026-09-10', $invoice->payment_installments[1]['due_date']);
+        $this->assertArrayNotHasKey('amount', $invoice->payment_installments[0]);
     }
 
     public function test_deposit_or_boleto_requires_all_installment_fields(): void
@@ -539,7 +540,7 @@ class NavigationAuditTest extends TestCase
                 'payment_method' => 'deposit',
                 'payment_installments_count' => 2,
                 'payment_installments' => [
-                    ['due_date' => '2026-08-10', 'amount' => '100'],
+                    ['due_date' => '2026-08-10'],
                 ],
             ])
             ->assertSessionHasErrors(['payment_installments_count']);
@@ -563,7 +564,7 @@ class NavigationAuditTest extends TestCase
                 'payment_method' => 'deposit',
                 'payment_installments_count' => 1,
                 'payment_installments' => [
-                    ['due_date' => '2026-07-30', 'amount' => '100'],
+                    ['due_date' => '2026-07-30'],
                 ],
             ])
             ->assertSessionHasErrors(['payment_installments.0.due_date']);
@@ -589,7 +590,7 @@ class NavigationAuditTest extends TestCase
                 'payment_method' => 'deposit',
                 'payment_installments_count' => 1,
                 'payment_installments' => [
-                    ['due_date' => '2026-08-01', 'amount' => '100'],
+                    ['due_date' => '2026-08-01'],
                 ],
             ])
             ->assertSessionHasErrors(['payment_installments.0.due_date']);
@@ -615,7 +616,6 @@ class NavigationAuditTest extends TestCase
                 'payment_installments_count' => 13,
                 'payment_installments' => array_fill(0, 13, [
                     'due_date' => '2026-08-10',
-                    'amount' => '100',
                 ]),
             ])
             ->assertSessionHasErrors(['payment_installments_count']);
