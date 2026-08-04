@@ -197,4 +197,49 @@ class PdfExtractionServiceTest extends TestCase
         $this->assertSame('44449', $result['invoice_number']);
         $this->assertNull($result['invoice_access_key']);
     }
+
+    public function test_it_extracts_nfse_number_from_municipal_note_label(): void
+    {
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "NOTA FISCAL DE SERVICO ELETRONICA\n".
+            "Codigo de Verificacao 938201\n".
+            "Numero da Nota 775459\n".
+            "Numero do RPS 123"
+        );
+
+        $this->assertSame('775459', $result['invoice_number']);
+        $this->assertNull($result['invoice_access_key']);
+    }
+
+    public function test_it_extracts_nfse_number_when_label_is_split_by_pdf_spacing(): void
+    {
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "NFS-e\n".
+            "N.\n".
+            "000031144\n".
+            "Serie 0 Codigo de Verificacao 1610855857"
+        );
+
+        $this->assertSame('31144', $result['invoice_number']);
+        $this->assertNull($result['invoice_access_key']);
+    }
+
+    public function test_it_extracts_nfse_number_from_service_invoice_block(): void
+    {
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "Prefeitura Municipal\n".
+            "Nota Fiscal de Servico Eletronica NFS-e\n".
+            "Data de emissao 03/08/2026 Numero 47933 Competencia 08/2026\n".
+            "Codigo de verificacao 456789"
+        );
+
+        $this->assertSame('47933', $result['invoice_number']);
+        $this->assertNull($result['invoice_access_key']);
+    }
 }

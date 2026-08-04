@@ -179,6 +179,12 @@ class PdfExtractionService
             return $accessKeyInvoiceNumber;
         }
 
+        $nfseNumber = $this->extractNfseInvoiceNumber($text);
+
+        if ($nfseNumber) {
+            return $nfseNumber;
+        }
+
         $patterns = [
             [
                 'pattern' => '/N(?:.{0,3}|[uú])mero\s+da\s+NFS-?e\s*[:\-]?\s*(\d[\d\.]{0,14})/iu',
@@ -223,6 +229,60 @@ class PdfExtractionService
         }
 
         return null;
+    }
+
+    private function extractNfseInvoiceNumber(string $text): ?string
+    {
+        $normalizedText = $this->normalizeReadableText($text);
+        $looksLikeNfse = str_contains($normalizedText, 'NFS E')
+            || str_contains($normalizedText, 'NOTA FISCAL DE SERVICO');
+
+        if (! $looksLikeNfse) {
+            return null;
+        }
+
+        $patterns = [
+            '/\bNUMERO\s+DA\s+NFS\s*E\s*[:\-]?\s*(\d[\d\s\.]{0,18})\b/i',
+            '/\bNUMERO\s+NFS\s*E\s*[:\-]?\s*(\d[\d\s\.]{0,18})\b/i',
+            '/\bNFS\s*E\s+(?:N(?:O|UMERO)?\.?\s*)[:\-]?\s*(\d[\d\s\.]{0,18})\b/i',
+            '/\bNUMERO\s+DA\s+NOTA\s*[:\-]?\s*(\d[\d\s\.]{0,18})\b/i',
+            '/\bNOTA\s+FISCAL\s+DE\s+SERVICO.{0,140}?\bNUMERO\s*[:\-]?\s*(\d[\d\s\.]{0,18})\b/i',
+            '/\bNOTA\s+FISCAL\s+DE\s+SERVICO.{0,140}?\bN(?:O|UMERO)?\.?\s*[:\-]?\s*(\d[\d\s\.]{0,18})\b/i',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (! preg_match_all($pattern, $normalizedText, $matches, PREG_OFFSET_CAPTURE)) {
+                continue;
+            }
+
+            foreach ($matches[1] ?? [] as [$number, $offset]) {
+                $normalized = $this->normalizeInvoiceNumber($number);
+
+                if (! $this->isPlausibleInvoiceNumber($normalized)) {
+                    continue;
+                }
+
+                if ($this->hasBlockedInvoiceNumberContext($normalizedText, $offset, [
+                    'protocolo',
+                    'inscricao municipal',
+                    'cnpj',
+                ])) {
+                    continue;
+                }
+
+                return $normalized;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeReadableText(string $text): string
+    {
+        $text = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text) ?: $text;
+        $text = preg_replace('/[^A-Z0-9]+/i', ' ', $text) ?? $text;
+
+        return trim(preg_replace('/\s+/', ' ', strtoupper($text)) ?? strtoupper($text));
     }
 
     private function isPlausibleInvoiceNumber(string $number): bool
