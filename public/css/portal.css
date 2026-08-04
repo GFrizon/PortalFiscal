@@ -965,6 +965,13 @@ textarea:focus-visible {
     color: var(--color-danger) !important;
 }
 
+.badge-draft {
+    border: 1px solid rgba(47, 127, 163, .18);
+    background: #dff1f8 !important;
+    color: #1f5f7e !important;
+    box-shadow: 0 1px 0 rgba(47, 127, 163, .08);
+}
+
 .invoice-workspace {
     display: grid;
     grid-template-columns: minmax(620px, 1.25fr) minmax(430px, .75fr);
@@ -2574,21 +2581,21 @@ textarea.form-control {
 }
 
 .data-table tbody tr.invoice-row-draft {
-    background: #f4f7fb;
-    box-shadow: inset 3px 0 0 #8aa0b8;
+    background: #eef7fb;
+    box-shadow: inset 4px 0 0 #2f7fa3;
 }
 
 .data-table tbody tr.invoice-row-draft:hover {
-    background: #eef3f8;
+    background: #e5f1f7;
 }
 
 .data-table tbody tr.invoice-row-draft.invoice-row-urgent {
-    background: #f4f7fb;
-    box-shadow: inset 3px 0 0 #8aa0b8;
+    background: #eef7fb;
+    box-shadow: inset 4px 0 0 #2f7fa3;
 }
 
 .data-table tbody tr.invoice-row-draft.invoice-row-urgent:hover {
-    background: #eef3f8;
+    background: #e5f1f7;
 }
 
 .data-table tbody tr.invoice-row-launched {
@@ -2642,9 +2649,11 @@ textarea.form-control {
     width: 24px;
     height: 24px;
     border-radius: 999px;
-    background: #e6edf5;
-    color: #52677e;
+    border: 1px solid rgba(47, 127, 163, .25);
+    background: #dff1f8;
+    color: #1f5f7e;
     font-size: .82rem;
+    box-shadow: 0 0 0 3px rgba(47, 127, 163, .08);
 }
 
 .launched-indicator {
@@ -6042,19 +6051,24 @@ body.is-navigating .app-main {
 }
 
 .invoice-list-scroll .data-table tbody tr.invoice-row-draft td {
-    background: #f4f7fb;
+    border-color: rgba(47, 127, 163, .2);
+    background: #eef7fb;
+}
+
+.invoice-list-scroll .data-table tbody tr.invoice-row-draft td:first-child {
+    box-shadow: inset 4px 0 0 #2f7fa3;
 }
 
 .invoice-list-scroll .data-table tbody tr.invoice-row-draft:hover td {
-    background: #eef3f8;
+    background: #e5f1f7;
 }
 
 .invoice-list-scroll .data-table tbody tr.invoice-row-draft.invoice-row-urgent td {
-    background: #f4f7fb;
+    background: #eef7fb;
 }
 
 .invoice-list-scroll .data-table tbody tr.invoice-row-draft.invoice-row-urgent:hover td {
-    background: #eef3f8;
+    background: #e5f1f7;
 }
 
 .invoice-list-scroll .data-table tbody tr.invoice-row-launched td {

@@ -38,7 +38,7 @@ enum InvoiceStatus: string
     public function badgeClass(): string
     {
         return match ($this) {
-            self::Draft => 'text-bg-light',
+            self::Draft => 'badge-draft',
             self::AwaitingReview => 'text-bg-secondary',
             self::InReview => 'text-bg-primary',
             self::Pending => 'text-bg-warning',
