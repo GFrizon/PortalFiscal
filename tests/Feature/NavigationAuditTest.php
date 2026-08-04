@@ -1640,6 +1640,33 @@ class NavigationAuditTest extends TestCase
             ->assertDontSee('910001');
     }
 
+    public function test_invoice_index_reference_filter_also_searches_invoice_number(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        Invoice::factory()->create([
+            'invoice_number' => '293',
+            'purchase_order_number' => '00103818',
+        ]);
+
+        Invoice::factory()->create([
+            'invoice_number' => '1753',
+            'purchase_order_number' => '00103814',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('invoices.index', ['purchase_order_number' => '293']))
+            ->assertOk()
+            ->assertSee('293')
+            ->assertDontSee('1753');
+
+        $this->actingAs($admin)
+            ->get(route('invoices.index', ['purchase_order_number' => '00103814']))
+            ->assertOk()
+            ->assertSee('1753')
+            ->assertDontSee('293');
+    }
+
     public function test_admin_can_create_update_and_block_user(): void
     {
         $admin = User::factory()->admin()->create();

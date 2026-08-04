@@ -53,7 +53,7 @@
                 <input type="hidden" name="business_unit_id" value="{{ $selectedUnitId }}">
             @endif
 
-            <input class="form-control" name="purchase_order_number" value="{{ $filters['purchase_order_number'] ?? '' }}" placeholder="OC/CTE" aria-label="Filtrar por OC ou CTE">
+            <input class="form-control" name="purchase_order_number" value="{{ $filters['purchase_order_number'] ?? '' }}" placeholder="Nota ou OC/CTE" aria-label="Filtrar por numero da nota, OC ou CTE">
             <input class="form-control" name="supplier" value="{{ $filters['supplier'] ?? '' }}" placeholder="Fornecedor" aria-label="Filtrar por fornecedor">
             <select class="form-select" name="status" aria-label="Filtrar por status">
                 <option value="">Fila aberta</option>

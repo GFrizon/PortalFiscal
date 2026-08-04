@@ -81,7 +81,13 @@ class InvoiceController extends Controller
         }
 
         if ($request->filled('purchase_order_number')) {
-            $query->where('purchase_order_number', 'like', '%'.$request->string('purchase_order_number')->toString().'%');
+            $reference = $request->string('purchase_order_number')->toString();
+
+            $query->where(function ($query) use ($reference): void {
+                $query
+                    ->where('purchase_order_number', 'like', '%'.$reference.'%')
+                    ->orWhere('invoice_number', 'like', '%'.$reference.'%');
+            });
         }
 
         if ($request->filled('supplier')) {
