@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AlertLevel;
+use App\Enums\AlertType;
 use App\Enums\InvoiceStatus;
 use App\Http\Requests\Invoice\FiscalStatusRequest;
 use App\Http\Requests\Invoice\FiscalReviewRequest;
@@ -58,8 +59,24 @@ class FiscalReviewController extends Controller
 
     public function markAsLaunched(FiscalReviewRequest $request, Invoice $invoice, InvoiceHistoryService $historyService): RedirectResponse
     {
-        if ($invoice->alerts()->where('resolved', false)->where('level', AlertLevel::Critical)->exists()) {
-            return back()->withErrors(['fiscal_notes' => 'Resolva os alertas criticos antes de marcar a nota como lancada.']);
+        $blockingAlerts = $invoice->alerts()
+            ->where('resolved', false)
+            ->where(function ($query): void {
+                $query
+                    ->where('level', AlertLevel::Critical)
+                    ->orWhereIn('type', $this->launchBlockingAlertTypes());
+            })
+            ->get();
+
+        if ($blockingAlerts->isNotEmpty()) {
+            $labels = $blockingAlerts
+                ->map(fn (InvoiceAlert $alert): string => $alert->type->label())
+                ->unique()
+                ->implode(', ');
+
+            return back()
+                ->withErrors(['fiscal_notes' => 'Nao e possivel lancar esta nota enquanto houver bloqueios abertos: '.$labels.'. Resolva os alertas antes de lancar.'])
+                ->with('error', 'Lancamento bloqueado: '.$labels.'.');
         }
 
         $previousStatus = $invoice->status;
@@ -159,5 +176,13 @@ class FiscalReviewController extends Controller
                 'error' => $exception->getMessage(),
             ]);
         }
+    }
+
+    private function launchBlockingAlertTypes(): array
+    {
+        return [
+            AlertType::CnpjMismatch->value,
+            AlertType::DuplicatePdf->value,
+        ];
     }
 }

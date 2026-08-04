@@ -29,6 +29,14 @@
             ?? data_get($purchaseOrderCheck->raw_response, 'cd_fornecedor'))
         : null)
     @php($actionFeedbackMessage = session('success') ?? session('status'))
+    @php($launchBlockingAlertTypes = [
+        \App\Enums\AlertType::CnpjMismatch,
+        \App\Enums\AlertType::DuplicatePdf,
+    ])
+    @php($launchBlockingAlerts = $invoice->alerts
+        ->filter(fn ($alert) => ! $alert->resolved && ($alert->level === \App\Enums\AlertLevel::Critical || in_array($alert->type, $launchBlockingAlertTypes, true)))
+        ->values())
+    @php($launchBlockingLabels = $launchBlockingAlerts->map(fn ($alert) => $alert->type->label())->unique()->implode(', '))
 
     <div class="invoice-detail-page {{ $isPendingForSubmitter ? 'has-pending-callout' : '' }}">
         <div class="section-toolbar mb-3">
@@ -437,6 +445,17 @@
                                         @else
                                             <form method="POST" action="{{ route('invoices.mark-as-launched', $invoice) }}">
                                                 @csrf
+                                                @if(session('error') || $errors->has('fiscal_notes') || $launchBlockingAlerts->isNotEmpty())
+                                                    <div class="alert alert-danger fiscal-blocking-alert mb-3" role="alert">
+                                                        <i class="bi bi-shield-exclamation" aria-hidden="true"></i>
+                                                        <div>
+                                                            <strong>Lancamento bloqueado</strong>
+                                                            <span>
+                                                                {{ session('error') ?? $errors->first('fiscal_notes') ?? 'Resolva os bloqueios antes de lancar: '.$launchBlockingLabels.'.' }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                @endif
                                                 <label class="form-label" for="fiscal_notes">Observacoes do Fiscal</label>
                                                 <textarea class="form-control mb-3" id="fiscal_notes" name="fiscal_notes" rows="2">{{ old('fiscal_notes', $invoice->fiscal_notes) }}</textarea>
                                                 <div class="fiscal-decision-row">
@@ -446,7 +465,7 @@
                                                         <i class="bi bi-exclamation-diamond" aria-hidden="true"></i>
                                                         Registrar pendencia
                                                     </button>
-                                                    <button class="btn btn-success btn-fiscal-launch" type="submit" data-confirm="Marcar esta nota como lancada?" data-action-feedback="Marcando nota como lancada...">
+                                                    <button class="btn btn-success btn-fiscal-launch" type="submit" data-confirm="Marcar esta nota como lancada?" data-action-feedback="Marcando nota como lancada..." @disabled($launchBlockingAlerts->isNotEmpty())>
                                                         <i class="bi bi-check2-circle" aria-hidden="true"></i>
                                                         Lancar nota
                                                     </button>

@@ -1174,6 +1174,57 @@ class NavigationAuditTest extends TestCase
         ]);
     }
 
+    public function test_fiscal_cannot_launch_invoice_with_open_duplicate_pdf_alert(): void
+    {
+        $user = User::factory()->create();
+        $fiscal = User::factory()->fiscal()->create();
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => 'awaiting_review',
+        ]);
+
+        $invoice->alerts()->create([
+            'type' => AlertType::DuplicatePdf,
+            'message' => 'Este PDF ja foi enviado em outra nota.',
+            'level' => AlertLevel::Warning,
+            'resolved' => false,
+        ]);
+
+        $this->actingAs($fiscal)
+            ->post(route('invoices.mark-as-launched', $invoice), [
+                'fiscal_notes' => 'Tentativa bloqueada por duplicidade.',
+            ])
+            ->assertSessionHasErrors('fiscal_notes')
+            ->assertSessionHas('error', 'Lancamento bloqueado: PDF duplicado.');
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+            'status' => 'awaiting_review',
+        ]);
+    }
+
+    public function test_fiscal_panel_shows_launch_blocking_warning(): void
+    {
+        $fiscal = User::factory()->fiscal()->create();
+        $invoice = Invoice::factory()->create([
+            'status' => 'awaiting_review',
+        ]);
+
+        $invoice->alerts()->create([
+            'type' => AlertType::CnpjMismatch,
+            'message' => 'CNPJ do emitente diferente do fornecedor da ordem de compra.',
+            'level' => AlertLevel::Critical,
+            'resolved' => false,
+        ]);
+
+        $this->actingAs($fiscal)
+            ->get(route('invoices.show', $invoice))
+            ->assertOk()
+            ->assertSee('Lancamento bloqueado')
+            ->assertSee('CNPJ divergente')
+            ->assertSee('disabled', false);
+    }
+
     public function test_invoice_review_tab_only_highlights_open_alerts(): void
     {
         $fiscal = User::factory()->fiscal()->create();
