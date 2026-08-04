@@ -4,6 +4,8 @@
     $oldPaymentMethod = old('payment_method', $isEditing ? $invoice->paymentMethod()->value : 'anticipated');
     $oldInstallments = old('payment_installments', $invoiceInstallments);
     $oldInstallmentCount = min(12, max(1, (int) old('payment_installments_count', max(1, count($oldInstallments)))));
+    $isDraftInvoice = $isEditing && $invoice->status === \App\Enums\InvoiceStatus::Draft;
+    $primaryActionLabel = $isDraftInvoice ? 'Enviar para conferencia' : ($isEditing ? 'Salvar alteracoes' : 'Enviar para conferencia');
 @endphp
 
 @extends('layouts.app')
@@ -32,7 +34,7 @@
         enctype="multipart/form-data"
         class="panel form-panel upload-form"
         data-submit-loading-message="{{ $isEditing ? 'Atualizando dados da nota...' : 'Consultando CIGAM e salvando nota...' }}"
-        data-submit-success-message="{{ $isEditing ? 'Alteracoes salvas. Abrindo a nota...' : 'Nota salva com sucesso. Abrindo a lista...' }}"
+        data-submit-success-message="{{ $isEditing ? 'Alteracoes salvas. Abrindo a nota...' : 'Nota enviada com sucesso. Abrindo a lista...' }}"
         data-submit-error-message="Nao foi possivel salvar a nota. Confira sua conexao e tente novamente."
         @unless($isEditing) data-pdf-preview-form @endunless
     >
@@ -151,10 +153,16 @@
             </div>
         </div>
         <div class="form-actions">
-            <button class="btn btn-primary" type="submit">
+            <button class="btn btn-primary" type="submit" name="submit_intent" value="submit" data-submit-loading-message="{{ $isDraftInvoice ? 'Enviando rascunho para conferencia...' : ($isEditing ? 'Atualizando dados da nota...' : 'Consultando CIGAM e enviando nota...') }}" data-submit-success-message="{{ $isDraftInvoice ? 'Rascunho enviado. Abrindo a nota...' : ($isEditing ? 'Alteracoes salvas. Abrindo a nota...' : 'Nota enviada com sucesso. Abrindo a lista...') }}">
                 <i class="bi bi-check2-circle" aria-hidden="true"></i>
-                {{ $isEditing ? 'Salvar alteracoes' : 'Salvar nota' }}
+                {{ $primaryActionLabel }}
             </button>
+            @if(! $isEditing || $isDraftInvoice)
+                <button class="btn btn-outline-primary" type="submit" name="submit_intent" value="draft" data-submit-loading-message="Salvando rascunho..." data-submit-success-message="Rascunho salvo. Abrindo a nota...">
+                    <i class="bi bi-file-earmark-check" aria-hidden="true"></i>
+                    Salvar rascunho
+                </button>
+            @endif
             <a href="{{ $isEditing ? route('invoices.show', $invoice) : route('invoices.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-x-lg" aria-hidden="true"></i>
                 Cancelar

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\InvoiceStatus;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -9,6 +10,10 @@ class InvoiceVisibility
 {
     public static function apply(Builder $query, User $user): Builder
     {
+        if ($user->isFiscal()) {
+            $query->where('status', '!=', InvoiceStatus::Draft->value);
+        }
+
         if (! $user->isRegularUser()) {
             return $query;
         }

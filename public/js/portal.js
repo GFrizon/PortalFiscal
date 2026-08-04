@@ -409,7 +409,7 @@
 
     function startFormSubmitLoading(form, submitter) {
         const loadingState = form.querySelector('.submit-loading-state');
-        const message = form.dataset.submitLoadingMessage || 'Processando...';
+        const message = submitter?.dataset.submitLoadingMessage || form.dataset.submitLoadingMessage || 'Processando...';
 
         form.classList.remove('submit-success', 'submit-error');
         form.setAttribute('aria-busy', 'true');
@@ -451,11 +451,16 @@
         const method = (
             submitter?.hasAttribute('formmethod') ? submitter.formMethod : (form.method || 'POST')
         ).toUpperCase();
+        const formData = new FormData(form);
+
+        if (submitter?.name) {
+            formData.append(submitter.name, submitter.value);
+        }
 
         try {
             const response = await fetch(action, {
                 method,
-                body: new FormData(form),
+                body: formData,
                 credentials: 'same-origin',
                 headers: {
                     Accept: 'application/json',
@@ -471,7 +476,7 @@
                 throw new Error(validationMessage || payload.message || 'Nao foi possivel concluir. Tente novamente.');
             }
 
-            const successMessage = form.dataset.submitSuccessMessage || payload.message || 'Salvo com sucesso. Abrindo...';
+            const successMessage = submitter?.dataset.submitSuccessMessage || form.dataset.submitSuccessMessage || payload.message || 'Salvo com sucesso. Abrindo...';
             setFormSubmitResult(form, submitter, 'success', successMessage);
             await delay(prefersReducedMotion ? 80 : 720);
             window.location.assign(payload.redirect || response.url || action);

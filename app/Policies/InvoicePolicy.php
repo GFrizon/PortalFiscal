@@ -16,6 +16,11 @@ class InvoicePolicy
 
     public function view(User $user, Invoice $invoice): bool
     {
+        if ($invoice->status === InvoiceStatus::Draft) {
+            return $user->isAdmin()
+                || InvoiceVisibility::canView($user, $invoice->submitter ?? $invoice->submitter()->firstOrFail());
+        }
+
         return $user->isAdmin()
             || $user->isFiscal()
             || InvoiceVisibility::canView($user, $invoice->submitter ?? $invoice->submitter()->firstOrFail());
@@ -52,11 +57,19 @@ class InvoicePolicy
 
     public function review(User $user, Invoice $invoice): bool
     {
+        if ($invoice->status === InvoiceStatus::Draft) {
+            return false;
+        }
+
         return $user->isAdmin() || $user->isFiscal();
     }
 
     public function markAsLaunched(User $user, Invoice $invoice): bool
     {
+        if ($invoice->status === InvoiceStatus::Draft) {
+            return false;
+        }
+
         return $user->isAdmin() || $user->isFiscal();
     }
 

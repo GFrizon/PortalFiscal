@@ -11,6 +11,7 @@
     @php($paymentMethod = $invoice->paymentMethod())
     @php($annotationData = $invoice->annotation?->data ?? ['strokes' => []])
     @php($canReviewInvoice = auth()->user()?->can('review', $invoice) ?? false)
+    @php($isDraftInvoice = $invoice->status === \App\Enums\InvoiceStatus::Draft)
     @php($isPendingForSubmitter = $invoice->status === \App\Enums\InvoiceStatus::Pending && ! $canReviewInvoice)
     @php($purchaseOrderCheck = $invoice->purchaseOrderCheck)
     @php($supplierName = $purchaseOrderCheck?->supplier_name ?? '-')
@@ -57,8 +58,8 @@
                 @endcan
                 @can('update', $invoice)
                     <a href="{{ route('invoices.edit', $invoice) }}" class="btn {{ $isPendingForSubmitter ? 'btn-warning' : 'btn-outline-primary' }}">
-                        <i class="bi {{ $isPendingForSubmitter ? 'bi-reply' : 'bi-pencil-square' }}" aria-hidden="true"></i>
-                        {{ $isPendingForSubmitter ? 'Responder pendencia' : 'Editar' }}
+                        <i class="bi {{ $isPendingForSubmitter ? 'bi-reply' : ($isDraftInvoice ? 'bi-file-earmark-text' : 'bi-pencil-square') }}" aria-hidden="true"></i>
+                        {{ $isPendingForSubmitter ? 'Responder pendencia' : ($isDraftInvoice ? 'Continuar rascunho' : 'Editar') }}
                     </a>
                 @endcan
                 @can('delete', $invoice)
@@ -80,6 +81,16 @@
                     <span class="eyebrow">Pendencia registrada</span>
                     <strong>{{ filled($invoice->fiscal_notes) ? $invoice->fiscal_notes : 'Revise os dados solicitados pelo fiscal.' }}</strong>
                     <small>Para resolver, use o botao amarelo acima, ajuste as informacoes e salve. A nota volta automaticamente para a conferencia e o fiscal recebe um aviso por e-mail.</small>
+                </div>
+            </div>
+        @endif
+
+        @if($isDraftInvoice)
+            <div class="pending-response-callout mb-3">
+                <div>
+                    <span class="eyebrow">Rascunho salvo</span>
+                    <strong>Esta nota ainda nao foi enviada para conferencia fiscal.</strong>
+                    <small>Use o botao "Continuar rascunho", confira ou corrija as informacoes e depois clique em "Enviar para conferencia".</small>
                 </div>
             </div>
         @endif

@@ -46,6 +46,10 @@ class InvoiceController extends Controller
             InvoiceStatus::Pending,
             InvoiceStatus::Launched,
         ];
+
+        if (! $request->user()->isFiscal()) {
+            array_unshift($filterableStatuses, InvoiceStatus::Draft);
+        }
         $defaultStatusValues = array_map(fn (InvoiceStatus $status): string => $status->value, $defaultStatuses);
         $filterableStatusValues = array_map(fn (InvoiceStatus $status): string => $status->value, $filterableStatuses);
         $selectedStatus = $request->string('status')->toString();
@@ -179,6 +183,7 @@ class InvoiceController extends Controller
         InvoiceHistoryService $historyService,
         InvoiceAlertService $alertService
     ): RedirectResponse|JsonResponse {
+        $isDraft = $request->isDraftIntent();
         $uploadedFile = $request->file('pdf');
         $uploadedPdfHash = hash_file('sha256', $uploadedFile->getPathname());
 
@@ -196,7 +201,8 @@ class InvoiceController extends Controller
         $precheckedPurchaseOrder = null;
 
         if (
-            $request->string('document_type')->toString() === InvoiceDocumentType::Nf->value
+            ! $isDraft
+            && $request->string('document_type')->toString() === InvoiceDocumentType::Nf->value
             && filled($request->string('purchase_order_number')->toString())
         ) {
             $precheckedPurchaseOrder = $purchaseOrderService->find($request->string('purchase_order_number')->toString());
@@ -231,8 +237,11 @@ class InvoiceController extends Controller
                 $purchaseOrderService,
                 $precheckedPurchaseOrder,
                 $historyService,
-                $alertService
+                $alertService,
+                $isDraft
             ): Invoice {
+                $status = $isDraft ? InvoiceStatus::Draft : InvoiceStatus::AwaitingReview;
+
                 $invoice = Invoice::query()->create([
                     'protocol' => $invoiceService->nextProtocol(),
                     'submitted_by' => $request->user()->id,
@@ -250,7 +259,7 @@ class InvoiceController extends Controller
                     'payment_method' => $request->string('payment_method')->toString(),
                     'payment_installments' => $this->paymentInstallments($request),
                     'due_date' => $this->paymentDueDate($request),
-                    'sent_at' => now(),
+                    'sent_at' => $isDraft ? null : now(),
                     'user_notes' => $request->string('user_notes')->toString() ?: null,
                     'pdf_path' => $storedPdf['path'],
                     'original_pdf_name' => $storedPdf['original_name'],
@@ -259,17 +268,17 @@ class InvoiceController extends Controller
                     'pdf_sha256' => $storedPdf['sha256'],
                     'pdf_optimized' => $storedPdf['optimized'],
                     'pdf_processed_at' => $storedPdf['processed_at'],
-                    'status' => InvoiceStatus::AwaitingReview,
+                    'status' => $status,
                 ]);
 
-                $historyService->record($invoice, $request->user(), 'Nota enviada', null, InvoiceStatus::AwaitingReview, null, $request);
+                $historyService->record($invoice, $request->user(), $isDraft ? 'Rascunho salvo' : 'Nota enviada', null, $status, null, $request);
 
                 if ($storedPdf['optimized']) {
-                    $historyService->record($invoice, $request->user(), 'PDF otimizado para armazenamento', null, InvoiceStatus::AwaitingReview, null, $request);
+                    $historyService->record($invoice, $request->user(), 'PDF otimizado para armazenamento', null, $status, null, $request);
                 }
 
                 if ($extracted['success']) {
-                    $historyService->record($invoice, $request->user(), 'PDF processado', null, InvoiceStatus::AwaitingReview, null, $request);
+                    $historyService->record($invoice, $request->user(), 'PDF processado', null, $status, null, $request);
                 } else {
                     $alertService->create($invoice, AlertType::PdfReadError, 'Nao foi possivel ler automaticamente o PDF.', AlertLevel::Warning);
                 }
@@ -279,12 +288,12 @@ class InvoiceController extends Controller
                 }
 
                 if ($businessUnit) {
-                    $historyService->record($invoice, $request->user(), 'Unidade identificada', null, InvoiceStatus::AwaitingReview, $businessUnit->name, $request);
+                    $historyService->record($invoice, $request->user(), 'Unidade identificada', null, $status, $businessUnit->name, $request);
                 } else {
                     $alertService->create($invoice, AlertType::BusinessUnitNotIdentified, 'Unidade de negocio nao identificada pelo CNPJ do destinatario.', AlertLevel::Warning);
                 }
 
-                if ($invoice->documentType() === InvoiceDocumentType::Nf && $invoice->purchase_order_number) {
+                if (! $isDraft && $invoice->documentType() === InvoiceDocumentType::Nf && $invoice->purchase_order_number) {
                     $purchaseOrder = $precheckedPurchaseOrder ?? $purchaseOrderService->find($invoice->purchase_order_number);
                     $invoice->purchaseOrderCheck()->create($purchaseOrder + [
                         'purchase_order_number' => $invoice->purchase_order_number,
@@ -325,12 +334,14 @@ class InvoiceController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Nota anexada com sucesso.',
-                'redirect' => route('invoices.index'),
+                'message' => $isDraft ? 'Rascunho salvo com sucesso.' : 'Nota anexada com sucesso.',
+                'redirect' => $isDraft ? route('invoices.show', $invoice) : route('invoices.index'),
             ]);
         }
 
-        return redirect()->route('invoices.index')->with('success', 'Nota anexada com sucesso.');
+        return $isDraft
+            ? redirect()->route('invoices.show', $invoice)->with('success', 'Rascunho salvo com sucesso.')
+            : redirect()->route('invoices.index')->with('success', 'Nota anexada com sucesso.');
     }
 
     public function update(
@@ -343,13 +354,39 @@ class InvoiceController extends Controller
     ): RedirectResponse|JsonResponse {
         $this->authorize('update', $invoice);
 
+        if (
+            $invoice->status === InvoiceStatus::Draft
+            && ! $request->isDraftIntent()
+            && $request->string('document_type')->toString() === InvoiceDocumentType::Nf->value
+            && filled($request->string('purchase_order_number')->toString())
+        ) {
+            $purchaseOrder = $purchaseOrderService->find($request->string('purchase_order_number')->toString());
+            $issuerCnpj = $pdfExtractionService->normalizeCnpj((string) $invoice->issuer_cnpj);
+            $supplierCnpj = $pdfExtractionService->normalizeCnpj((string) ($purchaseOrder['supplier_cnpj'] ?? ''));
+
+            if (($purchaseOrder['exists'] ?? false) && $issuerCnpj && $supplierCnpj && $issuerCnpj !== $supplierCnpj) {
+                throw ValidationException::withMessages([
+                    'purchase_order_number' => 'O CNPJ do fornecedor da OC e diferente do CNPJ do emitente da nota. Verifique a OC ou selecione o PDF correto antes de enviar para conferencia.',
+                ]);
+            }
+        }
+
         $notifyFiscalTeam = false;
 
         DB::transaction(function () use ($request, $invoice, $purchaseOrderService, $pdfExtractionService, $alertService, $historyService, &$notifyFiscalTeam): void {
             $previousStatus = $invoice->status;
             $nextStatus = $invoice->status;
+            $isDraftInvoice = $invoice->status === InvoiceStatus::Draft;
+            $isDraftIntent = $request->isDraftIntent();
+            $historyAction = 'Dados da nota atualizados';
 
-            if ($request->user()->isRegularUser() && $invoice->status === InvoiceStatus::Pending) {
+            if ($isDraftInvoice && ! $isDraftIntent) {
+                $nextStatus = InvoiceStatus::AwaitingReview;
+                $historyAction = 'Rascunho enviado para conferencia';
+            } elseif ($isDraftInvoice && $isDraftIntent) {
+                $nextStatus = InvoiceStatus::Draft;
+                $historyAction = 'Rascunho atualizado';
+            } elseif ($request->user()->isRegularUser() && $invoice->status === InvoiceStatus::Pending) {
                 $nextStatus = InvoiceStatus::AwaitingReview;
                 $notifyFiscalTeam = true;
             }
@@ -362,16 +399,21 @@ class InvoiceController extends Controller
                 'payment_method' => $request->string('payment_method')->toString(),
                 'payment_installments' => $this->paymentInstallments($request),
                 'due_date' => $this->paymentDueDate($request),
+                'sent_at' => $previousStatus === InvoiceStatus::Draft && $nextStatus === InvoiceStatus::AwaitingReview ? now() : $invoice->sent_at,
                 'user_notes' => $request->string('user_notes')->toString() ?: null,
                 'status' => $nextStatus,
             ]);
 
-            $this->syncPurchaseOrderCheck($invoice->refresh(), $purchaseOrderService, $pdfExtractionService, $alertService);
+            if ($nextStatus === InvoiceStatus::Draft) {
+                $this->clearPurchaseOrderCheck($invoice->refresh());
+            } else {
+                $this->syncPurchaseOrderCheck($invoice->refresh(), $purchaseOrderService, $pdfExtractionService, $alertService);
+            }
 
             $historyService->record(
                 $invoice,
                 $request->user(),
-                'Dados da nota atualizados',
+                $historyAction,
                 $previousStatus,
                 $nextStatus,
                 null,
@@ -385,12 +427,14 @@ class InvoiceController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Dados da nota atualizados com sucesso.',
+                'message' => $invoice->status === InvoiceStatus::Draft ? 'Rascunho atualizado com sucesso.' : 'Dados da nota atualizados com sucesso.',
                 'redirect' => route('invoices.show', $invoice),
             ]);
         }
 
-        return redirect()->route('invoices.show', $invoice)->with('success', 'Dados da nota atualizados com sucesso.');
+        return redirect()
+            ->route('invoices.show', $invoice)
+            ->with('success', $invoice->status === InvoiceStatus::Draft ? 'Rascunho atualizado com sucesso.' : 'Dados da nota atualizados com sucesso.');
     }
 
     public function show(Invoice $invoice, InvoiceHistoryService $historyService, Request $request): View
@@ -459,21 +503,9 @@ class InvoiceController extends Controller
         PdfExtractionService $pdfExtractionService,
         InvoiceAlertService $alertService
     ): void {
-        $relatedAlertTypes = [
-            AlertType::PurchaseOrderLookupFailed,
-            AlertType::PurchaseOrderNotFound,
-            AlertType::PurchaseOrderCancelled,
-            AlertType::CnpjMismatch,
-        ];
-
-        $invoice->alerts()
-            ->whereIn('type', array_map(fn (AlertType $type): string => $type->value, $relatedAlertTypes))
-            ->where('resolved', false)
-            ->delete();
+        $this->clearPurchaseOrderCheck($invoice);
 
         if ($invoice->documentType() !== InvoiceDocumentType::Nf || blank($invoice->purchase_order_number)) {
-            $invoice->purchaseOrderCheck()->delete();
-
             return;
         }
 
@@ -507,6 +539,23 @@ class InvoiceController extends Controller
         if ($issuerCnpj && $supplierCnpj && $issuerCnpj !== $supplierCnpj) {
             $alertService->create($invoice, AlertType::CnpjMismatch, 'CNPJ do emitente diferente do fornecedor da ordem de compra.', AlertLevel::Critical);
         }
+    }
+
+    private function clearPurchaseOrderCheck(Invoice $invoice): void
+    {
+        $relatedAlertTypes = [
+            AlertType::PurchaseOrderLookupFailed,
+            AlertType::PurchaseOrderNotFound,
+            AlertType::PurchaseOrderCancelled,
+            AlertType::CnpjMismatch,
+        ];
+
+        $invoice->alerts()
+            ->whereIn('type', array_map(fn (AlertType $type): string => $type->value, $relatedAlertTypes))
+            ->where('resolved', false)
+            ->delete();
+
+        $invoice->purchaseOrderCheck()->delete();
     }
 
     private function notifyFiscalTeamPendingWasResolved(

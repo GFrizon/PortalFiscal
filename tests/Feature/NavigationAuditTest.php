@@ -320,6 +320,108 @@ class NavigationAuditTest extends TestCase
         Storage::disk('local')->assertExists($invoice->pdf_path);
     }
 
+    public function test_user_can_save_invoice_draft_before_sending_to_review(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+        $fiscal = User::factory()->fiscal()->create();
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => 'PDF simulado',
+                'cnpjs' => ['12345678000195'],
+                'issuer_cnpj' => '12345678000195',
+                'recipient_cnpj' => null,
+                'invoice_number' => '293',
+                'invoice_access_key' => null,
+                'issuer_legal_name' => null,
+                'recipient_legal_name' => null,
+                'error' => null,
+            ]);
+        });
+
+        $response = $this->actingAs($user)
+            ->post(route('invoices.store'), [
+                'submit_intent' => 'draft',
+                'pdf' => UploadedFile::fake()->create('rascunho.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf',
+                'purchase_order_number' => '',
+                'arrival_date' => '',
+                'payment_method' => '',
+                'user_notes' => 'Aguardando ajuste na OC.',
+            ], [
+                'Accept' => 'application/json',
+                'X-Requested-With' => 'XMLHttpRequest',
+            ])
+            ->assertOk()
+            ->assertJsonPath('message', 'Rascunho salvo com sucesso.');
+
+        $invoice = Invoice::query()->where('submitted_by', $user->id)->firstOrFail();
+
+        $response->assertJsonPath('redirect', route('invoices.show', $invoice));
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+            'status' => InvoiceStatus::Draft->value,
+            'sent_at' => null,
+            'purchase_order_number' => null,
+            'user_notes' => 'Aguardando ajuste na OC.',
+        ]);
+
+        $this->actingAs($fiscal)
+            ->get(route('invoices.index', ['status' => InvoiceStatus::Draft->value]))
+            ->assertOk()
+            ->assertDontSee('293');
+
+        $this->actingAs($user)
+            ->get(route('invoices.index', ['status' => InvoiceStatus::Draft->value]))
+            ->assertOk()
+            ->assertSee('293')
+            ->assertSee('Rascunho');
+    }
+
+    public function test_user_can_send_saved_draft_to_review(): void
+    {
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => InvoiceStatus::Draft->value,
+            'document_type' => 'nf_no_oc',
+            'purchase_order_number' => null,
+            'sent_at' => null,
+            'payment_method' => 'anticipated',
+            'payment_installments' => null,
+            'due_date' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('invoices.update', $invoice), [
+                'submit_intent' => 'submit',
+                'is_urgent' => '0',
+                'document_type' => 'nf_no_oc',
+                'purchase_order_number' => '',
+                'arrival_date' => '2026-08-03',
+                'payment_method' => 'anticipated',
+                'user_notes' => 'Dados conferidos.',
+            ])
+            ->assertRedirect(route('invoices.show', $invoice));
+
+        $invoice->refresh();
+
+        $this->assertSame(InvoiceStatus::AwaitingReview, $invoice->status);
+        $this->assertNotNull($invoice->sent_at);
+
+        $this->assertDatabaseHas('invoice_histories', [
+            'invoice_id' => $invoice->id,
+            'user_id' => $user->id,
+            'action' => 'Rascunho enviado para conferencia',
+            'previous_status' => InvoiceStatus::Draft->value,
+            'new_status' => InvoiceStatus::AwaitingReview->value,
+        ]);
+    }
+
     public function test_invoice_upload_creates_critical_alert_when_number_is_not_identified(): void
     {
         Storage::fake('local');

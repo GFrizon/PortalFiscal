@@ -58,7 +58,13 @@
             <select class="form-select" name="status" aria-label="Filtrar por status">
                 <option value="">Fila aberta</option>
                 @foreach($statuses as $status)
-                    <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>{{ $status === \App\Enums\InvoiceStatus::Launched ? 'Lancadas' : $status->label() }}</option>
+                    <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>
+                        {{ match ($status) {
+                            \App\Enums\InvoiceStatus::Draft => 'Rascunhos',
+                            \App\Enums\InvoiceStatus::Launched => 'Lancadas',
+                            default => $status->label(),
+                        } }}
+                    </option>
                 @endforeach
             </select>
             <button class="btn btn-outline-primary btn-sm" type="submit">
