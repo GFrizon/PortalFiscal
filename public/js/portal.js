@@ -20,6 +20,7 @@
     });
 
     initPwaInstall();
+    initAutoFilterForms();
 
     window.addEventListener('pageshow', () => {
         isPageTransitioning = false;
@@ -50,6 +51,40 @@
             body.classList.remove('mobile-menu-open');
         });
     });
+
+    function initAutoFilterForms() {
+        document.querySelectorAll('[data-auto-filter-form]').forEach((form) => {
+            let debounceId = null;
+
+            const submit = () => {
+                if (debounceId) {
+                    window.clearTimeout(debounceId);
+                    debounceId = null;
+                }
+
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit();
+                    return;
+                }
+
+                form.submit();
+            };
+
+            form.querySelectorAll('select').forEach((field) => {
+                field.addEventListener('change', submit);
+            });
+
+            form.querySelectorAll('input:not([type="hidden"])').forEach((field) => {
+                field.addEventListener('input', () => {
+                    if (debounceId) {
+                        window.clearTimeout(debounceId);
+                    }
+
+                    debounceId = window.setTimeout(submit, 520);
+                });
+            });
+        });
+    }
 
     document.querySelectorAll('a[href]').forEach((link) => {
         link.addEventListener('click', (event) => {

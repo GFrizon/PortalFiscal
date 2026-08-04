@@ -48,6 +48,7 @@ class InvoiceController extends Controller
         ];
 
         if (! $request->user()->isFiscal()) {
+            array_unshift($defaultStatuses, InvoiceStatus::Draft);
             array_unshift($filterableStatuses, InvoiceStatus::Draft);
         }
         $defaultStatusValues = array_map(fn (InvoiceStatus $status): string => $status->value, $defaultStatuses);

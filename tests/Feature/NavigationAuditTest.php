@@ -376,6 +376,12 @@ class NavigationAuditTest extends TestCase
             ->assertDontSee('293');
 
         $this->actingAs($user)
+            ->get(route('invoices.index'))
+            ->assertOk()
+            ->assertSee('293')
+            ->assertSee('Rascunho');
+
+        $this->actingAs($user)
             ->get(route('invoices.index', ['status' => InvoiceStatus::Draft->value]))
             ->assertOk()
             ->assertSee('293')
@@ -1592,6 +1598,12 @@ class NavigationAuditTest extends TestCase
         ]);
 
         Invoice::factory()->create([
+            'protocol' => 'NF-2026-DRAFT',
+            'invoice_number' => '800006',
+            'status' => InvoiceStatus::Draft->value,
+        ]);
+
+        Invoice::factory()->create([
             'protocol' => 'NF-2026-DONE1',
             'invoice_number' => '800003',
             'status' => 'launched',
@@ -1616,6 +1628,7 @@ class NavigationAuditTest extends TestCase
             ->assertSee('Lancadas')
             ->assertSee('800001')
             ->assertSee('800002')
+            ->assertSee('800006')
             ->assertDontSee('800003')
             ->assertDontSee('800004')
             ->assertDontSee('800005')

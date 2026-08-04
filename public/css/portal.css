@@ -5775,7 +5775,7 @@ body.is-navigating .app-main {
 
 .invoice-toolbar-filter {
     display: grid;
-    grid-template-columns: minmax(100px, .75fr) minmax(220px, 1.3fr) minmax(150px, .8fr) auto auto;
+    grid-template-columns: minmax(120px, .85fr) minmax(220px, 1.35fr) minmax(150px, .85fr) auto;
     gap: 6px;
     align-items: center;
     width: min(760px, 52vw);
@@ -6228,7 +6228,7 @@ body.is-navigating .app-main {
 
 @media (max-width: 1399.98px) {
     .invoice-toolbar-filter {
-        grid-template-columns: minmax(88px, .75fr) minmax(170px, 1.15fr) minmax(130px, .8fr) auto auto;
+        grid-template-columns: minmax(100px, .8fr) minmax(170px, 1.15fr) minmax(130px, .8fr) auto;
         width: min(660px, 48vw);
     }
 

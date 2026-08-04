@@ -48,7 +48,7 @@
             <div class="eyebrow">Pasta selecionada</div>
             <div class="section-title">{{ $selectedUnitName }}</div>
         </div>
-        <form method="GET" action="{{ route('invoices.index') }}" class="invoice-toolbar-filter" aria-label="Filtros da lista de notas">
+        <form method="GET" action="{{ route('invoices.index') }}" class="invoice-toolbar-filter" data-auto-filter-form aria-label="Filtros da lista de notas">
             @if($selectedUnitId !== '')
                 <input type="hidden" name="business_unit_id" value="{{ $selectedUnitId }}">
             @endif
@@ -67,10 +67,6 @@
                     </option>
                 @endforeach
             </select>
-            <button class="btn btn-outline-primary btn-sm" type="submit">
-                <i class="bi bi-funnel" aria-hidden="true"></i>
-                Filtrar
-            </button>
             <a class="btn btn-outline-secondary btn-sm" href="{{ $selectedUnitId !== '' ? route('invoices.index', ['business_unit_id' => $selectedUnitId]) : route('invoices.index') }}">
                 <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
             </a>
