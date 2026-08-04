@@ -117,6 +117,9 @@
             }
 
         });
+
+        form.addEventListener('input', () => clearFormSubmitError(form));
+        form.addEventListener('change', () => clearFormSubmitError(form));
     });
 
     function updateActionFeedback(form, submitter) {
@@ -504,11 +507,13 @@
 
         if (submitter instanceof HTMLButtonElement) {
             submitter.classList.remove('is-loading', 'is-success', 'is-error');
-            submitter.classList.add(`is-${state}`);
             submitter.removeAttribute('aria-busy');
 
             if (state === 'error') {
                 submitter.disabled = false;
+                submitter.style.minWidth = '';
+            } else {
+                submitter.classList.add(`is-${state}`);
             }
         }
 
@@ -517,6 +522,28 @@
                 button.disabled = false;
             });
         }
+    }
+
+    function clearFormSubmitError(form) {
+        if (form.dataset.submitting === 'true' || ! form.classList.contains('submit-error')) {
+            return;
+        }
+
+        const loadingState = form.querySelector('.submit-loading-state');
+
+        form.classList.remove('submit-error');
+
+        if (loadingState) {
+            loadingState.hidden = true;
+            loadingState.classList.remove('is-error');
+        }
+
+        form.querySelectorAll('button[type="submit"]').forEach((button) => {
+            button.disabled = false;
+            button.classList.remove('is-error', 'is-loading');
+            button.removeAttribute('aria-busy');
+            button.style.minWidth = '';
+        });
     }
 
     function waitForMinimumFeedbackTime(startedAt, minimumDuration) {
