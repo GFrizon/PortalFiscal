@@ -4205,14 +4205,13 @@ body.is-navigating .app-main {
 }
 
 .payment-installments-area .installments-grid {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, max-content));
     gap: 8px;
 }
 
 .payment-installments-area .installment-row {
-    grid-template-columns: 34px 154px;
+    grid-template-columns: 34px 150px;
     gap: 7px;
     padding: 7px;
     background: #fff;
@@ -4299,9 +4298,9 @@ body.is-navigating .app-main {
 }
 
 .upload-form .payment-installments-area .installments-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, max-content));
+    gap: 8px 10px;
 }
 
 @media (max-width: 1199.98px) {
@@ -4316,7 +4315,7 @@ body.is-navigating .app-main {
 
 @media (min-width: 1400px) {
     .upload-form .payment-installments-area .installments-grid {
-        display: flex;
+        grid-template-columns: repeat(auto-fit, minmax(210px, max-content));
     }
 }
 
