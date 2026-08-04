@@ -98,7 +98,14 @@ class InvoiceController extends Controller
             $query->where('business_unit_id', $request->integer('business_unit_id'));
         }
 
-        $query->orderByDesc('is_urgent');
+        if ($sort === 'due') {
+            $query
+                ->orderByRaw('due_date IS NULL ASC')
+                ->orderBy('due_date', $direction)
+                ->orderByDesc('is_urgent');
+        } else {
+            $query->orderByDesc('is_urgent');
+        }
 
         if ($sort === 'supplier') {
             $query->orderBy(
@@ -108,7 +115,7 @@ class InvoiceController extends Controller
                     ->limit(1),
                 $direction
             );
-        } else {
+        } elseif ($sort !== 'due') {
             $query->orderBy($sortableColumns[$sort], $direction);
         }
 

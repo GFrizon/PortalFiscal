@@ -1550,6 +1550,15 @@ class NavigationAuditTest extends TestCase
             'created_at' => '2026-07-29 08:15:00',
         ]);
 
+        Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'protocol' => 'NF-2026-000032',
+            'invoice_number' => '900032',
+            'due_date' => null,
+            'is_urgent' => true,
+            'created_at' => '2026-07-29 07:00:00',
+        ]);
+
         $response = $this->actingAs($user)
             ->get(route('invoices.index', [
                 'sort' => 'due',
@@ -1566,6 +1575,7 @@ class NavigationAuditTest extends TestCase
         $response->assertSeeInOrder([
             '900031',
             '900030',
+            '900032',
         ]);
 
         $this->actingAs($user)
@@ -1619,8 +1629,8 @@ class NavigationAuditTest extends TestCase
             ->assertSee('Fornecedor Especial');
 
         $response->assertSeeInOrder([
-            '910002',
             '910001',
+            '910002',
         ]);
 
         $this->actingAs($admin)
