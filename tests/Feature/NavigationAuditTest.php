@@ -860,14 +860,14 @@ class NavigationAuditTest extends TestCase
         Storage::disk('local')->assertMissing($invoice->pdf_path);
     }
 
-    public function test_duplicate_pdf_upload_creates_warning_alert(): void
+    public function test_duplicate_pdf_upload_is_blocked_before_creating_invoice(): void
     {
         Storage::fake('local');
 
         $user = User::factory()->create();
 
         $this->mock(PdfExtractionService::class, function ($mock): void {
-            $mock->shouldReceive('extract')->twice()->andReturn([
+            $mock->shouldReceive('extract')->once()->andReturn([
                 'success' => true,
                 'text' => 'PDF simulado',
                 'cnpjs' => ['12345678000195'],
@@ -882,25 +882,76 @@ class NavigationAuditTest extends TestCase
         });
 
         foreach ([1, 2] as $attempt) {
-            $this->actingAs($user)
+            $response = $this->actingAs($user)
                 ->post(route('invoices.store'), [
                     'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
                     'document_type' => 'nf',
                     'purchase_order_number' => '12345'.$attempt,
                     'arrival_date' => now()->format('Y-m-d'),
-                    'due_date' => now()->addDays(10)->format('Y-m-d'),
+                    'payment_method' => 'anticipated',
                     'user_notes' => 'Envio '.$attempt,
-                ])
-                ->assertRedirect();
+                ]);
+
+            if ($attempt === 1) {
+                $response->assertRedirect(route('invoices.index'));
+            } else {
+                $response->assertSessionHasErrors('pdf');
+            }
         }
 
-        $secondInvoice = Invoice::query()->latest('id')->firstOrFail();
-
-        $this->assertDatabaseHas('invoice_alerts', [
-            'invoice_id' => $secondInvoice->id,
+        $this->assertSame(1, Invoice::query()->count());
+        $this->assertDatabaseMissing('invoice_alerts', [
             'type' => AlertType::DuplicatePdf->value,
-            'level' => AlertLevel::Warning->value,
         ]);
+    }
+
+    public function test_upload_is_blocked_when_purchase_order_supplier_cnpj_differs_from_invoice_issuer(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => 'PDF simulado com CNPJ diferente da OC',
+                'cnpjs' => ['11111111000111'],
+                'issuer_cnpj' => '11111111000111',
+                'recipient_cnpj' => null,
+                'invoice_number' => '987654',
+                'issuer_legal_name' => null,
+                'recipient_legal_name' => null,
+                'error' => null,
+            ]);
+            $mock->shouldReceive('normalizeCnpj')->andReturnUsing(fn (string $cnpj) => preg_replace('/\D/', '', $cnpj) ?? '');
+        });
+
+        $this->mock(PurchaseOrderService::class, function ($mock): void {
+            $mock->shouldReceive('find')->once()->with('103635')->andReturn([
+                'exists' => true,
+                'status' => 'aberta',
+                'supplier_cnpj' => '22222222000122',
+                'supplier_name' => 'Fornecedor da OC LTDA',
+                'business_unit_id' => null,
+                'amount' => 100,
+                'raw_response' => ['source' => 'test'],
+            ]);
+        });
+
+        $this->actingAs($user)
+            ->post(route('invoices.store'), [
+                'pdf' => UploadedFile::fake()->create('nota-cnpj-divergente.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf',
+                'purchase_order_number' => '103635',
+                'arrival_date' => now()->format('Y-m-d'),
+                'payment_method' => 'anticipated',
+                'user_notes' => 'Nao deve anexar.',
+            ])
+            ->assertSessionHasErrors('purchase_order_number');
+
+        $this->assertDatabaseCount('invoices', 0);
+        $this->assertDatabaseCount('invoice_alerts', 0);
+        $this->assertCount(0, Storage::disk('local')->allFiles());
     }
 
     public function test_purchase_order_lookup_failure_creates_technical_alert_instead_of_not_found(): void

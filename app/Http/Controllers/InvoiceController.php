@@ -27,6 +27,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
 
@@ -166,7 +167,35 @@ class InvoiceController extends Controller
         InvoiceAlertService $alertService
     ): RedirectResponse|JsonResponse {
         $uploadedFile = $request->file('pdf');
+        $uploadedPdfHash = hash_file('sha256', $uploadedFile->getPathname());
+
+        $duplicateInvoice = Invoice::query()
+            ->where('pdf_sha256', $uploadedPdfHash)
+            ->first();
+
+        if ($duplicateInvoice) {
+            throw ValidationException::withMessages([
+                'pdf' => 'Este PDF ja foi anexado no protocolo '.$duplicateInvoice->protocol.'. Abra a nota existente ou confira se selecionou o arquivo correto.',
+            ]);
+        }
+
         $extracted = $pdfExtractionService->extract($uploadedFile->getPathname());
+        $precheckedPurchaseOrder = null;
+
+        if (
+            $request->string('document_type')->toString() === InvoiceDocumentType::Nf->value
+            && filled($request->string('purchase_order_number')->toString())
+        ) {
+            $precheckedPurchaseOrder = $purchaseOrderService->find($request->string('purchase_order_number')->toString());
+            $issuerCnpj = $pdfExtractionService->normalizeCnpj((string) ($extracted['issuer_cnpj'] ?? ''));
+            $supplierCnpj = $pdfExtractionService->normalizeCnpj((string) ($precheckedPurchaseOrder['supplier_cnpj'] ?? ''));
+
+            if (($precheckedPurchaseOrder['exists'] ?? false) && $issuerCnpj && $supplierCnpj && $issuerCnpj !== $supplierCnpj) {
+                throw ValidationException::withMessages([
+                    'purchase_order_number' => 'O CNPJ do fornecedor da OC e diferente do CNPJ do emitente da nota. Verifique a OC ou selecione o PDF correto antes de anexar.',
+                ]);
+            }
+        }
 
         $businessUnit = null;
 
@@ -187,13 +216,10 @@ class InvoiceController extends Controller
                 $invoiceService,
                 $pdfExtractionService,
                 $purchaseOrderService,
+                $precheckedPurchaseOrder,
                 $historyService,
                 $alertService
             ): Invoice {
-                $duplicateInvoice = Invoice::query()
-                    ->where('pdf_sha256', $storedPdf['sha256'])
-                    ->first();
-
                 $invoice = Invoice::query()->create([
                     'protocol' => $invoiceService->nextProtocol(),
                     'submitted_by' => $request->user()->id,
@@ -229,10 +255,6 @@ class InvoiceController extends Controller
                     $historyService->record($invoice, $request->user(), 'PDF otimizado para armazenamento', null, InvoiceStatus::AwaitingReview, null, $request);
                 }
 
-                if ($duplicateInvoice) {
-                    $alertService->create($invoice, AlertType::DuplicatePdf, 'Este PDF ja foi enviado no protocolo '.$duplicateInvoice->protocol.'.', AlertLevel::Warning);
-                }
-
                 if ($extracted['success']) {
                     $historyService->record($invoice, $request->user(), 'PDF processado', null, InvoiceStatus::AwaitingReview, null, $request);
                 } else {
@@ -250,7 +272,7 @@ class InvoiceController extends Controller
                 }
 
                 if ($invoice->documentType() === InvoiceDocumentType::Nf && $invoice->purchase_order_number) {
-                    $purchaseOrder = $purchaseOrderService->find($invoice->purchase_order_number);
+                    $purchaseOrder = $precheckedPurchaseOrder ?? $purchaseOrderService->find($invoice->purchase_order_number);
                     $invoice->purchaseOrderCheck()->create($purchaseOrder + [
                         'purchase_order_number' => $invoice->purchase_order_number,
                     ]);
