@@ -29,8 +29,17 @@
         };
 
         $sortIcon = fn (string $column) => $sort === $column
-            ? ($direction === 'asc' ? 'bi-chevron-up' : 'bi-chevron-down')
+            ? ($direction === 'asc' ? 'bi-arrow-up-short' : 'bi-arrow-down-short')
             : 'bi-chevron-expand';
+        $sortClass = fn (string $column) => $sort === $column
+            ? 'sort-link is-sorted is-' . $direction
+            : 'sort-link';
+        $sortAria = fn (string $column) => $sort === $column
+            ? ($direction === 'asc' ? 'ascending' : 'descending')
+            : 'none';
+        $sortTitle = fn (string $column, string $label) => $sort === $column
+            ? $label . ' ordenado em ordem ' . ($direction === 'asc' ? 'crescente' : 'decrescente')
+            : 'Ordenar por ' . $label;
     @endphp
 
     <div class="invoices-index-page">
@@ -131,16 +140,16 @@
                 <thead>
                 <tr>
                     <th class="col-priority" aria-label="Prioridade"></th>
-                    <th class="col-type"><a class="sort-link" href="{{ $sortLink('type') }}">Tipo <i class="bi {{ $sortIcon('type') }}" aria-hidden="true"></i></a></th>
-                    <th class="col-invoice"><a class="sort-link" href="{{ $sortLink('invoice') }}">Nota <i class="bi {{ $sortIcon('invoice') }}" aria-hidden="true"></i></a></th>
-                    <th><a class="sort-link" href="{{ $sortLink('reference') }}">OC/CTE <i class="bi {{ $sortIcon('reference') }}" aria-hidden="true"></i></a></th>
-                    <th class="col-supplier"><a class="sort-link" href="{{ $sortLink('supplier') }}">Fornecedor <i class="bi {{ $sortIcon('supplier') }}" aria-hidden="true"></i></a></th>
-                    <th class="col-unit"><a class="sort-link" href="{{ $sortLink('unit') }}">Unidade <i class="bi {{ $sortIcon('unit') }}" aria-hidden="true"></i></a></th>
-                    <th class="col-user"><a class="sort-link" href="{{ $sortLink('user') }}">Usuario <i class="bi {{ $sortIcon('user') }}" aria-hidden="true"></i></a></th>
-                    <th class="col-created"><a class="sort-link" href="{{ $sortLink('created') }}">Inclusao <i class="bi {{ $sortIcon('created') }}" aria-hidden="true"></i></a></th>
-                    <th class="col-arrival"><a class="sort-link" href="{{ $sortLink('arrival') }}">Chegada <i class="bi {{ $sortIcon('arrival') }}" aria-hidden="true"></i></a></th>
-                    <th><a class="sort-link" href="{{ $sortLink('due') }}">Vencimento <i class="bi {{ $sortIcon('due') }}" aria-hidden="true"></i></a></th>
-                    <th><a class="sort-link" href="{{ $sortLink('status') }}">Status <i class="bi {{ $sortIcon('status') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-type" aria-sort="{{ $sortAria('type') }}"><a class="{{ $sortClass('type') }}" href="{{ $sortLink('type') }}" title="{{ $sortTitle('type', 'Tipo') }}">Tipo <i class="bi {{ $sortIcon('type') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-invoice" aria-sort="{{ $sortAria('invoice') }}"><a class="{{ $sortClass('invoice') }}" href="{{ $sortLink('invoice') }}" title="{{ $sortTitle('invoice', 'Nota') }}">Nota <i class="bi {{ $sortIcon('invoice') }}" aria-hidden="true"></i></a></th>
+                    <th aria-sort="{{ $sortAria('reference') }}"><a class="{{ $sortClass('reference') }}" href="{{ $sortLink('reference') }}" title="{{ $sortTitle('reference', 'OC/CTE') }}">OC/CTE <i class="bi {{ $sortIcon('reference') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-supplier" aria-sort="{{ $sortAria('supplier') }}"><a class="{{ $sortClass('supplier') }}" href="{{ $sortLink('supplier') }}" title="{{ $sortTitle('supplier', 'Fornecedor') }}">Fornecedor <i class="bi {{ $sortIcon('supplier') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-unit" aria-sort="{{ $sortAria('unit') }}"><a class="{{ $sortClass('unit') }}" href="{{ $sortLink('unit') }}" title="{{ $sortTitle('unit', 'Unidade') }}">Unidade <i class="bi {{ $sortIcon('unit') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-user" aria-sort="{{ $sortAria('user') }}"><a class="{{ $sortClass('user') }}" href="{{ $sortLink('user') }}" title="{{ $sortTitle('user', 'Usuario') }}">Usuario <i class="bi {{ $sortIcon('user') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-created" aria-sort="{{ $sortAria('created') }}"><a class="{{ $sortClass('created') }}" href="{{ $sortLink('created') }}" title="{{ $sortTitle('created', 'Inclusao') }}">Inclusao <i class="bi {{ $sortIcon('created') }}" aria-hidden="true"></i></a></th>
+                    <th class="col-arrival" aria-sort="{{ $sortAria('arrival') }}"><a class="{{ $sortClass('arrival') }}" href="{{ $sortLink('arrival') }}" title="{{ $sortTitle('arrival', 'Chegada') }}">Chegada <i class="bi {{ $sortIcon('arrival') }}" aria-hidden="true"></i></a></th>
+                    <th aria-sort="{{ $sortAria('due') }}"><a class="{{ $sortClass('due') }}" href="{{ $sortLink('due') }}" title="{{ $sortTitle('due', 'Vencimento') }}">Vencimento <i class="bi {{ $sortIcon('due') }}" aria-hidden="true"></i></a></th>
+                    <th aria-sort="{{ $sortAria('status') }}"><a class="{{ $sortClass('status') }}" href="{{ $sortLink('status') }}" title="{{ $sortTitle('status', 'Status') }}">Status <i class="bi {{ $sortIcon('status') }}" aria-hidden="true"></i></a></th>
                     <th class="text-end">Acoes</th>
                 </tr>
                 </thead>

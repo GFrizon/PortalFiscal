@@ -2484,14 +2484,63 @@ textarea.form-control {
     gap: 5px;
     color: inherit;
     text-decoration: none;
+    border-radius: 999px;
+    padding: 3px 6px;
+    margin-left: -6px;
+    transition:
+        color var(--motion-fast) var(--motion-ease-out),
+        background-color var(--motion-fast) var(--motion-ease-out),
+        box-shadow var(--motion-fast) var(--motion-ease-out);
 }
 
 .data-table thead .sort-link:hover {
     color: var(--color-primary);
+    background: rgba(255, 255, 255, .62);
+}
+
+.data-table thead .sort-link:focus-visible {
+    outline: 2px solid rgba(31, 91, 131, .35);
+    outline-offset: 2px;
+}
+
+.data-table thead .sort-link.is-sorted {
+    color: var(--color-primary);
+    background: #fff;
+    box-shadow:
+        0 1px 4px rgba(15, 23, 42, .08),
+        inset 0 0 0 1px rgba(31, 91, 131, .14);
 }
 
 .data-table thead .sort-link .bi {
-    font-size: .78rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    font-size: .76rem;
+    line-height: 1;
+    opacity: .72;
+    transition:
+        color var(--motion-fast) var(--motion-ease-out),
+        background-color var(--motion-fast) var(--motion-ease-out),
+        opacity var(--motion-fast) var(--motion-ease-out),
+        transform var(--motion-fast) var(--motion-ease-out);
+}
+
+.data-table thead .sort-link.is-sorted .bi {
+    color: #fff;
+    background: var(--color-primary);
+    border-radius: 999px;
+    font-size: .92rem;
+    opacity: 1;
+}
+
+.data-table thead .sort-link.is-asc .bi {
+    transform: translateY(-1px);
+}
+
+.data-table thead .sort-link.is-desc .bi {
+    transform: translateY(1px);
 }
 
 .data-table tbody td {
