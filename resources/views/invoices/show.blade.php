@@ -12,7 +12,7 @@
     @php($annotationData = $invoice->annotation?->data ?? ['strokes' => []])
     @php($canReviewInvoice = auth()->user()?->can('review', $invoice) ?? false)
     @php($isDraftInvoice = $invoice->status === \App\Enums\InvoiceStatus::Draft)
-    @php($isPendingForSubmitter = $invoice->status === \App\Enums\InvoiceStatus::Pending && ! $canReviewInvoice)
+    @php($isPendingResponse = $invoice->status === \App\Enums\InvoiceStatus::Pending && ! $canReviewInvoice)
     @php($purchaseOrderCheck = $invoice->purchaseOrderCheck)
     @php($supplierName = $purchaseOrderCheck?->supplier_name ?? $invoice->issuer_legal_name ?? $invoice->recipient_legal_name ?? '-')
     @php($invoiceAmount = $purchaseOrderCheck?->amount !== null ? 'R$ '.number_format((float) $purchaseOrderCheck->amount, 2, ',', '.') : '-')
@@ -39,7 +39,7 @@
         ->values())
     @php($launchBlockingLabels = $launchBlockingAlerts->map(fn ($alert) => $alert->type->label())->unique()->implode(', '))
 
-    <div class="invoice-detail-page {{ $isPendingForSubmitter ? 'has-pending-callout' : '' }}">
+    <div class="invoice-detail-page {{ $isPendingResponse ? 'has-pending-callout' : '' }}">
         <div class="section-toolbar mb-3">
             <div>
                 <div class="eyebrow">Navegacao</div>
@@ -57,9 +57,9 @@
                     </button>
                 @endcan
                 @can('update', $invoice)
-                    <a href="{{ route('invoices.edit', $invoice) }}" class="btn {{ $isPendingForSubmitter ? 'btn-warning' : 'btn-outline-primary' }}">
-                        <i class="bi {{ $isPendingForSubmitter ? 'bi-reply' : ($isDraftInvoice ? 'bi-file-earmark-text' : 'bi-pencil-square') }}" aria-hidden="true"></i>
-                        {{ $isPendingForSubmitter ? 'Responder pendencia' : ($isDraftInvoice ? 'Continuar rascunho' : 'Editar') }}
+                    <a href="{{ route('invoices.edit', $invoice) }}" class="btn {{ $isPendingResponse ? 'btn-warning' : 'btn-outline-primary' }}">
+                        <i class="bi {{ $isPendingResponse ? 'bi-reply' : ($isDraftInvoice ? 'bi-file-earmark-text' : 'bi-pencil-square') }}" aria-hidden="true"></i>
+                        {{ $isPendingResponse ? 'Responder pendencia' : ($isDraftInvoice ? 'Continuar rascunho' : 'Editar') }}
                     </a>
                 @endcan
                 @can('delete', $invoice)
@@ -75,7 +75,7 @@
             </div>
         </div>
 
-        @if($isPendingForSubmitter)
+        @if($isPendingResponse)
             <div class="pending-response-callout mb-3">
                 <div>
                     <span class="eyebrow">Pendencia registrada</span>

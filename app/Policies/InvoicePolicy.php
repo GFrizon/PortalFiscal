@@ -37,6 +37,16 @@ class InvoicePolicy
             return false;
         }
 
+        $submitter = $invoice->submitter ?? $invoice->submitter()->firstOrFail();
+
+        if (
+            $invoice->status === InvoiceStatus::Pending
+            && $user->isRegularUser()
+            && InvoiceVisibility::canView($user, $submitter)
+        ) {
+            return true;
+        }
+
         return $user->isAdmin()
             || $user->isFiscal()
             || $invoice->submitted_by === $user->id;

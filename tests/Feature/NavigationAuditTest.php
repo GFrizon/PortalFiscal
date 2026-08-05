@@ -838,6 +838,72 @@ class NavigationAuditTest extends TestCase
         ]);
     }
 
+    public function test_same_group_user_can_respond_pending_invoice(): void
+    {
+        Mail::fake();
+
+        $group = UserGroup::query()->create(['name' => 'Compras']);
+        $otherGroup = UserGroup::query()->create(['name' => 'Financeiro']);
+        $owner = User::factory()->create(['user_group_id' => $group->id]);
+        $sameGroupUser = User::factory()->create(['user_group_id' => $group->id]);
+        $outsideGroupUser = User::factory()->create(['user_group_id' => $otherGroup->id]);
+        User::factory()->fiscal()->create(['email' => 'fiscal.grupo@bakof.local']);
+
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $owner->id,
+            'status' => 'pending',
+            'document_type' => 'nf_no_oc',
+            'purchase_order_number' => null,
+            'is_urgent' => false,
+            'arrival_date' => '2026-07-29',
+            'payment_method' => 'anticipated',
+            'payment_installments' => null,
+            'due_date' => null,
+            'fiscal_notes' => 'Corrigir dados da nota.',
+            'user_notes' => 'Texto antigo',
+        ]);
+
+        $this->actingAs($sameGroupUser)
+            ->get(route('invoices.show', $invoice))
+            ->assertOk()
+            ->assertSee('Responder pendencia')
+            ->assertSee('Corrigir dados da nota.');
+
+        $this->actingAs($sameGroupUser)
+            ->get(route('invoices.edit', $invoice))
+            ->assertOk()
+            ->assertSee('Editar nota fiscal');
+
+        $this->actingAs($sameGroupUser)
+            ->put(route('invoices.update', $invoice), [
+                'document_type' => 'nf_no_oc',
+                'purchase_order_number' => '',
+                'arrival_date' => '2026-07-30',
+                'payment_method' => 'anticipated',
+                'user_notes' => 'Pendencia respondida por colega do grupo.',
+            ])
+            ->assertRedirect(route('invoices.show', $invoice));
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+            'status' => 'awaiting_review',
+            'user_notes' => 'Pendencia respondida por colega do grupo.',
+        ]);
+
+        $this->assertDatabaseHas('invoice_histories', [
+            'invoice_id' => $invoice->id,
+            'user_id' => $sameGroupUser->id,
+            'previous_status' => 'pending',
+            'new_status' => 'awaiting_review',
+        ]);
+
+        Mail::assertSent(InvoicePendingResolvedMail::class, 1);
+
+        $this->actingAs($outsideGroupUser)
+            ->get(route('invoices.edit', $invoice))
+            ->assertForbidden();
+    }
+
     public function test_launched_invoice_cannot_be_edited(): void
     {
         $user = User::factory()->create();
