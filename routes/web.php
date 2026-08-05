@@ -38,6 +38,7 @@ Route::middleware(['auth', 'active_user'])->group(function (): void {
         Route::get('historico', [InvoiceHistoryController::class, 'index'])->name('histories.index');
         Route::get('historico/{invoice}', [InvoiceHistoryController::class, 'show'])->name('histories.show');
         Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
+        Route::post('invoices/{invoice}/draft-follow-ups', [InvoiceController::class, 'storeDraftFollowUp'])->name('invoices.draft-follow-ups.store');
         Route::patch('invoices/{invoice}/unit', [FiscalReviewController::class, 'updateUnit'])->name('invoices.unit.update');
         Route::post('invoices/{invoice}/mark-as-pending', [FiscalReviewController::class, 'markAsPending'])->name('invoices.mark-as-pending');
         Route::post('invoices/{invoice}/mark-as-launched', [FiscalReviewController::class, 'markAsLaunched'])->name('invoices.mark-as-launched');

@@ -453,6 +453,31 @@ class InvoiceController extends Controller
         ]);
     }
 
+    public function storeDraftFollowUp(Request $request, Invoice $invoice, InvoiceHistoryService $historyService): RedirectResponse
+    {
+        $this->authorize('update', $invoice);
+
+        abort_unless($invoice->status === InvoiceStatus::Draft, 404);
+
+        $validated = $request->validate([
+            'note' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $historyService->record(
+            $invoice,
+            $request->user(),
+            'Acompanhamento do rascunho',
+            InvoiceStatus::Draft,
+            InvoiceStatus::Draft,
+            trim($validated['note']),
+            $request
+        );
+
+        return redirect()
+            ->route('invoices.show', $invoice)
+            ->with('success', 'Acompanhamento registrado no rascunho.');
+    }
+
     public function destroy(Invoice $invoice, PdfStorageService $pdfStorageService): RedirectResponse
     {
         $this->authorize('delete', $invoice);

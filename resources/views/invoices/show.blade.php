@@ -358,6 +358,28 @@
                                     @endif
                                 </div>
 
+                                @if($isDraftInvoice)
+                                    @can('update', $invoice)
+                                        <form method="POST" action="{{ route('invoices.draft-follow-ups.store', $invoice) }}" class="draft-follow-up-form">
+                                            @csrf
+                                            <label class="note-title" for="draft_follow_up_note">
+                                                <i class="bi bi-journal-plus" aria-hidden="true"></i>
+                                                Acompanhamento do rascunho
+                                            </label>
+                                            <div class="draft-follow-up-row">
+                                                <textarea class="form-control @error('note') is-invalid @enderror" id="draft_follow_up_note" name="note" rows="2" maxlength="2000" placeholder="Registre uma informacao para o grupo...">{{ old('note') }}</textarea>
+                                                <button class="btn btn-outline-primary" type="submit" data-action-feedback="Registrando acompanhamento do rascunho...">
+                                                    <i class="bi bi-plus-circle" aria-hidden="true"></i>
+                                                    Registrar
+                                                </button>
+                                            </div>
+                                            @error('note')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                        </form>
+                                    @endcan
+                                @endif
+
                                 @if(filled($invoice->fiscal_notes))
                                 <div class="note-box compact-note">
                                     <div class="note-title">

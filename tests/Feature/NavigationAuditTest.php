@@ -428,6 +428,107 @@ class NavigationAuditTest extends TestCase
         ]);
     }
 
+    public function test_same_group_user_can_continue_and_submit_draft_invoice(): void
+    {
+        $group = UserGroup::query()->create(['name' => 'Compras']);
+        $otherGroup = UserGroup::query()->create(['name' => 'Financeiro']);
+        $owner = User::factory()->create(['user_group_id' => $group->id]);
+        $sameGroupUser = User::factory()->create(['user_group_id' => $group->id]);
+        $outsideGroupUser = User::factory()->create(['user_group_id' => $otherGroup->id]);
+
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $owner->id,
+            'status' => InvoiceStatus::Draft->value,
+            'document_type' => 'nf_no_oc',
+            'purchase_order_number' => null,
+            'arrival_date' => '2026-08-04',
+            'payment_method' => 'anticipated',
+            'payment_installments' => null,
+            'due_date' => null,
+            'user_notes' => 'Rascunho inicial',
+        ]);
+
+        $this->actingAs($sameGroupUser)
+            ->get(route('invoices.show', $invoice))
+            ->assertOk()
+            ->assertSee('Continuar rascunho')
+            ->assertSee('Acompanhamento do rascunho');
+
+        $this->actingAs($sameGroupUser)
+            ->get(route('invoices.edit', $invoice))
+            ->assertOk()
+            ->assertSee('Editar nota fiscal');
+
+        $this->actingAs($sameGroupUser)
+            ->put(route('invoices.update', $invoice), [
+                'document_type' => 'nf_no_oc',
+                'purchase_order_number' => '',
+                'arrival_date' => '2026-08-05',
+                'payment_method' => 'anticipated',
+                'user_notes' => 'Rascunho revisado pelo grupo.',
+                'submit_intent' => 'submit',
+            ])
+            ->assertRedirect(route('invoices.show', $invoice));
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+            'status' => InvoiceStatus::AwaitingReview->value,
+            'user_notes' => 'Rascunho revisado pelo grupo.',
+        ]);
+
+        $this->assertDatabaseHas('invoice_histories', [
+            'invoice_id' => $invoice->id,
+            'user_id' => $sameGroupUser->id,
+            'action' => 'Rascunho enviado para conferencia',
+            'previous_status' => InvoiceStatus::Draft->value,
+            'new_status' => InvoiceStatus::AwaitingReview->value,
+        ]);
+
+        $this->actingAs($outsideGroupUser)
+            ->get(route('invoices.edit', $invoice))
+            ->assertForbidden();
+    }
+
+    public function test_same_group_user_can_add_draft_follow_up(): void
+    {
+        $group = UserGroup::query()->create(['name' => 'Compras']);
+        $otherGroup = UserGroup::query()->create(['name' => 'Financeiro']);
+        $owner = User::factory()->create(['user_group_id' => $group->id]);
+        $sameGroupUser = User::factory()->create(['user_group_id' => $group->id]);
+        $outsideGroupUser = User::factory()->create(['user_group_id' => $otherGroup->id]);
+
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $owner->id,
+            'status' => InvoiceStatus::Draft->value,
+        ]);
+
+        $this->actingAs($sameGroupUser)
+            ->post(route('invoices.draft-follow-ups.store', $invoice), [
+                'note' => 'OC corrigida no CIGAM, pode enviar para conferencia.',
+            ])
+            ->assertRedirect(route('invoices.show', $invoice));
+
+        $this->assertDatabaseHas('invoice_histories', [
+            'invoice_id' => $invoice->id,
+            'user_id' => $sameGroupUser->id,
+            'action' => 'Acompanhamento do rascunho',
+            'previous_status' => InvoiceStatus::Draft->value,
+            'new_status' => InvoiceStatus::Draft->value,
+            'note' => 'OC corrigida no CIGAM, pode enviar para conferencia.',
+        ]);
+
+        $this->actingAs($sameGroupUser)
+            ->get(route('invoices.show', $invoice))
+            ->assertOk()
+            ->assertSee('OC corrigida no CIGAM, pode enviar para conferencia.');
+
+        $this->actingAs($outsideGroupUser)
+            ->post(route('invoices.draft-follow-ups.store', $invoice), [
+                'note' => 'Tentativa fora do grupo.',
+            ])
+            ->assertForbidden();
+    }
+
     public function test_invoice_upload_creates_critical_alert_when_number_is_not_identified(): void
     {
         Storage::fake('local');
