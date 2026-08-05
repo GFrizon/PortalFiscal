@@ -125,6 +125,33 @@ class PdfExtractionServiceTest extends TestCase
         $this->assertSame('35260705462543000225570020001234591234567893', $result['invoice_access_key']);
     }
 
+    public function test_it_extracts_cte_issuer_legal_name_near_cnpj(): void
+    {
+        BusinessUnit::factory()->create([
+            'name' => 'BAKOF RS',
+            'legal_name' => 'BAKOF PLASTICOS LTDA',
+            'cnpj' => '91967067000155',
+        ]);
+
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "DACTE Documento Auxiliar do Conhecimento de Transporte Eletronico\n".
+            "REMETENTE\n".
+            "AUZEC COMERCIO DE EQUIPAMENTOS LTDA\n".
+            "CNPJ/CPF 05.462.543/0002-25\n".
+            "DESTINATARIO\n".
+            "BAKOF PLASTICOS LTDA\n".
+            "CNPJ 91.967.067/0001-55\n".
+            "CHAVE DE ACESSO CT-e 3526.0705.4625.4300.0225.5700.2000.1234.5912.3456.7893"
+        );
+
+        $this->assertSame('05462543000225', $result['issuer_cnpj']);
+        $this->assertSame('AUZEC COMERCIO DE EQUIPAMENTOS LTDA', $result['issuer_legal_name']);
+        $this->assertSame('91967067000155', $result['recipient_cnpj']);
+        $this->assertSame('BAKOF PLASTICOS LTDA', $result['recipient_legal_name']);
+    }
+
     public function test_it_rejects_invalid_fiscal_access_key_check_digit(): void
     {
         $service = new PdfExtractionService(new Parser());

@@ -39,8 +39,20 @@ class IdentifyInvoiceUnitsCommand extends Command
 
                 $extracted = $pdfExtractionService->extract(Storage::disk('local')->path($invoice->pdf_path));
                 $recipientCnpj = $extracted['recipient_cnpj'] ?? null;
+                $updates = [
+                    'recipient_cnpj' => $invoice->recipient_cnpj ?: $recipientCnpj,
+                    'issuer_cnpj' => $invoice->issuer_cnpj ?: ($extracted['issuer_cnpj'] ?? null),
+                    'invoice_number' => $invoice->invoice_number ?: ($extracted['invoice_number'] ?? null),
+                    'invoice_access_key' => $invoice->invoice_access_key ?: ($extracted['invoice_access_key'] ?? null),
+                    'issuer_legal_name' => $invoice->issuer_legal_name ?: ($extracted['issuer_legal_name'] ?? null),
+                    'recipient_legal_name' => $invoice->recipient_legal_name ?: ($extracted['recipient_legal_name'] ?? null),
+                ];
 
                 if (! $recipientCnpj) {
+                    if (! $dryRun && array_filter($updates, fn ($value): bool => filled($value))) {
+                        $invoice->forceFill($updates)->save();
+                    }
+
                     $this->line("Still unidentified {$invoice->protocol}");
                     continue;
                 }
@@ -63,11 +75,7 @@ class IdentifyInvoiceUnitsCommand extends Command
 
                 $invoice->forceFill([
                     'business_unit_id' => $businessUnit->id,
-                    'recipient_cnpj' => $invoice->recipient_cnpj ?: $recipientCnpj,
-                    'issuer_cnpj' => $invoice->issuer_cnpj ?: ($extracted['issuer_cnpj'] ?? null),
-                    'invoice_number' => $invoice->invoice_number ?: ($extracted['invoice_number'] ?? null),
-                    'invoice_access_key' => $invoice->invoice_access_key ?: ($extracted['invoice_access_key'] ?? null),
-                ])->save();
+                ] + $updates)->save();
 
                 $invoice->alerts()
                     ->where('type', AlertType::BusinessUnitNotIdentified->value)

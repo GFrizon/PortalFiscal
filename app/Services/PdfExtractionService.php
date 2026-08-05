@@ -45,17 +45,18 @@ class PdfExtractionService
         $cnpjs = $this->extractCnpjs($text);
         $recipientCnpj = $this->identifyRecipientCnpj($cnpjs, $text);
         $accessKey = $this->extractAccessKey($text);
+        $issuerCnpj = $this->identifyIssuerCnpj($cnpjs, $recipientCnpj, $accessKey);
 
         return [
             'success' => true,
             'text' => $text,
             'cnpjs' => $cnpjs,
-            'issuer_cnpj' => $this->identifyIssuerCnpj($cnpjs, $recipientCnpj),
+            'issuer_cnpj' => $issuerCnpj,
             'recipient_cnpj' => $recipientCnpj,
             'invoice_number' => $this->extractInvoiceNumber($text, $accessKey),
             'invoice_access_key' => $accessKey,
-            'issuer_legal_name' => null,
-            'recipient_legal_name' => null,
+            'issuer_legal_name' => $this->extractLegalNameNearCnpj($text, $issuerCnpj),
+            'recipient_legal_name' => $this->extractLegalNameNearCnpj($text, $recipientCnpj),
             'error' => null,
         ];
     }
@@ -165,10 +166,115 @@ class PdfExtractionService
         return preg_replace('/[^A-Z0-9]+/', '', strtoupper($text)) ?? '';
     }
 
-    private function identifyIssuerCnpj(array $cnpjs, ?string $recipientCnpj): ?string
+    private function identifyIssuerCnpj(array $cnpjs, ?string $recipientCnpj, ?string $accessKey = null): ?string
     {
-        return collect($cnpjs)
+        $issuerCnpj = collect($cnpjs)
             ->first(fn (string $cnpj) => $cnpj !== $recipientCnpj);
+
+        if ($issuerCnpj) {
+            return $issuerCnpj;
+        }
+
+        if ($accessKey) {
+            $accessKeyCnpj = substr($accessKey, 6, 14);
+
+            if ($this->isValidCnpj($accessKeyCnpj) && $accessKeyCnpj !== $recipientCnpj) {
+                return $accessKeyCnpj;
+            }
+        }
+
+        return null;
+    }
+
+    private function extractLegalNameNearCnpj(string $text, ?string $cnpj): ?string
+    {
+        if (! $cnpj) {
+            return null;
+        }
+
+        $lines = collect(preg_split('/\R/u', $text) ?: [])
+            ->map(fn (string $line): string => trim(preg_replace('/\s+/', ' ', $line) ?? $line))
+            ->filter()
+            ->values()
+            ->all();
+
+        foreach ($lines as $index => $line) {
+            if (! str_contains($this->normalizeCnpj($line), $cnpj)) {
+                continue;
+            }
+
+            $sameLineCandidate = preg_replace('/(?:CNPJ|CPF|CNPJ\/CPF|CNPJ\s*CPF|CGC|INSCRICAO|INSCRICAO\s+ESTADUAL).*/iu', '', $line) ?? '';
+            $sameLineName = $this->cleanLegalNameCandidate($sameLineCandidate);
+
+            if ($sameLineName) {
+                return $sameLineName;
+            }
+
+            foreach ([1, 2, 3, 4] as $distance) {
+                $previous = $lines[$index - $distance] ?? null;
+                $name = $previous ? $this->cleanLegalNameCandidate($previous) : null;
+
+                if ($name) {
+                    return $name;
+                }
+            }
+
+            foreach ([1, 2, 3] as $distance) {
+                $next = $lines[$index + $distance] ?? null;
+                $name = $next ? $this->cleanLegalNameCandidate($next) : null;
+
+                if ($name) {
+                    return $name;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function cleanLegalNameCandidate(string $candidate): ?string
+    {
+        $candidate = trim(preg_replace('/\s+/', ' ', $candidate) ?? $candidate);
+        $candidate = preg_replace('/^(?:EMITENTE|REMETENTE|DESTINATARIO|DESTINATARIO\s*\/\s*REMETENTE|TOMADOR|EXPEDIDOR|RECEBEDOR|TRANSPORTADOR|NOME\s*\/?\s*RAZAO\s+SOCIAL|RAZAO\s+SOCIAL|NOME)\s*[:\-]?\s*/iu', '', $candidate) ?? $candidate;
+        $candidate = trim($candidate, " \t\n\r\0\x0B:-|");
+
+        if ($candidate === '') {
+            return null;
+        }
+
+        $normalized = $this->normalizeReadableText($candidate);
+
+        if (strlen($normalized) < 6 || preg_match('/^\d+$/', $normalized)) {
+            return null;
+        }
+
+        $blockedTerms = [
+            'CNPJ',
+            'CPF',
+            'INSCRICAO',
+            'ENDERECO',
+            'MUNICIPIO',
+            'CIDADE',
+            'CEP',
+            'FONE',
+            'TELEFONE',
+            'CHAVE DE ACESSO',
+            'PROTOCOLO',
+            'DATA',
+            'NUMERO',
+            'SERIE',
+            'DANFE',
+            'DACTE',
+            'DOCUMENTO AUXILIAR',
+        ];
+
+        foreach ($blockedTerms as $term) {
+            if (str_contains($normalized, $term)) {
+                return null;
+            }
+        }
+
+        return mb_strtoupper($candidate, 'UTF-8');
     }
 
     private function extractInvoiceNumber(string $text, ?string $accessKey = null): ?string

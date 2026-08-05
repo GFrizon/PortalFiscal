@@ -1782,6 +1782,37 @@ class NavigationAuditTest extends TestCase
             ->assertDontSee('293');
     }
 
+    public function test_invoice_index_uses_extracted_supplier_name_when_purchase_order_check_is_missing(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        Invoice::factory()->create([
+            'document_type' => 'cte',
+            'protocol' => 'NF-2026-CTE',
+            'invoice_number' => '1261180',
+            'purchase_order_number' => '123',
+            'issuer_legal_name' => 'TRANSPORTADORA CTE LTDA',
+        ]);
+
+        Invoice::factory()->create([
+            'document_type' => 'nf',
+            'protocol' => 'NF-2026-OUTRA',
+            'invoice_number' => '31426',
+            'issuer_legal_name' => 'OUTRO FORNECEDOR LTDA',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('invoices.index'))
+            ->assertOk()
+            ->assertSee('TRANSPORTADORA CTE LTDA');
+
+        $this->actingAs($admin)
+            ->get(route('invoices.index', ['supplier' => 'TRANSPORTADORA']))
+            ->assertOk()
+            ->assertSee('1261180')
+            ->assertDontSee('31426');
+    }
+
     public function test_admin_can_create_update_and_block_user(): void
     {
         $admin = User::factory()->admin()->create();

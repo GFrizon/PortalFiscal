@@ -185,8 +185,9 @@
                         <td class="col-invoice" data-label="Nota"><span class="invoice-number-pill">{{ $invoice->invoice_number ?? '-' }}</span></td>
                         <td data-label="OC/CTE"><span class="reference-code">{{ $invoice->purchase_order_number ?? '-' }}</span></td>
                         <td class="col-supplier" data-label="Fornecedor">
+                            @php($supplierDisplayName = $invoice->purchaseOrderCheck?->supplier_name ?? $invoice->issuer_legal_name ?? $invoice->recipient_legal_name ?? '-')
                             <div class="supplier-cell">
-                                <strong>{{ $invoice->purchaseOrderCheck?->supplier_name ?? '-' }}</strong>
+                                <strong>{{ $supplierDisplayName }}</strong>
                                 <span>{{ $invoice->protocol }}</span>
                             </div>
                         </td>

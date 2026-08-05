@@ -98,8 +98,13 @@ class InvoiceController extends Controller
         if ($request->filled('supplier')) {
             $supplier = $request->string('supplier')->toString();
 
-            $query->whereHas('purchaseOrderCheck', function ($query) use ($supplier): void {
-                $query->where('supplier_name', 'like', '%'.$supplier.'%');
+            $query->where(function ($query) use ($supplier): void {
+                $query
+                    ->where('issuer_legal_name', 'like', '%'.$supplier.'%')
+                    ->orWhere('recipient_legal_name', 'like', '%'.$supplier.'%')
+                    ->orWhereHas('purchaseOrderCheck', function ($query) use ($supplier): void {
+                        $query->where('supplier_name', 'like', '%'.$supplier.'%');
+                    });
             });
         }
 
@@ -119,12 +124,8 @@ class InvoiceController extends Controller
         }
 
         if ($sort === 'supplier') {
-            $query->orderBy(
-                DB::table('purchase_order_checks')
-                    ->select('supplier_name')
-                    ->whereColumn('purchase_order_checks.invoice_id', 'invoices.id')
-                    ->limit(1),
-                $direction
+            $query->orderByRaw(
+                "COALESCE((select supplier_name from purchase_order_checks where purchase_order_checks.invoice_id = invoices.id limit 1), issuer_legal_name, recipient_legal_name, '') {$direction}"
             );
         } elseif ($sort !== 'due') {
             $query->orderBy($sortableColumns[$sort], $direction);

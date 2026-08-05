@@ -14,7 +14,7 @@
     @php($isDraftInvoice = $invoice->status === \App\Enums\InvoiceStatus::Draft)
     @php($isPendingForSubmitter = $invoice->status === \App\Enums\InvoiceStatus::Pending && ! $canReviewInvoice)
     @php($purchaseOrderCheck = $invoice->purchaseOrderCheck)
-    @php($supplierName = $purchaseOrderCheck?->supplier_name ?? '-')
+    @php($supplierName = $purchaseOrderCheck?->supplier_name ?? $invoice->issuer_legal_name ?? $invoice->recipient_legal_name ?? '-')
     @php($invoiceAmount = $purchaseOrderCheck?->amount !== null ? 'R$ '.number_format((float) $purchaseOrderCheck->amount, 2, ',', '.') : '-')
     @php($installments = collect($invoice->payment_installments ?? [])->sortBy('due_date')->values())
     @php($firstInstallment = $installments->first())
