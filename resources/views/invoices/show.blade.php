@@ -19,6 +19,10 @@
     @php($installments = collect($invoice->payment_installments ?? [])->sortBy('due_date')->values())
     @php($firstInstallment = $installments->first())
     @php($otherInstallments = $installments->slice(1)->values())
+    @php($draftFollowUps = $invoice->histories
+        ->where('action', 'Acompanhamento do rascunho')
+        ->sortByDesc('created_at')
+        ->values())
     @php($dueSummary = $paymentMethod->requiresInstallments()
         ? (filled($firstInstallment['due_date'] ?? null) ? \Illuminate\Support\Carbon::parse($firstInstallment['due_date'])->format('d/m/Y') : '-')
         : $paymentMethod->label())
@@ -442,7 +446,9 @@
                                     </li>
                                 @endcan
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link @cannot('review', $invoice) active @endcannot" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-tab-pane" type="button" role="tab" aria-controls="history-tab-pane" aria-selected="@cannot('review', $invoice) true @else false @endcannot">Historico</button>
+                                    <button class="nav-link @cannot('review', $invoice) active @endcannot" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-tab-pane" type="button" role="tab" aria-controls="history-tab-pane" aria-selected="@cannot('review', $invoice) true @else false @endcannot">
+                                        {{ $isDraftInvoice ? 'Acompanhamentos' : 'Historico' }}
+                                    </button>
                                 </li>
                             </ul>
 
@@ -506,20 +512,39 @@
                                 @endcan
 
                                 <div class="tab-pane fade @cannot('review', $invoice) show active @endcannot" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
-                                    <div class="timeline">
-                                        @forelse($invoice->histories->sortByDesc('created_at') as $history)
-                                            <div class="timeline-item">
-                                                <div class="timeline-dot"></div>
-                                                <div class="fw-semibold">{{ $history->action }}</div>
-                                                <div class="small text-secondary">{{ $history->created_at?->format('d/m/Y H:i') }} - {{ $history->user?->name ?? 'Sistema' }}</div>
-                                                @if($history->note)
-                                                    <div class="small">{{ $history->note }}</div>
-                                                @endif
-                                            </div>
-                                        @empty
-                                            <div class="empty-state compact">Nenhum historico registrado.</div>
-                                        @endforelse
-                                    </div>
+                                    @if($isDraftInvoice)
+                                        <div class="draft-follow-up-list">
+                                            @forelse($draftFollowUps as $history)
+                                                <article class="draft-follow-up-item">
+                                                    <div class="draft-follow-up-avatar">{{ mb_substr($history->user?->name ?? 'S', 0, 1) }}</div>
+                                                    <div>
+                                                        <div class="draft-follow-up-meta">
+                                                            <strong>{{ $history->user?->name ?? 'Sistema' }}</strong>
+                                                            <span>{{ $history->created_at?->format('d/m/Y H:i') }}</span>
+                                                        </div>
+                                                        <p>{{ $history->note }}</p>
+                                                    </div>
+                                                </article>
+                                            @empty
+                                                <div class="empty-state compact">Nenhum acompanhamento registrado neste rascunho.</div>
+                                            @endforelse
+                                        </div>
+                                    @else
+                                        <div class="timeline">
+                                            @forelse($invoice->histories->sortByDesc('created_at') as $history)
+                                                <div class="timeline-item">
+                                                    <div class="timeline-dot"></div>
+                                                    <div class="fw-semibold">{{ $history->action }}</div>
+                                                    <div class="small text-secondary">{{ $history->created_at?->format('d/m/Y H:i') }} - {{ $history->user?->name ?? 'Sistema' }}</div>
+                                                    @if($history->note)
+                                                        <div class="small">{{ $history->note }}</div>
+                                                    @endif
+                                                </div>
+                                            @empty
+                                                <div class="empty-state compact">Nenhum historico registrado.</div>
+                                            @endforelse
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </section>

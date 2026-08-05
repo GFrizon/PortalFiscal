@@ -520,6 +520,7 @@ class NavigationAuditTest extends TestCase
         $this->actingAs($sameGroupUser)
             ->get(route('invoices.show', $invoice))
             ->assertOk()
+            ->assertSee('Acompanhamentos')
             ->assertSee('OC corrigida no CIGAM, pode enviar para conferencia.');
 
         $this->actingAs($outsideGroupUser)
