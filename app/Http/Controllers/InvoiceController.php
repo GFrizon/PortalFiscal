@@ -27,6 +27,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
@@ -356,6 +357,11 @@ class InvoiceController extends Controller
     ): RedirectResponse|JsonResponse {
         $this->authorize('update', $invoice);
 
+        if ($invoice->status === InvoiceStatus::Draft && ! $request->isDraftIntent()) {
+            $this->refreshInvoiceExtractionFromStoredPdf($invoice, $pdfExtractionService);
+            $invoice->refresh();
+        }
+
         if (
             $invoice->status === InvoiceStatus::Draft
             && ! $request->isDraftIntent()
@@ -451,6 +457,33 @@ class InvoiceController extends Controller
             'invoice' => $invoice->load(['businessUnit', 'submitter', 'fiscalUser', 'alerts.resolver', 'histories.user', 'purchaseOrderCheck.businessUnit', 'annotation', 'attachments.uploader']),
             'businessUnits' => BusinessUnit::query()->orderBy('name')->get(['id', 'name']),
         ]);
+    }
+
+    private function refreshInvoiceExtractionFromStoredPdf(Invoice $invoice, PdfExtractionService $pdfExtractionService): void
+    {
+        if (blank($invoice->pdf_path) || ! Storage::disk('local')->exists($invoice->pdf_path)) {
+            return;
+        }
+
+        $extracted = $pdfExtractionService->extract(Storage::disk('local')->path($invoice->pdf_path));
+        $recipientCnpj = $extracted['recipient_cnpj'] ?? null;
+        $businessUnit = null;
+
+        if ($recipientCnpj) {
+            $businessUnit = BusinessUnit::query()
+                ->where('cnpj', $recipientCnpj)
+                ->first();
+        }
+
+        $invoice->forceFill([
+            'business_unit_id' => $businessUnit?->id ?? $invoice->business_unit_id,
+            'invoice_number' => $extracted['invoice_number'] ?: $invoice->invoice_number,
+            'invoice_access_key' => $extracted['invoice_access_key'] ?: $invoice->invoice_access_key,
+            'issuer_cnpj' => $extracted['issuer_cnpj'] ?: $invoice->issuer_cnpj,
+            'issuer_legal_name' => $extracted['issuer_legal_name'] ?: $invoice->issuer_legal_name,
+            'recipient_cnpj' => $recipientCnpj ?: $invoice->recipient_cnpj,
+            'recipient_legal_name' => $extracted['recipient_legal_name'] ?: $invoice->recipient_legal_name,
+        ])->save();
     }
 
     public function storeDraftFollowUp(Request $request, Invoice $invoice, InvoiceHistoryService $historyService): RedirectResponse

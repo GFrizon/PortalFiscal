@@ -530,6 +530,87 @@ class NavigationAuditTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_submitting_existing_draft_refreshes_pdf_extraction_before_cnpj_validation(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+        $unit = BusinessUnit::factory()->create([
+            'name' => 'BAKOF RS',
+            'cnpj' => '91967067000155',
+        ]);
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'business_unit_id' => $unit->id,
+            'status' => InvoiceStatus::Draft->value,
+            'document_type' => 'nf',
+            'purchase_order_number' => '103635',
+            'issuer_cnpj' => '02558157000162',
+            'recipient_cnpj' => '91967067000155',
+            'pdf_path' => 'notas/drafts/vivo.pdf',
+            'arrival_date' => '2026-08-04',
+            'payment_method' => 'anticipated',
+            'payment_installments' => null,
+            'due_date' => null,
+        ]);
+
+        Storage::disk('local')->put($invoice->pdf_path, 'PDF Vivo fake');
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => 'NFCOM Vivo',
+                'cnpjs' => ['02558157000162', '02558157001720', '91967067000155'],
+                'issuer_cnpj' => '02558157001720',
+                'recipient_cnpj' => '91967067000155',
+                'invoice_number' => '1130383',
+                'invoice_access_key' => '43260702558157001720620040011303831005586160',
+                'issuer_legal_name' => 'TELEFONICA BRASIL S.A.',
+                'recipient_legal_name' => 'BAKOF PLASTICOS LTDA',
+                'error' => null,
+            ]);
+            $mock->shouldReceive('normalizeCnpj')->andReturnUsing(
+                fn (string $cnpj): string => preg_replace('/\D/', '', $cnpj) ?? ''
+            );
+        });
+
+        $this->mock(PurchaseOrderService::class, function ($mock): void {
+            $mock->shouldReceive('find')->twice()->with('103635')->andReturn([
+                'exists' => true,
+                'status' => 'aprovado',
+                'supplier_cnpj' => '02558157001720',
+                'supplier_name' => 'TELEFONICA BRASIL S.A.',
+                'business_unit_id' => null,
+                'amount' => 2991.88,
+                'raw_response' => ['source' => 'test'],
+            ]);
+        });
+
+        $this->actingAs($user)
+            ->put(route('invoices.update', $invoice), [
+                'document_type' => 'nf',
+                'purchase_order_number' => '103635',
+                'arrival_date' => '2026-08-05',
+                'payment_method' => 'anticipated',
+                'user_notes' => 'Fatura Vivo conferida.',
+                'submit_intent' => 'submit',
+            ])
+            ->assertRedirect(route('invoices.show', $invoice));
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+            'status' => InvoiceStatus::AwaitingReview->value,
+            'issuer_cnpj' => '02558157001720',
+            'invoice_number' => '1130383',
+            'invoice_access_key' => '43260702558157001720620040011303831005586160',
+        ]);
+
+        $this->assertDatabaseMissing('invoice_alerts', [
+            'invoice_id' => $invoice->id,
+            'type' => AlertType::CnpjMismatch->value,
+        ]);
+    }
+
     public function test_invoice_upload_creates_critical_alert_when_number_is_not_identified(): void
     {
         Storage::fake('local');
