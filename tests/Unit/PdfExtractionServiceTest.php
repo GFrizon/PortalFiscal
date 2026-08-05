@@ -4,7 +4,9 @@ namespace Tests\Unit;
 
 use App\Models\BusinessUnit;
 use App\Services\PdfExtractionService;
+use App\Services\PdfOcrService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Smalot\PdfParser\Document;
 use Smalot\PdfParser\Parser;
 use Tests\TestCase;
 
@@ -300,5 +302,42 @@ class PdfExtractionServiceTest extends TestCase
 
         $this->assertSame('47933', $result['invoice_number']);
         $this->assertNull($result['invoice_access_key']);
+    }
+
+    public function test_it_uses_ocr_when_pdf_has_no_searchable_text(): void
+    {
+        BusinessUnit::factory()->create([
+            'name' => 'BAKOF RS',
+            'legal_name' => 'BAKOF PLASTICOS LTDA',
+            'cnpj' => '91967067000155',
+        ]);
+
+        $document = \Mockery::mock(Document::class);
+        $document->shouldReceive('getText')->once()->andReturn('');
+
+        $parser = \Mockery::mock(Parser::class);
+        $parser->shouldReceive('parseFile')->once()->with('scanned.pdf')->andReturn($document);
+
+        $ocr = new class extends PdfOcrService
+        {
+            public function extract(string $absolutePath): ?string
+            {
+                return "NOTA FISCAL DE SERVICO ELETRONICA\n".
+                    "Numero da Nota 1261180\n".
+                    "PAULO SERVICOS LTDA\n".
+                    "CNPJ 12.345.678/0001-95\n".
+                    "Tomador BAKOF PLASTICOS LTDA CNPJ 91.967.067/0001-55";
+            }
+        };
+
+        $service = new PdfExtractionService($parser, $ocr);
+
+        $result = $service->extract('scanned.pdf');
+
+        $this->assertTrue($result['success']);
+        $this->assertSame('ocr', $result['source']);
+        $this->assertSame('1261180', $result['invoice_number']);
+        $this->assertSame('12345678000195', $result['issuer_cnpj']);
+        $this->assertSame('91967067000155', $result['recipient_cnpj']);
     }
 }

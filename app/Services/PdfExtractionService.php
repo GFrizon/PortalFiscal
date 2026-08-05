@@ -9,7 +9,10 @@ use Throwable;
 
 class PdfExtractionService
 {
-    public function __construct(private readonly Parser $parser)
+    public function __construct(
+        private readonly Parser $parser,
+        private readonly ?PdfOcrService $ocrService = null,
+    )
     {
     }
 
@@ -17,30 +20,36 @@ class PdfExtractionService
     {
         try {
             $pdf = $this->parser->parseFile($absolutePath);
+            $text = $pdf->getText();
 
-            return $this->extractFromText($pdf->getText());
+            if (! $this->hasReadableText($text)) {
+                $ocrText = $this->ocrService?->extract($absolutePath);
+
+                if ($this->hasReadableText((string) $ocrText)) {
+                    return $this->extractFromText((string) $ocrText, 'ocr');
+                }
+
+                return $this->emptyExtractionResult('PDF sem texto pesquisavel. Configure OCR para ler documentos escaneados.', 'blank');
+            }
+
+            return $this->extractFromText($text, 'text');
         } catch (Throwable $exception) {
             Log::warning('Falha ao extrair texto do PDF.', [
                 'path' => $absolutePath,
                 'message' => $exception->getMessage(),
             ]);
 
-            return [
-                'success' => false,
-                'text' => '',
-                'cnpjs' => [],
-                'issuer_cnpj' => null,
-                'recipient_cnpj' => null,
-                'invoice_number' => null,
-                'invoice_access_key' => null,
-                'issuer_legal_name' => null,
-                'recipient_legal_name' => null,
-                'error' => $exception->getMessage(),
-            ];
+            $ocrText = $this->ocrService?->extract($absolutePath);
+
+            if ($this->hasReadableText((string) $ocrText)) {
+                return $this->extractFromText((string) $ocrText, 'ocr');
+            }
+
+            return $this->emptyExtractionResult($exception->getMessage(), 'error');
         }
     }
 
-    public function extractFromText(string $text): array
+    public function extractFromText(string $text, string $source = 'text'): array
     {
         $cnpjs = $this->extractCnpjs($text);
         $recipientCnpj = $this->identifyRecipientCnpj($cnpjs, $text);
@@ -58,6 +67,29 @@ class PdfExtractionService
             'issuer_legal_name' => $this->extractLegalNameNearCnpj($text, $issuerCnpj),
             'recipient_legal_name' => $this->extractLegalNameNearCnpj($text, $recipientCnpj),
             'error' => null,
+            'source' => $source,
+        ];
+    }
+
+    private function hasReadableText(?string $text): bool
+    {
+        return strlen(trim((string) preg_replace('/\s+/', ' ', (string) $text))) >= 20;
+    }
+
+    private function emptyExtractionResult(string $error, string $source): array
+    {
+        return [
+            'success' => false,
+            'text' => '',
+            'cnpjs' => [],
+            'issuer_cnpj' => null,
+            'recipient_cnpj' => null,
+            'invoice_number' => null,
+            'invoice_access_key' => null,
+            'issuer_legal_name' => null,
+            'recipient_legal_name' => null,
+            'error' => $error,
+            'source' => $source,
         ];
     }
 
@@ -379,7 +411,6 @@ class PdfExtractionService
                 if ($this->hasBlockedInvoiceNumberContext($normalizedText, $offset, [
                     'protocolo',
                     'inscricao municipal',
-                    'cnpj',
                 ])) {
                     continue;
                 }

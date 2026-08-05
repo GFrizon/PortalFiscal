@@ -40,4 +40,13 @@ return [
         'model' => env('OPENAI_MODEL'),
     ],
 
+    'pdf_ocr' => [
+        'enabled' => env('PDF_OCR_ENABLED', false),
+        'pdftoppm_binary' => env('PDF_OCR_PDFTOPPM_BINARY', 'pdftoppm'),
+        'tesseract_binary' => env('PDF_OCR_TESSERACT_BINARY', 'tesseract'),
+        'language' => env('PDF_OCR_LANGUAGE', 'por'),
+        'timeout' => env('PDF_OCR_TIMEOUT', 60),
+        'max_pages' => env('PDF_OCR_MAX_PAGES', 2),
+    ],
+
 ];

@@ -283,7 +283,12 @@ class InvoiceController extends Controller
                 if ($extracted['success']) {
                     $historyService->record($invoice, $request->user(), 'PDF processado', null, $status, null, $request);
                 } else {
-                    $alertService->create($invoice, AlertType::PdfReadError, 'Nao foi possivel ler automaticamente o PDF.', AlertLevel::Warning);
+                    $alertService->create(
+                        $invoice,
+                        AlertType::PdfReadError,
+                        $extracted['error'] ?: 'Nao foi possivel ler automaticamente o PDF.',
+                        AlertLevel::Warning
+                    );
                 }
 
                 if (blank($invoice->invoice_number)) {
