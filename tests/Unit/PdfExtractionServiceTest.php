@@ -152,6 +152,38 @@ class PdfExtractionServiceTest extends TestCase
         $this->assertSame('BAKOF PLASTICOS LTDA', $result['recipient_legal_name']);
     }
 
+    public function test_it_extracts_nfcom_issuer_from_access_key(): void
+    {
+        BusinessUnit::factory()->create([
+            'name' => 'BAKOF RS',
+            'legal_name' => 'BAKOF PLASTICOS LTDA',
+            'cnpj' => '91967067000155',
+        ]);
+
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "Telefonica Brasil S.A.\n".
+            "Av. Carlos Gomes, 258 - Andares 14, 15 e 16\n".
+            "CEP 90480-000 - Porto Alegre - RS\n".
+            "I.E.: 0962949477\n".
+            "CNPJ Matriz :02.558.157/0001-62\n".
+            "CNPJ Filial   :02.558.157/0017-20\n".
+            "Documento Auxiliar da Nota Fiscal de Fatura de Servico de Comunicacao Eletronica\n".
+            "NOME: BAKOF PLASTICOS LTDA\n".
+            "Nº NFCOM 1130383 - SERIE 004/DATA DE EMISSAO: 28/07/2026\n".
+            "Chave de acesso: 43260702558157001720620040011303831005586160\n".
+            "CPF/CNPJ: 91.967.067/0001-55"
+        );
+
+        $this->assertSame('1130383', $result['invoice_number']);
+        $this->assertSame('43260702558157001720620040011303831005586160', $result['invoice_access_key']);
+        $this->assertSame('02558157001720', $result['issuer_cnpj']);
+        $this->assertSame('TELEFONICA BRASIL S.A.', $result['issuer_legal_name']);
+        $this->assertSame('91967067000155', $result['recipient_cnpj']);
+        $this->assertSame('BAKOF PLASTICOS LTDA', $result['recipient_legal_name']);
+    }
+
     public function test_it_rejects_invalid_fiscal_access_key_check_digit(): void
     {
         $service = new PdfExtractionService(new Parser());

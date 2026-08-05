@@ -168,19 +168,19 @@ class PdfExtractionService
 
     private function identifyIssuerCnpj(array $cnpjs, ?string $recipientCnpj, ?string $accessKey = null): ?string
     {
-        $issuerCnpj = collect($cnpjs)
-            ->first(fn (string $cnpj) => $cnpj !== $recipientCnpj);
-
-        if ($issuerCnpj) {
-            return $issuerCnpj;
-        }
-
         if ($accessKey) {
             $accessKeyCnpj = substr($accessKey, 6, 14);
 
             if ($this->isValidCnpj($accessKeyCnpj) && $accessKeyCnpj !== $recipientCnpj) {
                 return $accessKeyCnpj;
             }
+        }
+
+        $issuerCnpj = collect($cnpjs)
+            ->first(fn (string $cnpj) => $cnpj !== $recipientCnpj);
+
+        if ($issuerCnpj) {
+            return $issuerCnpj;
         }
 
         return null;
@@ -210,7 +210,7 @@ class PdfExtractionService
                 return $sameLineName;
             }
 
-            foreach ([1, 2, 3, 4] as $distance) {
+            foreach ([1, 2, 3, 4, 5, 6, 7, 8] as $distance) {
                 $previous = $lines[$index - $distance] ?? null;
                 $name = $previous ? $this->cleanLegalNameCandidate($previous) : null;
 
@@ -252,9 +252,17 @@ class PdfExtractionService
             'CNPJ',
             'CPF',
             'INSCRICAO',
+            'I E',
+            'IE',
             'ENDERECO',
             'MUNICIPIO',
             'CIDADE',
+            'AV',
+            'AVENIDA',
+            'RUA',
+            'ROD',
+            'RODOVIA',
+            'BAIRRO',
             'CEP',
             'FONE',
             'TELEFONE',
@@ -427,7 +435,7 @@ class PdfExtractionService
             for ($offset = 0; $offset <= strlen($digits) - 44; $offset++) {
                 $key = substr($digits, $offset, 44);
 
-                if (! in_array(substr($key, 20, 2), ['55', '57'], true)) {
+                if (! in_array(substr($key, 20, 2), ['55', '57', '62'], true)) {
                     continue;
                 }
 
