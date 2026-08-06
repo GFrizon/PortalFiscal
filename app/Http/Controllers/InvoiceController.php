@@ -71,7 +71,9 @@ class InvoiceController extends Controller
             'status' => 'status',
             'created' => 'created_at',
         ];
-        $sort = array_key_exists($request->string('sort')->toString(), $sortableColumns)
+        $requestedSort = $request->string('sort')->toString();
+        $hasExplicitSort = array_key_exists($requestedSort, $sortableColumns);
+        $sort = $hasExplicitSort
             ? $request->string('sort')->toString()
             : 'arrival';
         $direction = $request->string('direction')->toString() === 'asc' ? 'asc' : 'desc';
@@ -115,13 +117,14 @@ class InvoiceController extends Controller
             $query->where('business_unit_id', $request->integer('business_unit_id'));
         }
 
+        if (! $hasExplicitSort) {
+            $query->orderByDesc('is_urgent');
+        }
+
         if ($sort === 'due') {
             $query
                 ->orderByRaw('due_date IS NULL ASC')
-                ->orderBy('due_date', $direction)
-                ->orderByDesc('is_urgent');
-        } else {
-            $query->orderByDesc('is_urgent');
+                ->orderBy('due_date', $direction);
         }
 
         if ($sort === 'supplier') {
@@ -132,7 +135,7 @@ class InvoiceController extends Controller
             $query->orderBy($sortableColumns[$sort], $direction);
         }
 
-        $query->orderByDesc('id');
+        $query->orderBy('id', $direction);
 
         $unitSummaryQuery = Invoice::query()
             ->with('businessUnit:id,name')

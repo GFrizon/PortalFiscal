@@ -1949,8 +1949,21 @@ class NavigationAuditTest extends TestCase
             ]))
             ->assertOk()
             ->assertSeeInOrder([
+                '900032',
                 '900031',
                 '900030',
+            ]);
+
+        $this->actingAs($user)
+            ->get(route('invoices.index', [
+                'sort' => 'created',
+                'direction' => 'desc',
+            ]))
+            ->assertOk()
+            ->assertSeeInOrder([
+                '900030',
+                '900031',
+                '900032',
             ]);
     }
 
