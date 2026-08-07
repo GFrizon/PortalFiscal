@@ -380,7 +380,7 @@ class NavigationAuditTest extends TestCase
             ->assertSee('Validado com OpenAI');
     }
 
-    public function test_user_cannot_save_invoice_draft_with_nonexistent_purchase_order(): void
+    public function test_user_can_save_invoice_draft_with_nonexistent_purchase_order(): void
     {
         Storage::fake('local');
 
@@ -400,25 +400,9 @@ class NavigationAuditTest extends TestCase
                 'error' => null,
                 'source' => 'text',
             ]);
-            $mock->shouldReceive('normalizeCnpj')->andReturnUsing(fn (string $cnpj) => preg_replace('/\D/', '', $cnpj) ?? '');
         });
 
-        $this->mock(PurchaseOrderService::class, function ($mock): void {
-            $mock->shouldReceive('find')->once()->with('123456')->andReturn([
-                'exists' => false,
-                'status' => null,
-                'supplier_cnpj' => null,
-                'supplier_name' => null,
-                'business_unit_id' => null,
-                'amount' => null,
-                'raw_response' => [
-                    'source' => 'oracle',
-                    'number' => '123456',
-                ],
-            ]);
-        });
-
-        $this->actingAs($user)
+        $response = $this->actingAs($user)
             ->post(route('invoices.store'), [
                 'submit_intent' => 'draft',
                 'pdf' => UploadedFile::fake()->create('rascunho.pdf', 100, 'application/pdf'),
@@ -426,11 +410,23 @@ class NavigationAuditTest extends TestCase
                 'purchase_order_number' => '123456',
                 'arrival_date' => '',
                 'payment_method' => '',
-                'user_notes' => 'Tentando salvar com OC inexistente.',
+                'user_notes' => 'Salvando rascunho com OC ainda nao validada.',
+            ], [
+                'Accept' => 'application/json',
+                'X-Requested-With' => 'XMLHttpRequest',
             ])
-            ->assertSessionHasErrors('purchase_order_number');
+            ->assertOk()
+            ->assertJsonPath('message', 'Rascunho salvo com sucesso.');
 
-        $this->assertDatabaseCount('invoices', 0);
+        $invoice = Invoice::query()->where('submitted_by', $user->id)->firstOrFail();
+
+        $response->assertJsonPath('redirect', route('invoices.show', $invoice));
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+            'status' => InvoiceStatus::Draft->value,
+            'purchase_order_number' => '123456',
+        ]);
     }
 
     public function test_user_can_save_invoice_draft_before_sending_to_review(): void
@@ -541,7 +537,7 @@ class NavigationAuditTest extends TestCase
         ]);
     }
 
-    public function test_existing_draft_cannot_be_saved_with_nonexistent_purchase_order(): void
+    public function test_existing_draft_can_be_saved_with_nonexistent_purchase_order(): void
     {
         Storage::fake('local');
 
@@ -560,25 +556,6 @@ class NavigationAuditTest extends TestCase
 
         Storage::disk('local')->put($invoice->pdf_path, 'PDF fake');
 
-        $this->mock(PurchaseOrderService::class, function ($mock): void {
-            $mock->shouldReceive('find')->once()->with('123456')->andReturn([
-                'exists' => false,
-                'status' => null,
-                'supplier_cnpj' => null,
-                'supplier_name' => null,
-                'business_unit_id' => null,
-                'amount' => null,
-                'raw_response' => [
-                    'source' => 'oracle',
-                    'number' => '123456',
-                ],
-            ]);
-        });
-
-        $this->mock(PdfExtractionService::class, function ($mock): void {
-            $mock->shouldReceive('normalizeCnpj')->once()->andReturn('12345678000195');
-        });
-
         $this->actingAs($user)
             ->put(route('invoices.update', $invoice), [
                 'submit_intent' => 'draft',
@@ -586,13 +563,13 @@ class NavigationAuditTest extends TestCase
                 'purchase_order_number' => '123456',
                 'arrival_date' => '',
                 'payment_method' => '',
-                'user_notes' => 'Tentando salvar com OC inexistente.',
+                'user_notes' => 'Salvando rascunho com OC ainda nao validada.',
             ])
-            ->assertSessionHasErrors('purchase_order_number');
+            ->assertRedirect(route('invoices.show', $invoice));
 
         $invoice->refresh();
 
-        $this->assertNull($invoice->purchase_order_number);
+        $this->assertSame('123456', $invoice->purchase_order_number);
         $this->assertSame(InvoiceStatus::Draft, $invoice->status);
     }
 

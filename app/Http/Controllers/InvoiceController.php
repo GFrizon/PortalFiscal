@@ -209,17 +209,14 @@ class InvoiceController extends Controller
         $precheckedPurchaseOrder = null;
 
         if (
-            $request->string('document_type')->toString() === InvoiceDocumentType::Nf->value
+            ! $isDraft
+            && $request->string('document_type')->toString() === InvoiceDocumentType::Nf->value
             && filled($request->string('purchase_order_number')->toString())
         ) {
             $precheckedPurchaseOrder = $purchaseOrderService->find($request->string('purchase_order_number')->toString());
             $issuerCnpj = $pdfExtractionService->normalizeCnpj((string) ($extracted['issuer_cnpj'] ?? ''));
 
-            $this->ensurePurchaseOrderCanBeSubmitted(
-                $precheckedPurchaseOrder,
-                $issuerCnpj,
-                $isDraft ? 'salvar o rascunho' : 'enviar para conferencia'
-            );
+            $this->ensurePurchaseOrderCanBeSubmitted($precheckedPurchaseOrder, $issuerCnpj, 'enviar para conferencia');
         }
 
         $businessUnit = null;
@@ -367,17 +364,14 @@ class InvoiceController extends Controller
         }
 
         if (
-            $request->string('document_type')->toString() === InvoiceDocumentType::Nf->value
+            ! $request->isDraftIntent()
+            && $request->string('document_type')->toString() === InvoiceDocumentType::Nf->value
             && filled($request->string('purchase_order_number')->toString())
         ) {
             $purchaseOrder = $purchaseOrderService->find($request->string('purchase_order_number')->toString());
             $issuerCnpj = $pdfExtractionService->normalizeCnpj((string) $invoice->issuer_cnpj);
 
-            $this->ensurePurchaseOrderCanBeSubmitted(
-                $purchaseOrder,
-                $issuerCnpj,
-                $request->isDraftIntent() ? 'salvar o rascunho' : 'enviar para conferencia'
-            );
+            $this->ensurePurchaseOrderCanBeSubmitted($purchaseOrder, $issuerCnpj, 'enviar para conferencia');
         }
 
         $notifyFiscalTeam = false;
