@@ -121,6 +121,7 @@ Use `OPENAI_PDF_DETAIL=low` para menor custo. O app tenta leitura local primeiro
 php artisan invoices:storage-report
 php artisan invoices:optimize-pdfs --force --dry-run --limit=25 --min-size-kb=300
 php artisan invoices:cleanup-storage --dry-run --days=1
+php artisan invoices:sync-suppliers --dry-run
 ```
 
 15. Se o dry-run estiver correto e o servidor tiver Ghostscript, compacte em lotes pequenos:

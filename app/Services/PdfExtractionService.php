@@ -205,7 +205,7 @@ class PdfExtractionService
             return true;
         }
 
-        if (preg_match('/\d{6,}/', $normalized)) {
+        if ($this->looksLikeDocumentNumberWithoutLetters((string) $name) || preg_match('/\d{6,}/', $normalized)) {
             return true;
         }
 
@@ -228,6 +228,17 @@ class PdfExtractionService
         }
 
         return false;
+    }
+
+    private function looksLikeDocumentNumberWithoutLetters(string $value): bool
+    {
+        $digits = preg_replace('/\D/', '', $value) ?? '';
+
+        if ($digits === '' || preg_match('/\p{L}/u', $value)) {
+            return false;
+        }
+
+        return in_array(strlen($digits), [11, 14], true);
     }
 
     private function hasReadableText(?string $text): bool
@@ -255,6 +266,11 @@ class PdfExtractionService
     public function normalizeCnpj(string $cnpj): string
     {
         return preg_replace('/\D/', '', $cnpj) ?? '';
+    }
+
+    public function isSuspiciousLegalName(?string $name): bool
+    {
+        return $this->looksSuspiciousLegalName($name);
     }
 
     public function extractCnpjs(string $text): array
@@ -435,7 +451,11 @@ class PdfExtractionService
 
         $normalized = $this->normalizeReadableText($candidate);
 
-        if (strlen($normalized) < 6 || preg_match('/^\d+$/', $normalized)) {
+        if (
+            strlen($normalized) < 6
+            || preg_match('/^\d+$/', $normalized)
+            || $this->looksLikeDocumentNumberWithoutLetters($candidate)
+        ) {
             return null;
         }
 
@@ -465,6 +485,10 @@ class PdfExtractionService
             'DANFE',
             'DACTE',
             'DOCUMENTO AUXILIAR',
+            'ENTRADA',
+            'SAIDA',
+            'ORDEM DE COMPRA',
+            'PEDIDO',
         ];
 
         foreach ($blockedTerms as $term) {

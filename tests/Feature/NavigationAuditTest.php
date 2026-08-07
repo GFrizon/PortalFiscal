@@ -380,6 +380,59 @@ class NavigationAuditTest extends TestCase
             ->assertSee('Validado com OpenAI');
     }
 
+    public function test_user_cannot_save_invoice_draft_with_nonexistent_purchase_order(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => 'PDF simulado',
+                'cnpjs' => ['12345678000195'],
+                'issuer_cnpj' => '12345678000195',
+                'recipient_cnpj' => null,
+                'invoice_number' => '293',
+                'invoice_access_key' => null,
+                'issuer_legal_name' => 'FORNECEDOR TESTE LTDA',
+                'recipient_legal_name' => null,
+                'error' => null,
+                'source' => 'text',
+            ]);
+            $mock->shouldReceive('normalizeCnpj')->andReturnUsing(fn (string $cnpj) => preg_replace('/\D/', '', $cnpj) ?? '');
+        });
+
+        $this->mock(PurchaseOrderService::class, function ($mock): void {
+            $mock->shouldReceive('find')->once()->with('123456')->andReturn([
+                'exists' => false,
+                'status' => null,
+                'supplier_cnpj' => null,
+                'supplier_name' => null,
+                'business_unit_id' => null,
+                'amount' => null,
+                'raw_response' => [
+                    'source' => 'oracle',
+                    'number' => '123456',
+                ],
+            ]);
+        });
+
+        $this->actingAs($user)
+            ->post(route('invoices.store'), [
+                'submit_intent' => 'draft',
+                'pdf' => UploadedFile::fake()->create('rascunho.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf',
+                'purchase_order_number' => '123456',
+                'arrival_date' => '',
+                'payment_method' => '',
+                'user_notes' => 'Tentando salvar com OC inexistente.',
+            ])
+            ->assertSessionHasErrors('purchase_order_number');
+
+        $this->assertDatabaseCount('invoices', 0);
+    }
+
     public function test_user_can_save_invoice_draft_before_sending_to_review(): void
     {
         Storage::fake('local');
@@ -486,6 +539,61 @@ class NavigationAuditTest extends TestCase
             'previous_status' => InvoiceStatus::Draft->value,
             'new_status' => InvoiceStatus::AwaitingReview->value,
         ]);
+    }
+
+    public function test_existing_draft_cannot_be_saved_with_nonexistent_purchase_order(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => InvoiceStatus::Draft->value,
+            'document_type' => 'nf',
+            'purchase_order_number' => null,
+            'invoice_number' => '293',
+            'issuer_cnpj' => '12345678000195',
+            'issuer_legal_name' => 'FORNECEDOR TESTE LTDA',
+            'sent_at' => null,
+            'pdf_path' => 'notas/drafts/oc-inexistente.pdf',
+        ]);
+
+        Storage::disk('local')->put($invoice->pdf_path, 'PDF fake');
+
+        $this->mock(PurchaseOrderService::class, function ($mock): void {
+            $mock->shouldReceive('find')->once()->with('123456')->andReturn([
+                'exists' => false,
+                'status' => null,
+                'supplier_cnpj' => null,
+                'supplier_name' => null,
+                'business_unit_id' => null,
+                'amount' => null,
+                'raw_response' => [
+                    'source' => 'oracle',
+                    'number' => '123456',
+                ],
+            ]);
+        });
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('normalizeCnpj')->once()->andReturn('12345678000195');
+        });
+
+        $this->actingAs($user)
+            ->put(route('invoices.update', $invoice), [
+                'submit_intent' => 'draft',
+                'document_type' => 'nf',
+                'purchase_order_number' => '123456',
+                'arrival_date' => '',
+                'payment_method' => '',
+                'user_notes' => 'Tentando salvar com OC inexistente.',
+            ])
+            ->assertSessionHasErrors('purchase_order_number');
+
+        $invoice->refresh();
+
+        $this->assertNull($invoice->purchase_order_number);
+        $this->assertSame(InvoiceStatus::Draft, $invoice->status);
     }
 
     public function test_same_group_user_can_continue_and_submit_draft_invoice(): void

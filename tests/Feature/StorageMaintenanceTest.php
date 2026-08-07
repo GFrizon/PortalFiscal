@@ -131,6 +131,44 @@ class StorageMaintenanceTest extends TestCase
         $this->assertSame('35260754163230000109550040000314261443991849', $invoice->refresh()->invoice_access_key);
     }
 
+    public function test_sync_supplier_names_updates_suspicious_names_from_pdf(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('notas/2026/07/unidade-001/fornecedor.pdf', 'pdf');
+
+        $invoice = Invoice::factory()->create([
+            'issuer_legal_name' => '91.967.067/0001-55',
+            'recipient_legal_name' => '0 - ENTRADA 432',
+            'pdf_path' => 'notas/2026/07/unidade-001/fornecedor.pdf',
+        ]);
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('isSuspiciousLegalName')->times(2)->andReturn(true);
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => '',
+                'cnpjs' => [],
+                'issuer_cnpj' => '12345678000195',
+                'recipient_cnpj' => '91967067000155',
+                'invoice_number' => '31426',
+                'invoice_access_key' => null,
+                'issuer_legal_name' => 'NORDESTE INDUSTRIA LTDA',
+                'recipient_legal_name' => 'BAKOF PLASTICOS LTDA',
+                'error' => null,
+                'source' => 'text+ai',
+            ]);
+        });
+
+        $this->artisan('invoices:sync-suppliers')
+            ->expectsOutputToContain('Updating '.$invoice->protocol)
+            ->assertExitCode(0);
+
+        $invoice->refresh();
+
+        $this->assertSame('NORDESTE INDUSTRIA LTDA', $invoice->issuer_legal_name);
+        $this->assertSame('BAKOF PLASTICOS LTDA', $invoice->recipient_legal_name);
+    }
+
     public function test_identify_units_command_updates_unidentified_invoice(): void
     {
         Storage::fake('local');

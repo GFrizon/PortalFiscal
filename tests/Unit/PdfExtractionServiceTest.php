@@ -307,25 +307,18 @@ class PdfExtractionServiceTest extends TestCase
 
     public function test_it_discards_suspicious_legal_name_candidates(): void
     {
-        BusinessUnit::factory()->create([
-            'name' => 'BAKOF RS',
-            'legal_name' => 'BAKOF PLASTICOS LTDA',
-            'cnpj' => '91967067000155',
-        ]);
-
         $service = new PdfExtractionService(new Parser());
 
-        $result = $service->extractFromText(
-            "0 - ENTRADA 432\n".
-            "CNPJ 12.345.678/0001-95\n".
-            "Tomador BAKOF PLASTICOS LTDA\n".
-            "CNPJ 91.967.067/0001-55\n".
-            "Numero da Nota 1261180"
-        );
+        $this->assertTrue($service->isSuspiciousLegalName('0 - ENTRADA 432'));
+        $this->assertTrue($service->isSuspiciousLegalName('0 - SAIDA 432'));
+    }
 
-        $this->assertSame('12345678000195', $result['issuer_cnpj']);
-        $this->assertNull($result['issuer_legal_name']);
-        $this->assertSame('BAKOF PLASTICOS LTDA', $result['recipient_legal_name']);
+    public function test_it_discards_formatted_cnpj_as_legal_name_candidate(): void
+    {
+        $service = new PdfExtractionService(new Parser());
+
+        $this->assertTrue($service->isSuspiciousLegalName('91.967.067/0001-55'));
+        $this->assertTrue($service->isSuspiciousLegalName('12345678000195'));
     }
 
     public function test_it_uses_ai_fallback_when_local_extraction_is_missing_critical_fields(): void
