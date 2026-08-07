@@ -143,7 +143,9 @@ class StorageMaintenanceTest extends TestCase
         ]);
 
         $this->mock(PdfExtractionService::class, function ($mock): void {
-            $mock->shouldReceive('isSuspiciousLegalName')->times(2)->andReturn(true);
+            $mock->shouldReceive('isSuspiciousLegalName')->andReturnUsing(function (?string $name): bool {
+                return in_array($name, ['91.967.067/0001-55', '0 - ENTRADA 432'], true);
+            });
             $mock->shouldReceive('extract')->once()->andReturn([
                 'success' => true,
                 'text' => '',
@@ -167,6 +169,46 @@ class StorageMaintenanceTest extends TestCase
 
         $this->assertSame('NORDESTE INDUSTRIA LTDA', $invoice->issuer_legal_name);
         $this->assertSame('BAKOF PLASTICOS LTDA', $invoice->recipient_legal_name);
+    }
+
+    public function test_sync_supplier_names_ignores_unreliable_extracted_names(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('notas/2026/07/unidade-001/fornecedor-invalido.pdf', 'pdf');
+
+        $invoice = Invoice::factory()->create([
+            'issuer_legal_name' => '91.967.067/0001-55',
+            'recipient_legal_name' => '0 - ENTRADA 432',
+            'pdf_path' => 'notas/2026/07/unidade-001/fornecedor-invalido.pdf',
+        ]);
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('isSuspiciousLegalName')->andReturnUsing(function (?string $name): bool {
+                return in_array($name, ['91.967.067/0001-55', '0 - ENTRADA 432'], true);
+            });
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => '',
+                'cnpjs' => [],
+                'issuer_cnpj' => '12345678000195',
+                'recipient_cnpj' => '91967067000155',
+                'invoice_number' => '31426',
+                'invoice_access_key' => null,
+                'issuer_legal_name' => 'VALOR LIQUIDO: 3.600,00',
+                'recipient_legal_name' => 'REGIME DE APURACAO DOS TRIBUTOS FEDERAIS',
+                'error' => null,
+                'source' => 'text+ai',
+            ]);
+        });
+
+        $this->artisan('invoices:sync-suppliers')
+            ->expectsOutputToContain('Updated 0 of 1 invoices.')
+            ->assertExitCode(0);
+
+        $invoice->refresh();
+
+        $this->assertSame('91.967.067/0001-55', $invoice->issuer_legal_name);
+        $this->assertSame('0 - ENTRADA 432', $invoice->recipient_legal_name);
     }
 
     public function test_identify_units_command_updates_unidentified_invoice(): void
