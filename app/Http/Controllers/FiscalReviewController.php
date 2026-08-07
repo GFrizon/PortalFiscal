@@ -180,9 +180,10 @@ class FiscalReviewController extends Controller
 
     private function launchBlockingAlertTypes(): array
     {
-        return [
-            AlertType::CnpjMismatch->value,
-            AlertType::DuplicatePdf->value,
-        ];
+        return collect(AlertType::cases())
+            ->filter(fn (AlertType $type): bool => $type->blocksLaunch())
+            ->map(fn (AlertType $type): string => $type->value)
+            ->values()
+            ->all();
     }
 }

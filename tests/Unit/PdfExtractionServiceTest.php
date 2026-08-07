@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\BusinessUnit;
+use App\Services\AiDocumentExtractionService;
 use App\Services\PdfExtractionService;
 use App\Services\PdfOcrService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -302,6 +303,73 @@ class PdfExtractionServiceTest extends TestCase
 
         $this->assertSame('47933', $result['invoice_number']);
         $this->assertNull($result['invoice_access_key']);
+    }
+
+    public function test_it_discards_suspicious_legal_name_candidates(): void
+    {
+        BusinessUnit::factory()->create([
+            'name' => 'BAKOF RS',
+            'legal_name' => 'BAKOF PLASTICOS LTDA',
+            'cnpj' => '91967067000155',
+        ]);
+
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "0 - ENTRADA 432\n".
+            "CNPJ 12.345.678/0001-95\n".
+            "Tomador BAKOF PLASTICOS LTDA\n".
+            "CNPJ 91.967.067/0001-55\n".
+            "Numero da Nota 1261180"
+        );
+
+        $this->assertSame('12345678000195', $result['issuer_cnpj']);
+        $this->assertNull($result['issuer_legal_name']);
+        $this->assertSame('BAKOF PLASTICOS LTDA', $result['recipient_legal_name']);
+    }
+
+    public function test_it_uses_ai_fallback_when_local_extraction_is_missing_critical_fields(): void
+    {
+        BusinessUnit::factory()->create([
+            'name' => 'BAKOF RS',
+            'legal_name' => 'BAKOF PLASTICOS LTDA',
+            'cnpj' => '91967067000155',
+        ]);
+
+        $document = \Mockery::mock(Document::class);
+        $document->shouldReceive('getText')->once()->andReturn("Fornecedor ilegivel\nTomador BAKOF PLASTICOS LTDA\nCNPJ 91.967.067/0001-55");
+
+        $parser = \Mockery::mock(Parser::class);
+        $parser->shouldReceive('parseFile')->once()->with('broken.pdf')->andReturn($document);
+
+        $ai = new class extends AiDocumentExtractionService
+        {
+            public function extract(string $absolutePath): array
+            {
+                return [
+                    'success' => true,
+                    'invoice_number' => '1261180',
+                    'invoice_access_key' => null,
+                    'issuer_cnpj' => '12345678000195',
+                    'issuer_legal_name' => 'PAULO SERVICOS LTDA',
+                    'recipient_cnpj' => '91967067000155',
+                    'recipient_legal_name' => 'BAKOF PLASTICOS LTDA',
+                    'error' => null,
+                    'source' => 'ai',
+                ];
+            }
+        };
+
+        $service = new PdfExtractionService($parser, null, $ai);
+
+        $result = $service->extract('broken.pdf');
+
+        $this->assertTrue($result['success']);
+        $this->assertSame('text+ai', $result['source']);
+        $this->assertSame('1261180', $result['invoice_number']);
+        $this->assertSame('12345678000195', $result['issuer_cnpj']);
+        $this->assertSame('PAULO SERVICOS LTDA', $result['issuer_legal_name']);
+        $this->assertSame('91967067000155', $result['recipient_cnpj']);
     }
 
     public function test_it_uses_ocr_when_pdf_has_no_searchable_text(): void

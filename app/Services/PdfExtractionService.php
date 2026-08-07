@@ -12,6 +12,7 @@ class PdfExtractionService
     public function __construct(
         private readonly Parser $parser,
         private readonly ?PdfOcrService $ocrService = null,
+        private readonly ?AiDocumentExtractionService $aiExtractionService = null,
     )
     {
     }
@@ -26,13 +27,19 @@ class PdfExtractionService
                 $ocrText = $this->ocrService?->extract($absolutePath);
 
                 if ($this->hasReadableText((string) $ocrText)) {
-                    return $this->extractFromText((string) $ocrText, 'ocr');
+                    return $this->applyAiFallback(
+                        $absolutePath,
+                        $this->extractFromText((string) $ocrText, 'ocr')
+                    );
                 }
 
-                return $this->emptyExtractionResult('PDF sem texto pesquisavel. Configure OCR para ler documentos escaneados.', 'blank');
+                return $this->applyAiFallback(
+                    $absolutePath,
+                    $this->emptyExtractionResult('PDF sem texto pesquisavel. Configure OCR para ler documentos escaneados.', 'blank')
+                );
             }
 
-            return $this->extractFromText($text, 'text');
+            return $this->applyAiFallback($absolutePath, $this->extractFromText($text, 'text'));
         } catch (Throwable $exception) {
             Log::warning('Falha ao extrair texto do PDF.', [
                 'path' => $absolutePath,
@@ -42,10 +49,13 @@ class PdfExtractionService
             $ocrText = $this->ocrService?->extract($absolutePath);
 
             if ($this->hasReadableText((string) $ocrText)) {
-                return $this->extractFromText((string) $ocrText, 'ocr');
+                return $this->applyAiFallback(
+                    $absolutePath,
+                    $this->extractFromText((string) $ocrText, 'ocr')
+                );
             }
 
-            return $this->emptyExtractionResult($exception->getMessage(), 'error');
+            return $this->applyAiFallback($absolutePath, $this->emptyExtractionResult($exception->getMessage(), 'error'));
         }
     }
 
@@ -64,11 +74,160 @@ class PdfExtractionService
             'recipient_cnpj' => $recipientCnpj,
             'invoice_number' => $this->extractInvoiceNumber($text, $accessKey),
             'invoice_access_key' => $accessKey,
-            'issuer_legal_name' => $this->extractLegalNameNearCnpj($text, $issuerCnpj),
-            'recipient_legal_name' => $this->extractLegalNameNearCnpj($text, $recipientCnpj),
+            'issuer_legal_name' => $this->sanitizeExtractedLegalName($this->extractLegalNameNearCnpj($text, $issuerCnpj)),
+            'recipient_legal_name' => $this->sanitizeExtractedLegalName($this->extractLegalNameNearCnpj($text, $recipientCnpj)),
             'error' => null,
             'source' => $source,
         ];
+    }
+
+    private function applyAiFallback(string $absolutePath, array $baseResult): array
+    {
+        if (! $this->shouldUseAiFallback($baseResult) || ! $this->aiExtractionService) {
+            return $baseResult;
+        }
+
+        $aiResult = $this->aiExtractionService->extract($absolutePath);
+
+        if (! ($aiResult['success'] ?? false)) {
+            return $baseResult;
+        }
+
+        return $this->mergeExtractionWithAiFallback($baseResult, $aiResult);
+    }
+
+    private function shouldUseAiFallback(array $result): bool
+    {
+        if (! $this->aiExtractionService) {
+            return false;
+        }
+
+        if (! ($result['success'] ?? false)) {
+            return true;
+        }
+
+        return blank($result['invoice_number'] ?? null)
+            || blank($result['issuer_cnpj'] ?? null)
+            || $this->looksSuspiciousLegalName($result['issuer_legal_name'] ?? null)
+            || $this->looksSuspiciousLegalName($result['recipient_legal_name'] ?? null);
+    }
+
+    private function mergeExtractionWithAiFallback(array $baseResult, array $aiResult): array
+    {
+        $issuerCnpj = $this->normalizeNullableCnpj($aiResult['issuer_cnpj'] ?? null)
+            ?? $this->normalizeNullableCnpj($baseResult['issuer_cnpj'] ?? null);
+        $recipientCnpj = $this->normalizeNullableCnpj($aiResult['recipient_cnpj'] ?? null)
+            ?? $this->normalizeNullableCnpj($baseResult['recipient_cnpj'] ?? null);
+        $invoiceAccessKey = $this->normalizeNullableAccessKey($aiResult['invoice_access_key'] ?? null)
+            ?? $this->normalizeNullableAccessKey($baseResult['invoice_access_key'] ?? null);
+        $invoiceNumber = $this->normalizeNullableInvoiceNumber($aiResult['invoice_number'] ?? null)
+            ?? $this->normalizeNullableInvoiceNumber($baseResult['invoice_number'] ?? null);
+        $issuerLegalName = $this->normalizeNullableLegalName($aiResult['issuer_legal_name'] ?? null)
+            ?? $this->sanitizeExtractedLegalName($baseResult['issuer_legal_name'] ?? null);
+        $recipientLegalName = $this->normalizeNullableLegalName($aiResult['recipient_legal_name'] ?? null)
+            ?? $this->sanitizeExtractedLegalName($baseResult['recipient_legal_name'] ?? null);
+        $baseSource = trim((string) ($baseResult['source'] ?? ''));
+
+        return [
+            'success' => true,
+            'text' => (string) ($baseResult['text'] ?? ''),
+            'cnpjs' => $this->mergeCnpjs(
+                (array) ($baseResult['cnpjs'] ?? []),
+                [$issuerCnpj, $recipientCnpj]
+            ),
+            'issuer_cnpj' => $issuerCnpj,
+            'recipient_cnpj' => $recipientCnpj,
+            'invoice_number' => $invoiceNumber,
+            'invoice_access_key' => $invoiceAccessKey,
+            'issuer_legal_name' => $issuerLegalName,
+            'recipient_legal_name' => $recipientLegalName,
+            'error' => null,
+            'source' => $baseSource !== '' ? $baseSource.'+ai' : 'ai',
+        ];
+    }
+
+    private function mergeCnpjs(array $baseCnpjs, array $additionalCnpjs): array
+    {
+        return collect(array_merge($baseCnpjs, $additionalCnpjs))
+            ->map(fn (mixed $cnpj): string => $this->normalizeCnpj((string) $cnpj))
+            ->filter(fn (string $cnpj): bool => $this->isValidCnpj($cnpj))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function normalizeNullableCnpj(?string $cnpj): ?string
+    {
+        $normalized = $this->normalizeCnpj((string) $cnpj);
+
+        return $this->isValidCnpj($normalized) ? $normalized : null;
+    }
+
+    private function normalizeNullableInvoiceNumber(?string $number): ?string
+    {
+        $normalized = $this->normalizeInvoiceNumber((string) $number);
+
+        return $this->isPlausibleInvoiceNumber($normalized) ? $normalized : null;
+    }
+
+    private function normalizeNullableAccessKey(?string $accessKey): ?string
+    {
+        $digits = preg_replace('/\D/', '', (string) $accessKey) ?? '';
+
+        return strlen($digits) === 44 && $this->isValidFiscalAccessKey($digits) ? $digits : null;
+    }
+
+    private function normalizeNullableLegalName(?string $name): ?string
+    {
+        $name = trim((string) $name);
+
+        if ($name === '' || $this->looksSuspiciousLegalName($name)) {
+            return null;
+        }
+
+        return mb_strtoupper($name, 'UTF-8');
+    }
+
+    private function sanitizeExtractedLegalName(?string $name): ?string
+    {
+        return $this->normalizeNullableLegalName($name);
+    }
+
+    private function looksSuspiciousLegalName(?string $name): bool
+    {
+        if (blank($name)) {
+            return false;
+        }
+
+        $normalized = $this->normalizeReadableText((string) $name);
+
+        if ($normalized === '' || preg_match('/^\d+$/', $normalized)) {
+            return true;
+        }
+
+        if (preg_match('/\d{6,}/', $normalized)) {
+            return true;
+        }
+
+        $blockedTerms = [
+            'ENTRADA',
+            'SAIDA',
+            'PROTOCOLO',
+            'CHAVE DE ACESSO',
+            'ORDEM DE COMPRA',
+            'PEDIDO',
+            'DOCUMENTO AUXILIAR',
+            'DANFE',
+            'DACTE',
+        ];
+
+        foreach ($blockedTerms as $term) {
+            if (str_contains($normalized, $term)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function hasReadableText(?string $text): bool

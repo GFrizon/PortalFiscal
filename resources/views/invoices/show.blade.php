@@ -34,12 +34,8 @@
             ?? data_get($purchaseOrderCheck->raw_response, 'cd_fornecedor'))
         : null)
     @php($actionFeedbackMessage = session('success') ?? session('status'))
-    @php($launchBlockingAlertTypes = [
-        \App\Enums\AlertType::CnpjMismatch,
-        \App\Enums\AlertType::DuplicatePdf,
-    ])
     @php($launchBlockingAlerts = $invoice->alerts
-        ->filter(fn ($alert) => ! $alert->resolved && ($alert->level === \App\Enums\AlertLevel::Critical || in_array($alert->type, $launchBlockingAlertTypes, true)))
+        ->filter(fn ($alert) => ! $alert->resolved && ($alert->level === \App\Enums\AlertLevel::Critical || $alert->type->blocksLaunch()))
         ->values())
     @php($launchBlockingLabels = $launchBlockingAlerts->map(fn ($alert) => $alert->type->label())->unique()->implode(', '))
 

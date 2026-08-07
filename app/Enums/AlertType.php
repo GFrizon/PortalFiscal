@@ -26,4 +26,16 @@ enum AlertType: string
             self::DuplicatePdf => 'PDF duplicado',
         };
     }
+
+    public function blocksLaunch(): bool
+    {
+        return match ($this) {
+            self::PurchaseOrderNotFound,
+            self::PurchaseOrderLookupFailed,
+            self::PurchaseOrderCancelled,
+            self::CnpjMismatch,
+            self::DuplicatePdf => true,
+            default => false,
+        };
+    }
 }

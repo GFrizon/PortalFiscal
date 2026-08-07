@@ -286,6 +286,18 @@ class NavigationAuditTest extends TestCase
             $mock->shouldReceive('normalizeCnpj')->andReturnUsing(fn (string $cnpj) => preg_replace('/\D/', '', $cnpj) ?? '');
         });
 
+        $this->mock(PurchaseOrderService::class, function ($mock): void {
+            $mock->shouldReceive('find')->once()->with('123456')->andReturn([
+                'exists' => true,
+                'status' => 'aberta',
+                'supplier_cnpj' => '12345678000195',
+                'supplier_name' => 'Fornecedor Teste LTDA',
+                'business_unit_id' => null,
+                'amount' => 100,
+                'raw_response' => ['source' => 'test'],
+            ]);
+        });
+
         $this->actingAs($user)
             ->post(route('invoices.store'), [
                 'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
@@ -776,6 +788,8 @@ class NavigationAuditTest extends TestCase
         Storage::fake('local');
 
         $user = User::factory()->create();
+        $firstDueDate = Carbon::today(config('app.timezone'))->addWeekdays(3)->format('Y-m-d');
+        $secondDueDate = Carbon::today(config('app.timezone'))->addWeekdays(24)->format('Y-m-d');
 
         $this->mock(PdfExtractionService::class, function ($mock): void {
             $mock->shouldReceive('extract')->once()->andReturn([
@@ -792,6 +806,18 @@ class NavigationAuditTest extends TestCase
             $mock->shouldReceive('normalizeCnpj')->andReturnUsing(fn (string $cnpj) => preg_replace('/\D/', '', $cnpj) ?? '');
         });
 
+        $this->mock(PurchaseOrderService::class, function ($mock): void {
+            $mock->shouldReceive('find')->once()->with('123456')->andReturn([
+                'exists' => true,
+                'status' => 'aberta',
+                'supplier_cnpj' => '12345678000195',
+                'supplier_name' => 'Fornecedor Parcelado LTDA',
+                'business_unit_id' => null,
+                'amount' => 100,
+                'raw_response' => ['source' => 'test'],
+            ]);
+        });
+
         $this->actingAs($user)
             ->post(route('invoices.store'), [
                 'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
@@ -801,8 +827,8 @@ class NavigationAuditTest extends TestCase
                 'payment_method' => 'boleto',
                 'payment_installments_count' => 2,
                 'payment_installments' => [
-                    ['due_date' => '2026-08-10'],
-                    ['due_date' => '2026-09-10'],
+                    ['due_date' => $firstDueDate],
+                    ['due_date' => $secondDueDate],
                 ],
             ])
             ->assertRedirect();
@@ -810,9 +836,9 @@ class NavigationAuditTest extends TestCase
         $invoice = Invoice::query()->where('submitted_by', $user->id)->firstOrFail();
 
         $this->assertSame('boleto', $invoice->payment_method->value);
-        $this->assertSame('2026-08-10', $invoice->due_date?->format('Y-m-d'));
-        $this->assertSame('2026-08-10', $invoice->payment_installments[0]['due_date']);
-        $this->assertSame('2026-09-10', $invoice->payment_installments[1]['due_date']);
+        $this->assertSame($firstDueDate, $invoice->due_date?->format('Y-m-d'));
+        $this->assertSame($firstDueDate, $invoice->payment_installments[0]['due_date']);
+        $this->assertSame($secondDueDate, $invoice->payment_installments[1]['due_date']);
         $this->assertArrayNotHasKey('amount', $invoice->payment_installments[0]);
     }
 
@@ -1238,6 +1264,18 @@ class NavigationAuditTest extends TestCase
             $mock->shouldReceive('normalizeCnpj')->andReturnUsing(fn (string $cnpj) => preg_replace('/\D/', '', $cnpj) ?? '');
         });
 
+        $this->mock(PurchaseOrderService::class, function ($mock): void {
+            $mock->shouldReceive('find')->once()->with('123451')->andReturn([
+                'exists' => true,
+                'status' => 'aberta',
+                'supplier_cnpj' => '12345678000195',
+                'supplier_name' => 'Fornecedor Duplicado LTDA',
+                'business_unit_id' => null,
+                'amount' => 100,
+                'raw_response' => ['source' => 'test'],
+            ]);
+        });
+
         foreach ([1, 2] as $attempt) {
             $response = $this->actingAs($user)
                 ->post(route('invoices.store'), [
@@ -1311,7 +1349,7 @@ class NavigationAuditTest extends TestCase
         $this->assertCount(0, Storage::disk('local')->allFiles());
     }
 
-    public function test_purchase_order_lookup_failure_creates_technical_alert_instead_of_not_found(): void
+    public function test_purchase_order_lookup_failure_blocks_nf_submission_before_creating_invoice(): void
     {
         Storage::fake('local');
 
@@ -1325,6 +1363,7 @@ class NavigationAuditTest extends TestCase
                 'issuer_cnpj' => '12345678000195',
                 'recipient_cnpj' => null,
                 'invoice_number' => '123456',
+                'invoice_access_key' => null,
                 'issuer_legal_name' => null,
                 'recipient_legal_name' => null,
                 'error' => null,
@@ -1333,7 +1372,7 @@ class NavigationAuditTest extends TestCase
         });
 
         $this->mock(PurchaseOrderService::class, function ($mock): void {
-            $mock->shouldReceive('find')->once()->andReturn([
+            $mock->shouldReceive('find')->once()->with('123456')->andReturn([
                 'exists' => false,
                 'status' => null,
                 'supplier_cnpj' => null,
@@ -1353,22 +1392,191 @@ class NavigationAuditTest extends TestCase
                 'document_type' => 'nf',
                 'purchase_order_number' => '123456',
                 'arrival_date' => now()->format('Y-m-d'),
-                'due_date' => now()->addDays(10)->format('Y-m-d'),
+                'payment_method' => 'anticipated',
                 'user_notes' => null,
             ])
-            ->assertRedirect();
+            ->assertSessionHasErrors('purchase_order_number');
 
-        $invoice = Invoice::query()->where('submitted_by', $user->id)->firstOrFail();
+        $this->assertDatabaseCount('invoices', 0);
+        $this->assertDatabaseCount('invoice_alerts', 0);
+        $this->assertCount(0, Storage::disk('local')->allFiles());
+    }
 
-        $this->assertDatabaseHas('invoice_alerts', [
-            'invoice_id' => $invoice->id,
-            'type' => AlertType::PurchaseOrderLookupFailed->value,
+    public function test_purchase_order_not_found_blocks_nf_submission_before_creating_invoice(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => 'PDF simulado',
+                'cnpjs' => ['12345678000195'],
+                'issuer_cnpj' => '12345678000195',
+                'recipient_cnpj' => null,
+                'invoice_number' => '123456',
+                'invoice_access_key' => null,
+                'issuer_legal_name' => null,
+                'recipient_legal_name' => null,
+                'error' => null,
+            ]);
+            $mock->shouldReceive('normalizeCnpj')->andReturnUsing(fn (string $cnpj) => preg_replace('/\D/', '', $cnpj) ?? '');
+        });
+
+        $this->mock(PurchaseOrderService::class, function ($mock): void {
+            $mock->shouldReceive('find')->once()->with('123456')->andReturn([
+                'exists' => false,
+                'status' => null,
+                'supplier_cnpj' => null,
+                'supplier_name' => null,
+                'business_unit_id' => null,
+                'amount' => null,
+                'raw_response' => [
+                    'source' => 'oracle',
+                    'number' => '123456',
+                ],
+            ]);
+        });
+
+        $this->actingAs($user)
+            ->post(route('invoices.store'), [
+                'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf',
+                'purchase_order_number' => '123456',
+                'arrival_date' => now()->format('Y-m-d'),
+                'payment_method' => 'anticipated',
+                'user_notes' => null,
+            ])
+            ->assertSessionHasErrors('purchase_order_number');
+
+        $this->assertDatabaseCount('invoices', 0);
+        $this->assertDatabaseCount('invoice_alerts', 0);
+        $this->assertCount(0, Storage::disk('local')->allFiles());
+    }
+
+    public function test_purchase_order_cancelled_blocks_nf_submission_before_creating_invoice(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => 'PDF simulado',
+                'cnpjs' => ['12345678000195'],
+                'issuer_cnpj' => '12345678000195',
+                'recipient_cnpj' => null,
+                'invoice_number' => '123456',
+                'invoice_access_key' => null,
+                'issuer_legal_name' => null,
+                'recipient_legal_name' => null,
+                'error' => null,
+            ]);
+            $mock->shouldReceive('normalizeCnpj')->andReturnUsing(fn (string $cnpj) => preg_replace('/\D/', '', $cnpj) ?? '');
+        });
+
+        $this->mock(PurchaseOrderService::class, function ($mock): void {
+            $mock->shouldReceive('find')->once()->with('123456')->andReturn([
+                'exists' => true,
+                'status' => 'cancelada',
+                'supplier_cnpj' => '12345678000195',
+                'supplier_name' => 'Fornecedor cancelado LTDA',
+                'business_unit_id' => null,
+                'amount' => null,
+                'raw_response' => [
+                    'source' => 'oracle',
+                    'number' => '123456',
+                ],
+            ]);
+        });
+
+        $this->actingAs($user)
+            ->post(route('invoices.store'), [
+                'pdf' => UploadedFile::fake()->create('nota.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf',
+                'purchase_order_number' => '123456',
+                'arrival_date' => now()->format('Y-m-d'),
+                'payment_method' => 'anticipated',
+                'user_notes' => null,
+            ])
+            ->assertSessionHasErrors('purchase_order_number');
+
+        $this->assertDatabaseCount('invoices', 0);
+        $this->assertDatabaseCount('invoice_alerts', 0);
+        $this->assertCount(0, Storage::disk('local')->allFiles());
+    }
+
+    public function test_existing_draft_cannot_be_sent_to_review_when_purchase_order_is_not_found(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => InvoiceStatus::Draft->value,
+            'document_type' => 'nf',
+            'purchase_order_number' => null,
+            'invoice_number' => null,
+            'issuer_cnpj' => null,
+            'issuer_legal_name' => null,
+            'sent_at' => null,
+            'pdf_path' => 'notas/drafts/sem-oc.pdf',
+            'payment_method' => 'anticipated',
+            'payment_installments' => null,
+            'due_date' => null,
         ]);
 
-        $this->assertDatabaseMissing('invoice_alerts', [
-            'invoice_id' => $invoice->id,
-            'type' => AlertType::PurchaseOrderNotFound->value,
-        ]);
+        Storage::disk('local')->put($invoice->pdf_path, 'PDF fake');
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => 'PDF simulado',
+                'cnpjs' => ['12345678000195'],
+                'issuer_cnpj' => '12345678000195',
+                'recipient_cnpj' => null,
+                'invoice_number' => '123456',
+                'invoice_access_key' => null,
+                'issuer_legal_name' => 'Fornecedor sem OC',
+                'recipient_legal_name' => null,
+                'error' => null,
+            ]);
+            $mock->shouldReceive('normalizeCnpj')->andReturnUsing(fn (string $cnpj) => preg_replace('/\D/', '', $cnpj) ?? '');
+        });
+
+        $this->mock(PurchaseOrderService::class, function ($mock): void {
+            $mock->shouldReceive('find')->once()->with('123456')->andReturn([
+                'exists' => false,
+                'status' => null,
+                'supplier_cnpj' => null,
+                'supplier_name' => null,
+                'business_unit_id' => null,
+                'amount' => null,
+                'raw_response' => [
+                    'source' => 'oracle',
+                    'number' => '123456',
+                ],
+            ]);
+        });
+
+        $this->actingAs($user)
+            ->put(route('invoices.update', $invoice), [
+                'document_type' => 'nf',
+                'purchase_order_number' => '123456',
+                'arrival_date' => '2026-08-05',
+                'payment_method' => 'anticipated',
+                'user_notes' => 'Tentando enviar sem OC valida.',
+                'submit_intent' => 'submit',
+            ])
+            ->assertSessionHasErrors('purchase_order_number');
+
+        $invoice->refresh();
+
+        $this->assertSame(InvoiceStatus::Draft, $invoice->status);
+        $this->assertNull($invoice->sent_at);
+        $this->assertDatabaseCount('purchase_order_checks', 0);
     }
 
     public function test_fiscal_can_update_unit_and_mark_invoice_as_launched(): void
@@ -1410,6 +1618,40 @@ class NavigationAuditTest extends TestCase
         ]);
 
         $this->assertDatabaseHas('invoice_histories', [
+            'invoice_id' => $invoice->id,
+            'user_id' => $fiscal->id,
+            'action' => 'Nota marcada como lancada',
+        ]);
+    }
+
+    public function test_fiscal_cannot_launch_invoice_while_purchase_order_block_is_open(): void
+    {
+        $user = User::factory()->create();
+        $fiscal = User::factory()->fiscal()->create();
+        $invoice = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'status' => 'awaiting_review',
+        ]);
+
+        $invoice->alerts()->create([
+            'type' => AlertType::PurchaseOrderNotFound,
+            'message' => 'Ordem de compra nao encontrada no ERP.',
+            'level' => AlertLevel::Warning,
+        ]);
+
+        $this->actingAs($fiscal)
+            ->post(route('invoices.mark-as-launched', $invoice), [
+                'fiscal_notes' => 'Nao deveria lancar.',
+            ])
+            ->assertSessionHasErrors('fiscal_notes');
+
+        $this->assertDatabaseHas('invoices', [
+            'id' => $invoice->id,
+            'status' => 'awaiting_review',
+            'fiscal_user_id' => null,
+        ]);
+
+        $this->assertDatabaseMissing('invoice_histories', [
             'invoice_id' => $invoice->id,
             'user_id' => $fiscal->id,
             'action' => 'Nota marcada como lancada',

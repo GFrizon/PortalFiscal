@@ -93,7 +93,29 @@ INVOICE_PDF_OPTIMIZATION_MIN_SAVINGS_PERCENT=8
 
 Se o Ghostscript nao estiver disponivel, deixe `INVOICE_PDF_OPTIMIZATION_ENABLED=false`.
 
-12. Teste os comandos de armazenamento:
+12. Para OCR local de PDFs escaneados, habilite somente se o servidor tiver `pdftoppm` e `tesseract`:
+
+```env
+PDF_OCR_ENABLED=true
+PDF_OCR_PDFTOPPM_BINARY=/usr/bin/pdftoppm
+PDF_OCR_TESSERACT_BINARY=/usr/bin/tesseract
+PDF_OCR_LANGUAGE=por
+PDF_OCR_TIMEOUT=60
+PDF_OCR_MAX_PAGES=2
+```
+
+13. Para fallback opcional via OpenAI quando parser/OCR nao extrairem os campos criticos do PDF:
+
+```env
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_TIMEOUT=45
+OPENAI_PDF_DETAIL=low
+```
+
+Use `OPENAI_PDF_DETAIL=low` para menor custo. O app tenta leitura local primeiro e so chama a OpenAI quando faltarem campos criticos ou o nome extraido parecer inconsistente.
+
+14. Teste os comandos de armazenamento:
 
 ```bash
 php artisan invoices:storage-report
@@ -101,7 +123,7 @@ php artisan invoices:optimize-pdfs --force --dry-run --limit=25 --min-size-kb=30
 php artisan invoices:cleanup-storage --dry-run --days=1
 ```
 
-13. Se o dry-run estiver correto e o servidor tiver Ghostscript, compacte em lotes pequenos:
+15. Se o dry-run estiver correto e o servidor tiver Ghostscript, compacte em lotes pequenos:
 
 ```bash
 php artisan invoices:optimize-pdfs --force --limit=25 --min-size-kb=300
@@ -109,7 +131,7 @@ php artisan invoices:optimize-pdfs --force --limit=25 --min-size-kb=300
 
 Use lotes pequenos no cPanel para evitar estourar CPU/memoria da hospedagem. O app so substitui o PDF quando a nova versao fica menor que o percentual minimo configurado.
 
-14. Para limpar arquivos temporarios:
+16. Para limpar arquivos temporarios:
 
 ```bash
 php artisan invoices:cleanup-storage --days=1
@@ -123,7 +145,7 @@ php artisan invoices:cleanup-storage --orphans --dry-run
 
 So remova orfaos sem `--dry-run` depois de conferir o resultado.
 
-15. Configure Cron para tarefas agendadas, fila e manutencao com banco de dados:
+17. Configure Cron para tarefas agendadas, fila e manutencao com banco de dados:
 
 ```bash
 * * * * * cd /home/usuario/portal-notas && php artisan schedule:run >> /dev/null 2>&1
@@ -132,12 +154,12 @@ So remova orfaos sem `--dry-run` depois de conferir o resultado.
 0 2 * * * cd /home/usuario/portal-notas && php artisan invoices:cleanup-storage --days=1 >> /dev/null 2>&1
 ```
 
-16. Configure backup recorrente de:
+18. Configure backup recorrente de:
    - banco MySQL
    - pasta `storage/app/private`
    - arquivo `.env`
 
-17. Para volume alto de PDFs, acompanhe mensalmente:
+19. Para volume alto de PDFs, acompanhe mensalmente:
    - espaco usado em `storage/app/private/notas`
    - tamanho medio por PDF
    - crescimento da tabela `invoice_histories`

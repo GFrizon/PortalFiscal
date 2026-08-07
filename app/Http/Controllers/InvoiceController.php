@@ -213,13 +213,8 @@ class InvoiceController extends Controller
         ) {
             $precheckedPurchaseOrder = $purchaseOrderService->find($request->string('purchase_order_number')->toString());
             $issuerCnpj = $pdfExtractionService->normalizeCnpj((string) ($extracted['issuer_cnpj'] ?? ''));
-            $supplierCnpj = $pdfExtractionService->normalizeCnpj((string) ($precheckedPurchaseOrder['supplier_cnpj'] ?? ''));
 
-            if (($precheckedPurchaseOrder['exists'] ?? false) && $issuerCnpj && $supplierCnpj && $issuerCnpj !== $supplierCnpj) {
-                throw ValidationException::withMessages([
-                    'purchase_order_number' => 'O CNPJ do fornecedor da OC e diferente do CNPJ do emitente da nota. Verifique a OC ou selecione o PDF correto antes de anexar.',
-                ]);
-            }
+            $this->ensurePurchaseOrderCanBeSubmitted($precheckedPurchaseOrder, $issuerCnpj, 'enviar para conferencia');
         }
 
         $businessUnit = null;
@@ -311,15 +306,8 @@ class InvoiceController extends Controller
                     ]);
 
                     $purchaseOrderSource = $purchaseOrder['raw_response']['source'] ?? null;
-                    $lookupFailedSources = [
-                        'oci8_missing',
-                        'oracle_error',
-                        'http_not_configured',
-                        'http_error',
-                        'http_exception',
-                    ];
 
-                    if (! $purchaseOrder['exists'] && in_array($purchaseOrderSource, $lookupFailedSources, true)) {
+                    if (! $purchaseOrder['exists'] && in_array($purchaseOrderSource, $this->purchaseOrderLookupFailedSources(), true)) {
                         $alertService->create($invoice, AlertType::PurchaseOrderLookupFailed, 'Nao foi possivel consultar a ordem de compra no ERP. Verifique a API local/Oracle.', AlertLevel::Critical);
                     } elseif (! $purchaseOrder['exists']) {
                         $alertService->create($invoice, AlertType::PurchaseOrderNotFound, 'Ordem de compra nao encontrada no ERP.', AlertLevel::Warning);
@@ -378,13 +366,8 @@ class InvoiceController extends Controller
         ) {
             $purchaseOrder = $purchaseOrderService->find($request->string('purchase_order_number')->toString());
             $issuerCnpj = $pdfExtractionService->normalizeCnpj((string) $invoice->issuer_cnpj);
-            $supplierCnpj = $pdfExtractionService->normalizeCnpj((string) ($purchaseOrder['supplier_cnpj'] ?? ''));
 
-            if (($purchaseOrder['exists'] ?? false) && $issuerCnpj && $supplierCnpj && $issuerCnpj !== $supplierCnpj) {
-                throw ValidationException::withMessages([
-                    'purchase_order_number' => 'O CNPJ do fornecedor da OC e diferente do CNPJ do emitente da nota. Verifique a OC ou selecione o PDF correto antes de enviar para conferencia.',
-                ]);
-            }
+            $this->ensurePurchaseOrderCanBeSubmitted($purchaseOrder, $issuerCnpj, 'enviar para conferencia');
         }
 
         $notifyFiscalTeam = false;
@@ -465,6 +448,38 @@ class InvoiceController extends Controller
             'invoice' => $invoice->load(['businessUnit', 'submitter', 'fiscalUser', 'alerts.resolver', 'histories.user', 'purchaseOrderCheck.businessUnit', 'annotation', 'attachments.uploader']),
             'businessUnits' => BusinessUnit::query()->orderBy('name')->get(['id', 'name']),
         ]);
+    }
+
+    private function ensurePurchaseOrderCanBeSubmitted(array $purchaseOrder, string $issuerCnpj, string $action): void
+    {
+        $purchaseOrderExists = (bool) ($purchaseOrder['exists'] ?? false);
+        $purchaseOrderSource = $purchaseOrder['raw_response']['source'] ?? null;
+
+        if (! $purchaseOrderExists && in_array($purchaseOrderSource, $this->purchaseOrderLookupFailedSources(), true)) {
+            throw ValidationException::withMessages([
+                'purchase_order_number' => 'Nao foi possivel validar a ordem de compra no ERP. Verifique a integracao e tente novamente antes de '.$action.'.',
+            ]);
+        }
+
+        if (! $purchaseOrderExists) {
+            throw ValidationException::withMessages([
+                'purchase_order_number' => 'Ordem de compra nao encontrada no ERP. Verifique a OC antes de '.$action.'.',
+            ]);
+        }
+
+        if (($purchaseOrder['status'] ?? null) === 'cancelada') {
+            throw ValidationException::withMessages([
+                'purchase_order_number' => 'Ordem de compra cancelada. Corrija a OC antes de '.$action.'.',
+            ]);
+        }
+
+        $supplierCnpj = preg_replace('/\D/', '', (string) ($purchaseOrder['supplier_cnpj'] ?? '')) ?? '';
+
+        if ($issuerCnpj && $supplierCnpj && $issuerCnpj !== $supplierCnpj) {
+            throw ValidationException::withMessages([
+                'purchase_order_number' => 'O CNPJ do fornecedor da OC e diferente do CNPJ do emitente da nota. Verifique a OC ou selecione o PDF correto antes de '.$action.'.',
+            ]);
+        }
     }
 
     private function refreshInvoiceExtractionFromStoredPdf(Invoice $invoice, PdfExtractionService $pdfExtractionService): void
@@ -585,15 +600,8 @@ class InvoiceController extends Controller
         );
 
         $purchaseOrderSource = $purchaseOrder['raw_response']['source'] ?? null;
-        $lookupFailedSources = [
-            'oci8_missing',
-            'oracle_error',
-            'http_not_configured',
-            'http_error',
-            'http_exception',
-        ];
 
-        if (! $purchaseOrder['exists'] && in_array($purchaseOrderSource, $lookupFailedSources, true)) {
+        if (! $purchaseOrder['exists'] && in_array($purchaseOrderSource, $this->purchaseOrderLookupFailedSources(), true)) {
             $alertService->create($invoice, AlertType::PurchaseOrderLookupFailed, 'Nao foi possivel consultar a ordem de compra no ERP. Verifique a API local/Oracle.', AlertLevel::Critical);
         } elseif (! $purchaseOrder['exists']) {
             $alertService->create($invoice, AlertType::PurchaseOrderNotFound, 'Ordem de compra nao encontrada no ERP.', AlertLevel::Warning);
@@ -607,6 +615,17 @@ class InvoiceController extends Controller
         if ($issuerCnpj && $supplierCnpj && $issuerCnpj !== $supplierCnpj) {
             $alertService->create($invoice, AlertType::CnpjMismatch, 'CNPJ do emitente diferente do fornecedor da ordem de compra.', AlertLevel::Critical);
         }
+    }
+
+    private function purchaseOrderLookupFailedSources(): array
+    {
+        return [
+            'oci8_missing',
+            'oracle_error',
+            'http_not_configured',
+            'http_error',
+            'http_exception',
+        ];
     }
 
     private function clearPurchaseOrderCheck(Invoice $invoice): void

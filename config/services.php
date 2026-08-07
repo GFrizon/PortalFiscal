@@ -38,6 +38,8 @@ return [
     'openai' => [
         'key' => env('OPENAI_API_KEY'),
         'model' => env('OPENAI_MODEL'),
+        'timeout' => (int) env('OPENAI_TIMEOUT', 45),
+        'pdf_detail' => env('OPENAI_PDF_DETAIL', 'low'),
     ],
 
     'pdf_ocr' => [
