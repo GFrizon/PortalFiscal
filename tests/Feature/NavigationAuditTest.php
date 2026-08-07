@@ -332,6 +332,54 @@ class NavigationAuditTest extends TestCase
         Storage::disk('local')->assertExists($invoice->pdf_path);
     }
 
+    public function test_invoice_details_show_discreet_openai_badge_when_ai_fallback_is_used(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->mock(PdfExtractionService::class, function ($mock): void {
+            $mock->shouldReceive('extract')->once()->andReturn([
+                'success' => true,
+                'text' => 'PDF simulado com fallback de IA',
+                'cnpjs' => ['12345678000195'],
+                'issuer_cnpj' => '12345678000195',
+                'recipient_cnpj' => null,
+                'invoice_number' => '1261180',
+                'invoice_access_key' => null,
+                'issuer_legal_name' => 'PAULO SERVICOS LTDA',
+                'recipient_legal_name' => null,
+                'error' => null,
+                'source' => 'text+ai',
+            ]);
+            $mock->shouldReceive('normalizeCnpj')->andReturnUsing(fn (string $cnpj) => preg_replace('/\D/', '', $cnpj) ?? '');
+        });
+
+        $this->actingAs($user)
+            ->post(route('invoices.store'), [
+                'pdf' => UploadedFile::fake()->create('nota-ai.pdf', 100, 'application/pdf'),
+                'document_type' => 'nf_no_oc',
+                'purchase_order_number' => '',
+                'arrival_date' => now()->format('Y-m-d'),
+                'payment_method' => 'anticipated',
+                'user_notes' => 'Arquivo com leitura complementar.',
+            ])
+            ->assertRedirect();
+
+        $invoice = Invoice::query()->where('submitted_by', $user->id)->firstOrFail();
+
+        $this->assertDatabaseHas('invoice_histories', [
+            'invoice_id' => $invoice->id,
+            'user_id' => $user->id,
+            'action' => 'Leitura complementar via OpenAI',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('invoices.show', $invoice))
+            ->assertOk()
+            ->assertSee('Validado com OpenAI');
+    }
+
     public function test_user_can_save_invoice_draft_before_sending_to_review(): void
     {
         Storage::fake('local');

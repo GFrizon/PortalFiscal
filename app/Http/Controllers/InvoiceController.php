@@ -34,6 +34,8 @@ use Throwable;
 
 class InvoiceController extends Controller
 {
+    private const AI_VALIDATION_HISTORY_ACTION = 'Leitura complementar via OpenAI';
+
     public function index(Request $request): View
     {
         $this->authorize('viewAny', Invoice::class);
@@ -280,6 +282,7 @@ class InvoiceController extends Controller
 
                 if ($extracted['success']) {
                     $historyService->record($invoice, $request->user(), 'PDF processado', null, $status, null, $request);
+                    $this->recordAiValidationHistoryIfNeeded($invoice, (string) ($extracted['source'] ?? ''), $historyService, $request);
                 } else {
                     $alertService->create(
                         $invoice,
@@ -353,8 +356,10 @@ class InvoiceController extends Controller
     ): RedirectResponse|JsonResponse {
         $this->authorize('update', $invoice);
 
+        $refreshedExtraction = null;
+
         if ($invoice->status === InvoiceStatus::Draft && ! $request->isDraftIntent()) {
-            $this->refreshInvoiceExtractionFromStoredPdf($invoice, $pdfExtractionService);
+            $refreshedExtraction = $this->refreshInvoiceExtractionFromStoredPdf($invoice, $pdfExtractionService);
             $invoice->refresh();
         }
 
@@ -371,8 +376,9 @@ class InvoiceController extends Controller
         }
 
         $notifyFiscalTeam = false;
+        $usedAiValidation = $this->extractionUsedAi($refreshedExtraction);
 
-        DB::transaction(function () use ($request, $invoice, $purchaseOrderService, $pdfExtractionService, $alertService, $historyService, &$notifyFiscalTeam): void {
+        DB::transaction(function () use ($request, $invoice, $purchaseOrderService, $pdfExtractionService, $alertService, $historyService, &$notifyFiscalTeam, $usedAiValidation): void {
             $previousStatus = $invoice->status;
             $nextStatus = $invoice->status;
             $isDraftInvoice = $invoice->status === InvoiceStatus::Draft;
@@ -418,6 +424,10 @@ class InvoiceController extends Controller
                 null,
                 $request
             );
+
+            if ($usedAiValidation) {
+                $this->recordAiValidationHistoryIfNeeded($invoice, 'ai', $historyService, $request, $nextStatus);
+            }
         });
 
         if ($notifyFiscalTeam) {
@@ -448,6 +458,41 @@ class InvoiceController extends Controller
             'invoice' => $invoice->load(['businessUnit', 'submitter', 'fiscalUser', 'alerts.resolver', 'histories.user', 'purchaseOrderCheck.businessUnit', 'annotation', 'attachments.uploader']),
             'businessUnits' => BusinessUnit::query()->orderBy('name')->get(['id', 'name']),
         ]);
+    }
+
+    private function extractionUsedAi(?array $extracted): bool
+    {
+        return str_contains((string) ($extracted['source'] ?? ''), 'ai');
+    }
+
+    private function recordAiValidationHistoryIfNeeded(
+        Invoice $invoice,
+        string $source,
+        InvoiceHistoryService $historyService,
+        Request $request,
+        ?InvoiceStatus $status = null
+    ): void {
+        if (! str_contains($source, 'ai')) {
+            return;
+        }
+
+        $alreadyRecorded = $invoice->histories()
+            ->where('action', self::AI_VALIDATION_HISTORY_ACTION)
+            ->exists();
+
+        if ($alreadyRecorded) {
+            return;
+        }
+
+        $historyService->record(
+            $invoice,
+            $request->user(),
+            self::AI_VALIDATION_HISTORY_ACTION,
+            $status,
+            $status,
+            'Leitura auxiliar do PDF feita com OpenAI.',
+            $request
+        );
     }
 
     private function ensurePurchaseOrderCanBeSubmitted(array $purchaseOrder, string $issuerCnpj, string $action): void
@@ -482,10 +527,10 @@ class InvoiceController extends Controller
         }
     }
 
-    private function refreshInvoiceExtractionFromStoredPdf(Invoice $invoice, PdfExtractionService $pdfExtractionService): void
+    private function refreshInvoiceExtractionFromStoredPdf(Invoice $invoice, PdfExtractionService $pdfExtractionService): ?array
     {
         if (blank($invoice->pdf_path) || ! Storage::disk('local')->exists($invoice->pdf_path)) {
-            return;
+            return null;
         }
 
         $extracted = $pdfExtractionService->extract(Storage::disk('local')->path($invoice->pdf_path));
@@ -507,6 +552,8 @@ class InvoiceController extends Controller
             'recipient_cnpj' => $recipientCnpj ?: $invoice->recipient_cnpj,
             'recipient_legal_name' => $extracted['recipient_legal_name'] ?: $invoice->recipient_legal_name,
         ])->save();
+
+        return $extracted;
     }
 
     public function storeDraftFollowUp(Request $request, Invoice $invoice, InvoiceHistoryService $historyService): RedirectResponse

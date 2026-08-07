@@ -34,6 +34,7 @@
             ?? data_get($purchaseOrderCheck->raw_response, 'cd_fornecedor'))
         : null)
     @php($actionFeedbackMessage = session('success') ?? session('status'))
+    @php($validatedWithAi = $invoice->histories->contains(fn ($history) => $history->action === 'Leitura complementar via OpenAI'))
     @php($launchBlockingAlerts = $invoice->alerts
         ->filter(fn ($alert) => ! $alert->resolved && ($alert->level === \App\Enums\AlertLevel::Critical || $alert->type->blocksLaunch()))
         ->values())
@@ -180,6 +181,12 @@
                             <div class="eyebrow">Protocolo {{ $invoice->protocol }}</div>
                             <h2 class="panel-title">Conferencia de documentos</h2>
                         </div>
+                        @if($validatedWithAi)
+                            <span class="soft-chip" title="Leitura auxiliar do PDF feita com OpenAI.">
+                                <i class="bi bi-stars" aria-hidden="true"></i>
+                                Validado com OpenAI
+                            </span>
+                        @endif
                     </div>
 
                     @if($documentType === \App\Enums\InvoiceDocumentType::Nf && $purchaseOrderCheck)
