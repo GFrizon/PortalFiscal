@@ -311,6 +311,12 @@ class PdfExtractionService
     {
         $units = BusinessUnit::query()->get(['name', 'legal_name', 'cnpj', 'internal_code']);
 
+        $unit = $this->identifyBusinessUnitByRecipientSection($units, $text);
+
+        if ($unit) {
+            return $this->normalizeCnpj($unit->cnpj);
+        }
+
         $unit = $units->first(function (BusinessUnit $unit) use ($cnpjs): bool {
             return in_array($this->normalizeCnpj($unit->cnpj), $cnpjs, true);
         });
@@ -323,6 +329,43 @@ class PdfExtractionService
             ?? $this->identifyBusinessUnitByName($units, $text);
 
         return $unit ? $this->normalizeCnpj($unit->cnpj) : null;
+    }
+
+    private function identifyBusinessUnitByRecipientSection($units, string $text): ?BusinessUnit
+    {
+        $lines = collect(preg_split('/\R/u', $text) ?: [])
+            ->map(fn (string $line): string => trim(preg_replace('/\s+/', ' ', $line) ?? $line))
+            ->filter(fn (string $line): bool => $line !== '')
+            ->values()
+            ->all();
+
+        foreach ($lines as $index => $line) {
+            if (! $this->isRecipientSectionHeading($line)) {
+                continue;
+            }
+
+            $section = implode("\n", array_slice($lines, $index, 28));
+            $matchedUnits = $units->filter(function (BusinessUnit $unit) use ($section): bool {
+                return str_contains($this->normalizeCnpj($section), $this->normalizeCnpj((string) $unit->cnpj));
+            });
+
+            if ($matchedUnits->count() === 1) {
+                return $matchedUnits->first();
+            }
+        }
+
+        return null;
+    }
+
+    private function isRecipientSectionHeading(string $line): bool
+    {
+        $normalized = $this->normalizeReadableText($line);
+
+        return str_contains($normalized, 'DESTINATARIO')
+            || str_contains($normalized, 'TOMADOR DO SERVICO')
+            || str_contains($normalized, 'TOMADOR DE SERVICO')
+            || str_contains($normalized, 'DADOS DO TOMADOR')
+            || str_contains($normalized, 'DADOS DO DESTINATARIO');
     }
 
     private function identifyBusinessUnitByInternalCode($units, string $text): ?BusinessUnit

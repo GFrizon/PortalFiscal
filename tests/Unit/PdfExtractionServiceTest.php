@@ -88,6 +88,37 @@ class PdfExtractionServiceTest extends TestCase
         $this->assertSame('91967067000317', $result['recipient_cnpj']);
     }
 
+    public function test_it_prefers_destination_business_unit_when_issuer_is_also_a_business_unit(): void
+    {
+        BusinessUnit::factory()->create([
+            'name' => 'BAKOF SC',
+            'legal_name' => 'BAKOF PLASTICOS LTDA',
+            'cnpj' => '54163230000109',
+        ]);
+
+        BusinessUnit::factory()->create([
+            'name' => 'BAKOF RS',
+            'legal_name' => 'BAKOF PLASTICOS LTDA',
+            'cnpj' => '91967067000155',
+        ]);
+
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "DANFE Documento Auxiliar da Nota Fiscal Eletronica\n".
+            "EMITENTE\n".
+            "BAKOF PLASTICOS LTDA\n".
+            "CNPJ 54.163.230/0001-09\n".
+            "DESTINATARIO / REMETENTE\n".
+            "BAKOF PLASTICOS LTDA\n".
+            "CNPJ 91.967.067/0001-55\n".
+            "NF-e N 000.014.317 SERIE 1"
+        );
+
+        $this->assertSame('91967067000155', $result['recipient_cnpj']);
+        $this->assertSame('54163230000109', $result['issuer_cnpj']);
+    }
+
     public function test_it_extracts_nfe_number_from_access_key(): void
     {
         $service = new PdfExtractionService(new Parser());
