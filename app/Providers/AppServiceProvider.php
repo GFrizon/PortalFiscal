@@ -8,9 +8,13 @@ use App\Models\User;
 use App\Policies\BusinessUnitPolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\UserPolicy;
+use App\Services\AiDocumentExtractionService;
+use App\Services\PdfExtractionService;
+use App\Services\PdfOcrService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
+use Smalot\PdfParser\Parser;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,7 +23,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(PdfExtractionService::class, function ($app): PdfExtractionService {
+            return new PdfExtractionService(
+                $app->make(Parser::class),
+                $app->make(PdfOcrService::class),
+                $app->make(AiDocumentExtractionService::class),
+            );
+        });
     }
 
     /**

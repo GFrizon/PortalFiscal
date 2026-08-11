@@ -3,11 +3,23 @@
 namespace Tests\Unit;
 
 use App\Services\AiDocumentExtractionService;
+use App\Services\PdfExtractionService;
 use Illuminate\Support\Facades\Http;
+use ReflectionClass;
 use Tests\TestCase;
 
 class AiDocumentExtractionServiceTest extends TestCase
 {
+    public function test_pdf_extraction_service_resolved_by_container_has_openai_fallback(): void
+    {
+        $service = app(PdfExtractionService::class);
+        $reflection = new ReflectionClass($service);
+        $property = $reflection->getProperty('aiExtractionService');
+        $property->setAccessible(true);
+
+        $this->assertInstanceOf(AiDocumentExtractionService::class, $property->getValue($service));
+    }
+
     public function test_it_reads_json_from_responses_api_output_content(): void
     {
         config([
