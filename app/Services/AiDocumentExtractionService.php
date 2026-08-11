@@ -84,7 +84,7 @@ class AiDocumentExtractionService
             }
 
             $payload = $response->json();
-            $outputText = trim((string) data_get($payload, 'output_text', ''));
+            $outputText = $this->extractOutputText(is_array($payload) ? $payload : []);
             $parsed = json_decode($outputText, true);
 
             if (! is_array($parsed)) {
@@ -174,6 +174,30 @@ TEXT;
                 'recipient_legal_name',
             ],
         ];
+    }
+
+    private function extractOutputText(array $payload): string
+    {
+        $directOutput = trim((string) data_get($payload, 'output_text', ''));
+
+        if ($directOutput !== '') {
+            return $directOutput;
+        }
+
+        $parts = [];
+
+        foreach ((array) data_get($payload, 'output', []) as $outputItem) {
+            foreach ((array) data_get($outputItem, 'content', []) as $contentItem) {
+                $type = (string) data_get($contentItem, 'type', '');
+                $text = (string) data_get($contentItem, 'text', '');
+
+                if (in_array($type, ['output_text', 'text'], true) && trim($text) !== '') {
+                    $parts[] = $text;
+                }
+            }
+        }
+
+        return trim(implode("\n", $parts));
     }
 
     private function cleanNullableString(mixed $value): ?string
