@@ -399,6 +399,12 @@ class PdfExtractionService
             return null;
         }
 
+        $nfseSectionName = $this->extractNfseLegalNameForCnpj($text, $cnpj);
+
+        if ($nfseSectionName) {
+            return $nfseSectionName;
+        }
+
         $lines = collect(preg_split('/\R/u', $text) ?: [])
             ->map(fn (string $line): string => trim(preg_replace('/\s+/', ' ', $line) ?? $line))
             ->filter()
@@ -432,6 +438,37 @@ class PdfExtractionService
 
                 if ($name) {
                     return $name;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function extractNfseLegalNameForCnpj(string $text, string $cnpj): ?string
+    {
+        $lines = collect(preg_split('/\R/u', $text) ?: [])
+            ->map(fn (string $line): string => trim(preg_replace('/\s+/', ' ', $line) ?? $line))
+            ->filter(fn (string $line): bool => $line !== '')
+            ->values()
+            ->all();
+
+        foreach ($lines as $index => $line) {
+            if (! str_contains($this->normalizeCnpj($line), $cnpj)) {
+                continue;
+            }
+
+            for ($position = $index - 1; $position >= max(0, $index - 8); $position--) {
+                $candidate = $lines[$position] ?? '';
+
+                if (! preg_match('/^nome\s*\/\s*nome\s+empresarial$/iu', $candidate)) {
+                    continue;
+                }
+
+                $name = $lines[$position + 1] ?? null;
+
+                if ($name && ($cleaned = $this->cleanLegalNameCandidate($name))) {
+                    return $cleaned;
                 }
             }
         }
@@ -571,6 +608,7 @@ class PdfExtractionService
         }
 
         $patterns = [
+            '/\bNUMERO\s+DA\s+NFS\s*E\b.{0,160}?\bCOMPETENCIA\s+DA\s+NFS\s*E\b.{0,160}?(\d{1,12})\s+\d{2}\s+\d{2}\s+\d{4}\b/i',
             '/\bNUMERO\s+DA\s+NFS\s*E\s*[:\-]?\s*(\d[\d\s\.]{0,18})\b/i',
             '/\bNUMERO\s+NFS\s*E\s*[:\-]?\s*(\d[\d\s\.]{0,18})\b/i',
             '/\bNFS\s*E\s+(?:N(?:O|UMERO)?\.?\s*)[:\-]?\s*(\d[\d\s\.]{0,18})\b/i',
@@ -609,6 +647,19 @@ class PdfExtractionService
     {
         $text = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text) ?: $text;
         $text = preg_replace('/[^A-Z0-9]+/i', ' ', $text) ?? $text;
+        $text = preg_replace([
+            '/\bN\s+UMERO\b/i',
+            '/\bCOMPET\s+ENCIA\b/i',
+            '/\bEMISS\s+AO\b/i',
+            '/\bC\s+ODIGO\b/i',
+            '/\bINSCRIC\s+AO\b/i',
+        ], [
+            'NUMERO',
+            'COMPETENCIA',
+            'EMISSAO',
+            'CODIGO',
+            'INSCRICAO',
+        ], $text) ?? $text;
 
         return trim(preg_replace('/\s+/', ' ', strtoupper($text)) ?? strtoupper($text));
     }

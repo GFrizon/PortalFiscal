@@ -305,6 +305,43 @@ class PdfExtractionServiceTest extends TestCase
         $this->assertNull($result['invoice_access_key']);
     }
 
+    public function test_it_extracts_nfse_number_from_danfse_column_header_layout(): void
+    {
+        BusinessUnit::factory()->create([
+            'name' => 'BAKOF RS',
+            'legal_name' => 'BAKOF PLASTICOS LTDA',
+            'cnpj' => '91967067000155',
+        ]);
+
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "DANFSe v1.0\n".
+            "Documento auxiliar da NFS-e\n".
+            "Chave de acesso da NFS-e\n".
+            "35290051202351877000900000000059270326064760853336\n".
+            "Numero da NFS-e Competencia da NFS-e Data e Hora da emissao da NFS-e\n".
+            "592703 21/06/2026 00:06 21/06/2026 03:06\n".
+            "EMITENTE DA NFS-e\n".
+            "Prestador de servico\n".
+            "Nome / Nome empresarial\n".
+            "LWSA S A\n".
+            "CNPJ / CPF / NIF\n".
+            "02.351.877/0009-00\n".
+            "TOMADOR DO SERVICO\n".
+            "Nome / Nome Empresarial\n".
+            "BAKOF PLASTICOS LTDA\n".
+            "CNPJ / CPF / NIF\n".
+            "91.967.067/0001-55"
+        );
+
+        $this->assertSame('592703', $result['invoice_number']);
+        $this->assertSame('02351877000900', $result['issuer_cnpj']);
+        $this->assertSame('LWSA S A', $result['issuer_legal_name']);
+        $this->assertSame('91967067000155', $result['recipient_cnpj']);
+        $this->assertSame('BAKOF PLASTICOS LTDA', $result['recipient_legal_name']);
+    }
+
     public function test_it_discards_suspicious_legal_name_candidates(): void
     {
         $service = new PdfExtractionService(new Parser());
