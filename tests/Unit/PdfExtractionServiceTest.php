@@ -147,6 +147,32 @@ class PdfExtractionServiceTest extends TestCase
         $this->assertSame('35260705462543000225550020007754591594506574', $result['invoice_access_key']);
     }
 
+    public function test_it_prefers_printed_issuer_cnpj_when_access_key_cnpj_conflicts_with_pdf_cnpj(): void
+    {
+        BusinessUnit::factory()->create([
+            'name' => 'BAKOF RS',
+            'legal_name' => 'BAKOF PLASTICOS LTDA',
+            'cnpj' => '91967067000155',
+        ]);
+
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "DESTINATARIO / REMETENTE\n".
+            "BAKOF PLASTICOS LTDA EM RECUPERACAO JUDICIAL\n".
+            "CNPJ/CPF 91.967.067/0001-55\n".
+            "CHAVE ACESSO\n".
+            "43260887958674000181558900684543221163137974\n".
+            "NATUREZA DA OPERACAO PROTOCOLO DE AUTORIZACAO DE USO\n".
+            "CPF/CNPJ Venda de Mercadoria 490064744 243260354293551 - 11/08/2026 16:02:26 46.349.446/0001-27\n".
+            "KW MOTORES E USINAGENS LTDA"
+        );
+
+        $this->assertSame('46349446000127', $result['issuer_cnpj']);
+        $this->assertSame('91967067000155', $result['recipient_cnpj']);
+        $this->assertSame('43260887958674000181558900684543221163137974', $result['invoice_access_key']);
+    }
+
     public function test_it_extracts_cte_number_from_valid_access_key(): void
     {
         $service = new PdfExtractionService(new Parser());

@@ -64,7 +64,7 @@ class PdfExtractionService
         $cnpjs = $this->extractCnpjs($text);
         $recipientCnpj = $this->identifyRecipientCnpj($cnpjs, $text);
         $accessKey = $this->extractAccessKey($text);
-        $issuerCnpj = $this->identifyIssuerCnpj($cnpjs, $recipientCnpj, $accessKey);
+        $issuerCnpj = $this->identifyIssuerCnpj($cnpjs, $recipientCnpj, $accessKey, $text);
 
         return [
             'success' => true,
@@ -219,6 +219,7 @@ class PdfExtractionService
             'DOCUMENTO AUXILIAR',
             'DANFE',
             'DACTE',
+            'RESERVADO AO FISCO',
         ];
 
         foreach ($blockedTerms as $term) {
@@ -416,24 +417,87 @@ class PdfExtractionService
         return preg_replace('/[^A-Z0-9]+/', '', strtoupper($text)) ?? '';
     }
 
-    private function identifyIssuerCnpj(array $cnpjs, ?string $recipientCnpj, ?string $accessKey = null): ?string
+    private function identifyIssuerCnpj(array $cnpjs, ?string $recipientCnpj, ?string $accessKey = null, string $text = ''): ?string
     {
+        $contextIssuerCnpj = $this->identifyIssuerCnpjByContext($cnpjs, $recipientCnpj, $text);
+        $printedIssuerCnpj = $contextIssuerCnpj ?? collect($cnpjs)
+            ->first(fn (string $cnpj) => $cnpj !== $recipientCnpj);
+
         if ($accessKey) {
             $accessKeyCnpj = substr($accessKey, 6, 14);
 
             if ($this->isValidCnpj($accessKeyCnpj) && $accessKeyCnpj !== $recipientCnpj) {
+                if ($printedIssuerCnpj && ! in_array($accessKeyCnpj, $cnpjs, true)) {
+                    return $printedIssuerCnpj;
+                }
+
                 return $accessKeyCnpj;
             }
         }
 
-        $issuerCnpj = collect($cnpjs)
-            ->first(fn (string $cnpj) => $cnpj !== $recipientCnpj);
-
-        if ($issuerCnpj) {
-            return $issuerCnpj;
+        if ($printedIssuerCnpj) {
+            return $printedIssuerCnpj;
         }
 
         return null;
+    }
+
+    private function identifyIssuerCnpjByContext(array $cnpjs, ?string $recipientCnpj, string $text): ?string
+    {
+        if ($cnpjs === [] || trim($text) === '') {
+            return null;
+        }
+
+        $lines = collect(preg_split('/\R/u', $text) ?: [])
+            ->map(fn (string $line): string => trim(preg_replace('/\s+/', ' ', $line) ?? $line))
+            ->filter(fn (string $line): bool => $line !== '')
+            ->values()
+            ->all();
+
+        $best = null;
+        $bestScore = 0;
+
+        foreach ($lines as $index => $line) {
+            $lineCnpjs = array_values(array_intersect($this->extractCnpjs($line), $cnpjs));
+
+            if ($lineCnpjs === []) {
+                continue;
+            }
+
+            $windowBefore = $this->normalizeReadableText(implode(' ', array_slice($lines, max(0, $index - 6), 6)));
+            $windowAfter = $this->normalizeReadableText(implode(' ', array_slice($lines, $index + 1, 6)));
+
+            foreach ($lineCnpjs as $cnpj) {
+                if ($cnpj === $recipientCnpj) {
+                    continue;
+                }
+
+                $score = 10;
+
+                if (preg_match('/(?:^|\s)(?:CNPJ|CPF\/CNPJ)\s*:?\s*$/i', $this->normalizeReadableText($lines[$index - 1] ?? ''))) {
+                    $score += 70;
+                }
+
+                if (str_contains($windowBefore, 'CHAVE ACESSO') || str_contains($windowBefore, 'NATUREZA DA OPERACAO')) {
+                    $score += 50;
+                }
+
+                if (str_contains($windowBefore, 'DANFE') || str_contains($windowAfter, 'DANFE')) {
+                    $score += 35;
+                }
+
+                if (str_contains($windowBefore, 'DESTINATARIO') || str_contains($windowBefore, 'TOMADOR DO SERVICO')) {
+                    $score -= 60;
+                }
+
+                if ($score > $bestScore) {
+                    $best = $cnpj;
+                    $bestScore = $score;
+                }
+            }
+        }
+
+        return $bestScore > 0 ? $best : null;
     }
 
     private function extractLegalNameNearCnpj(string $text, ?string $cnpj): ?string
@@ -475,7 +539,7 @@ class PdfExtractionService
                 }
             }
 
-            foreach ([1, 2, 3] as $distance) {
+            foreach ([1, 2, 3, 4, 5] as $distance) {
                 $next = $lines[$index + $distance] ?? null;
                 $name = $next ? $this->cleanLegalNameCandidate($next) : null;
 
