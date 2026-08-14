@@ -57,6 +57,9 @@ class InvoiceController extends Controller
         $defaultStatusValues = array_map(fn (InvoiceStatus $status): string => $status->value, $defaultStatuses);
         $filterableStatusValues = array_map(fn (InvoiceStatus $status): string => $status->value, $filterableStatuses);
         $selectedStatus = $request->string('status')->toString();
+        if ($selectedStatus === '' && $request->filled('launched_by')) {
+            $selectedStatus = InvoiceStatus::Launched->value;
+        }
         $statusValues = in_array($selectedStatus, $filterableStatusValues, true)
             ? [$selectedStatus]
             : $defaultStatusValues;
@@ -82,6 +85,9 @@ class InvoiceController extends Controller
 
         $query = Invoice::query()
             ->with(['businessUnit:id,name', 'submitter:id,name', 'purchaseOrderCheck:id,invoice_id,supplier_name'])
+            ->withCount([
+                'histories as draft_follow_ups_count' => fn ($query) => $query->where('action', 'Acompanhamento do rascunho'),
+            ])
             ->whereIn('status', $statusValues);
 
         InvoiceVisibility::apply($query, $request->user());
@@ -111,6 +117,10 @@ class InvoiceController extends Controller
                         $query->where('supplier_name', 'like', '%'.$supplier.'%');
                     });
             });
+        }
+
+        if ($request->filled('launched_by')) {
+            $query->where('fiscal_user_id', $request->integer('launched_by'));
         }
 
         if ($request->string('business_unit_id')->toString() === 'none') {
@@ -149,13 +159,22 @@ class InvoiceController extends Controller
             ->selectRaw('business_unit_id, count(*) as total')
             ->groupBy('business_unit_id')
             ->get();
+        $filters = $request->only(['protocol', 'purchase_order_number', 'supplier', 'status', 'business_unit_id', 'sort', 'direction', 'launched_by']);
+
+        if ($selectedStatus !== '') {
+            $filters['status'] = $selectedStatus;
+        }
 
         return view('invoices.index', [
             'invoices' => $query->paginate(15)->withQueryString(),
             'businessUnits' => BusinessUnit::query()->orderBy('name')->get(['id', 'name']),
+            'launchUsers' => User::query()
+                ->whereIn('id', Invoice::query()->select('fiscal_user_id')->whereNotNull('fiscal_user_id')->distinct())
+                ->orderBy('name')
+                ->get(['id', 'name']),
             'statuses' => $filterableStatuses,
             'unitSummary' => $unitSummary,
-            'filters' => $request->only(['protocol', 'purchase_order_number', 'supplier', 'status', 'business_unit_id', 'sort', 'direction']),
+            'filters' => $filters,
             'sort' => $sort,
             'direction' => $direction,
         ]);

@@ -2205,6 +2205,115 @@ class NavigationAuditTest extends TestCase
             ->assertSee('Nao identificada');
     }
 
+    public function test_invoice_show_back_button_preserves_index_filters(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $unit = BusinessUnit::factory()->create([
+            'name' => 'BAKOF RS',
+        ]);
+        $invoice = Invoice::factory()->create([
+            'business_unit_id' => $unit->id,
+            'status' => InvoiceStatus::Pending->value,
+            'purchase_order_number' => '103960',
+            'invoice_number' => '68454322',
+            'issuer_legal_name' => 'KW MOTORES E USINAGENS LTDA',
+        ]);
+
+        $indexUrl = route('invoices.index', [
+            'business_unit_id' => $unit->id,
+            'purchase_order_number' => '68454322',
+            'supplier' => 'KW',
+            'status' => InvoiceStatus::Pending->value,
+            'sort' => 'created',
+            'direction' => 'desc',
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->get($indexUrl)
+            ->assertOk()
+            ->assertSee('KW MOTORES');
+
+        $response->assertSee('href="'.route('invoices.show', $invoice).'?return=', false);
+        $response->assertSee('purchase_order_number%3D68454322', false);
+        $response->assertSee('supplier%3DKW', false);
+        $response->assertSee('status%3Dpending', false);
+
+        $this->actingAs($admin)
+            ->get(route('invoices.show', ['invoice' => $invoice, 'return' => $indexUrl]))
+            ->assertOk()
+            ->assertSee('href="'.e($indexUrl).'"', false);
+    }
+
+    public function test_invoice_index_marks_draft_with_follow_up(): void
+    {
+        $user = User::factory()->create();
+
+        $draftWithFollowUp = Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'protocol' => 'NF-2026-DRAFT-WITH',
+            'status' => InvoiceStatus::Draft->value,
+            'invoice_number' => '700101',
+        ]);
+
+        Invoice::factory()->create([
+            'submitted_by' => $user->id,
+            'protocol' => 'NF-2026-DRAFT-PLAIN',
+            'status' => InvoiceStatus::Draft->value,
+            'invoice_number' => '700102',
+        ]);
+
+        $draftWithFollowUp->histories()->create([
+            'user_id' => $user->id,
+            'action' => 'Acompanhamento do rascunho',
+            'previous_status' => InvoiceStatus::Draft,
+            'new_status' => InvoiceStatus::Draft,
+            'note' => 'Conferir OC antes de enviar.',
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('invoices.index', ['status' => InvoiceStatus::Draft->value]))
+            ->assertOk()
+            ->assertSee('Rascunho com acompanhamento')
+            ->assertSee('draft-follow-up-indicator', false)
+            ->assertSee('700101')
+            ->assertSee('700102');
+
+        $this->assertSame(1, substr_count($response->getContent(), 'draft-follow-up-indicator'));
+    }
+
+    public function test_invoice_index_filters_by_user_who_launched_invoice(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $firstFiscal = User::factory()->fiscal()->create([
+            'name' => 'Fiscal Livia',
+        ]);
+        $secondFiscal = User::factory()->fiscal()->create([
+            'name' => 'Fiscal Bruno',
+        ]);
+
+        Invoice::factory()->create([
+            'invoice_number' => '710001',
+            'status' => InvoiceStatus::Launched->value,
+            'fiscal_user_id' => $firstFiscal->id,
+            'launched_at' => now(),
+        ]);
+
+        Invoice::factory()->create([
+            'invoice_number' => '710002',
+            'status' => InvoiceStatus::Launched->value,
+            'fiscal_user_id' => $secondFiscal->id,
+            'launched_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('invoices.index', ['launched_by' => $firstFiscal->id]))
+            ->assertOk()
+            ->assertSee('Lancado por')
+            ->assertSee('Fiscal Livia')
+            ->assertSee('710001')
+            ->assertDontSee('710002');
+    }
+
     public function test_invoice_index_only_shows_operational_statuses(): void
     {
         $admin = User::factory()->admin()->create();

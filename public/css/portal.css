@@ -2656,6 +2656,20 @@ textarea.form-control {
     box-shadow: 0 0 0 3px rgba(47, 127, 163, .08);
 }
 
+.draft-follow-up-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    border: 1px solid rgba(194, 127, 19, .34);
+    background: #fff4cc;
+    color: #9a6105;
+    font-size: .82rem;
+    box-shadow: 0 0 0 3px rgba(194, 127, 19, .09);
+}
+
 .launched-indicator {
     display: inline-flex;
     align-items: center;
@@ -6235,6 +6249,7 @@ body.is-navigating .app-main {
 .invoice-list-scroll .entity-icon,
 .invoice-list-scroll .urgent-indicator,
 .invoice-list-scroll .draft-indicator,
+.invoice-list-scroll .draft-follow-up-indicator,
 .invoice-list-scroll .launched-indicator {
     width: 24px;
     height: 24px;

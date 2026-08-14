@@ -23,6 +23,7 @@
                 'purchase_order_number' => $filters['purchase_order_number'] ?? null,
                 'supplier' => $filters['supplier'] ?? null,
                 'status' => $filters['status'] ?? null,
+                'launched_by' => $filters['launched_by'] ?? null,
                 'sort' => $column,
                 'direction' => $nextDirection,
             ], fn ($value) => filled($value)));
@@ -67,6 +68,14 @@
                     </option>
                 @endforeach
             </select>
+            <select class="form-select" name="launched_by" aria-label="Filtrar por usuario que lancou">
+                <option value="">Lancado por</option>
+                @foreach($launchUsers as $launchUser)
+                    <option value="{{ $launchUser->id }}" @selected((string) ($filters['launched_by'] ?? '') === (string) $launchUser->id)>
+                        {{ $launchUser->name }}
+                    </option>
+                @endforeach
+            </select>
             <a class="btn btn-outline-secondary btn-sm" href="{{ $selectedUnitId !== '' ? route('invoices.index', ['business_unit_id' => $selectedUnitId]) : route('invoices.index') }}">
                 <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
             </a>
@@ -107,6 +116,7 @@
                         'status' => $filters['status'] ?? null,
                         'purchase_order_number' => $filters['purchase_order_number'] ?? null,
                         'supplier' => $filters['supplier'] ?? null,
+                        'launched_by' => $filters['launched_by'] ?? null,
                         'sort' => $filters['sort'] ?? null,
                         'direction' => $filters['direction'] ?? null,
                     ], fn ($value) => filled($value)));
@@ -158,13 +168,19 @@
                 <tbody>
                 @forelse($invoices as $invoice)
                     @php($documentType = $invoice->documentType())
+                    @php($hasDraftFollowUps = $invoice->status === \App\Enums\InvoiceStatus::Draft && (int) ($invoice->draft_follow_ups_count ?? 0) > 0)
                     <tr @class([
                         'invoice-row-draft' => $invoice->status === \App\Enums\InvoiceStatus::Draft,
                         'invoice-row-urgent' => $invoice->is_urgent,
                         'invoice-row-launched' => $invoice->status === \App\Enums\InvoiceStatus::Launched,
                     ])>
-                        <td class="col-priority {{ $invoice->is_urgent || in_array($invoice->status, [\App\Enums\InvoiceStatus::Draft, \App\Enums\InvoiceStatus::Launched], true) ? '' : 'priority-empty' }}" data-label="Prioridade">
-                            @if($invoice->status === \App\Enums\InvoiceStatus::Draft)
+                        <td class="col-priority {{ $invoice->is_urgent || $hasDraftFollowUps || in_array($invoice->status, [\App\Enums\InvoiceStatus::Draft, \App\Enums\InvoiceStatus::Launched], true) ? '' : 'priority-empty' }}" data-label="Prioridade">
+                            @if($hasDraftFollowUps)
+                                <span class="draft-follow-up-indicator" title="Rascunho com acompanhamento" aria-label="Rascunho com acompanhamento">
+                                    <i class="bi bi-chat-dots" aria-hidden="true"></i>
+                                    <span class="visually-hidden">Rascunho com acompanhamento</span>
+                                </span>
+                            @elseif($invoice->status === \App\Enums\InvoiceStatus::Draft)
                                 <span class="draft-indicator" title="Rascunho" aria-label="Rascunho">
                                     <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
                                     <span class="visually-hidden">Rascunho</span>
@@ -207,7 +223,7 @@
                             </div>
                         </td>
                         <td class="text-end row-actions" data-label="Acoes">
-                            <a href="{{ route('invoices.show', $invoice) }}" class="btn btn-sm btn-outline-primary btn-open-invoice" aria-label="Abrir {{ $invoice->protocol }}">
+                            <a href="{{ route('invoices.show', ['invoice' => $invoice, 'return' => request()->fullUrl()]) }}" class="btn btn-sm btn-outline-primary btn-open-invoice" aria-label="Abrir {{ $invoice->protocol }}">
                                 Abrir
                             </a>
                         </td>

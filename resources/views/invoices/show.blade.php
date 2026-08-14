@@ -39,6 +39,9 @@
         ->filter(fn ($alert) => ! $alert->resolved && ($alert->level === \App\Enums\AlertLevel::Critical || $alert->type->blocksLaunch()))
         ->values())
     @php($launchBlockingLabels = $launchBlockingAlerts->map(fn ($alert) => $alert->type->label())->unique()->implode(', '))
+    @php($returnToIndex = filled(request('return')) && str_starts_with((string) request('return'), url('/'))
+        ? (string) request('return')
+        : route('invoices.index'))
 
     <div class="invoice-detail-page {{ $isPendingResponse ? 'has-pending-callout' : '' }}">
         <div class="section-toolbar mb-3">
@@ -47,7 +50,7 @@
                 <div class="section-title">Detalhes e conferencia</div>
             </div>
             <div class="toolbar-actions">
-                <a href="{{ route('invoices.index') }}" class="btn btn-outline-secondary">
+                <a href="{{ $returnToIndex }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left" aria-hidden="true"></i>
                     Voltar
                 </a>
