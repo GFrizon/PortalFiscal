@@ -244,7 +244,13 @@ class PdfExtractionService
 
     private function hasReadableText(?string $text): bool
     {
-        return strlen(trim((string) preg_replace('/\s+/', ' ', (string) $text))) >= 20;
+        $normalized = trim((string) preg_replace('/\s+/', ' ', (string) $text));
+        $letters = preg_replace('/[^\p{L}]/u', '', $normalized) ?? '';
+        $digits = preg_replace('/\D/', '', $normalized) ?? '';
+
+        return strlen($normalized) >= 20
+            && strlen($letters) >= 8
+            && (strlen($letters) + strlen($digits)) >= 20;
     }
 
     private function emptyExtractionResult(string $error, string $source): array

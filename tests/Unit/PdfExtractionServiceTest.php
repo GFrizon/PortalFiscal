@@ -459,6 +459,49 @@ class PdfExtractionServiceTest extends TestCase
         $this->assertSame('91967067000155', $result['recipient_cnpj']);
     }
 
+    public function test_it_uses_ai_fallback_when_pdf_parser_returns_only_numeric_identifier(): void
+    {
+        BusinessUnit::factory()->create([
+            'name' => 'BAKOF RS',
+            'legal_name' => 'BAKOF PLASTICOS LTDA',
+            'cnpj' => '91967067000155',
+        ]);
+
+        $document = \Mockery::mock(Document::class);
+        $document->shouldReceive('getText')->once()->andReturn('2026-178258701-01-001-04-4');
+
+        $parser = \Mockery::mock(Parser::class);
+        $parser->shouldReceive('parseFile')->once()->with('corsan.pdf')->andReturn($document);
+
+        $ai = new class extends AiDocumentExtractionService
+        {
+            public function extract(string $absolutePath): array
+            {
+                return [
+                    'success' => true,
+                    'invoice_number' => '985315',
+                    'invoice_access_key' => null,
+                    'issuer_cnpj' => '12345678000195',
+                    'issuer_legal_name' => 'COMPANHIA RIOGRANDENSE DE SANEAMENTO',
+                    'recipient_cnpj' => '91967067000155',
+                    'recipient_legal_name' => 'BAKOF PLASTICOS LTDA',
+                    'error' => null,
+                    'source' => 'ai',
+                ];
+            }
+        };
+
+        $service = new PdfExtractionService($parser, null, $ai);
+
+        $result = $service->extract('corsan.pdf');
+
+        $this->assertTrue($result['success']);
+        $this->assertSame('blank+ai', $result['source']);
+        $this->assertSame('985315', $result['invoice_number']);
+        $this->assertSame('12345678000195', $result['issuer_cnpj']);
+        $this->assertSame('91967067000155', $result['recipient_cnpj']);
+    }
+
     public function test_it_uses_ocr_when_pdf_has_no_searchable_text(): void
     {
         BusinessUnit::factory()->create([
