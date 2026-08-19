@@ -583,6 +583,43 @@ class PdfExtractionServiceTest extends TestCase
         $this->assertSame('91967067000155', $result['recipient_cnpj']);
     }
 
+    public function test_it_uses_ai_fallback_when_recipient_unit_is_missing(): void
+    {
+        $document = \Mockery::mock(Document::class);
+        $document->shouldReceive('getText')->once()->andReturn(
+            "NF-e 12345\nEmitente FORNECEDOR TESTE LTDA\nCNPJ 12.345.678/0001-95"
+        );
+
+        $parser = \Mockery::mock(Parser::class);
+        $parser->shouldReceive('parseFile')->once()->with('missing-recipient.pdf')->andReturn($document);
+
+        $ai = new class extends AiDocumentExtractionService
+        {
+            public function extract(string $absolutePath): array
+            {
+                return [
+                    'success' => true,
+                    'invoice_number' => '12345',
+                    'invoice_access_key' => null,
+                    'issuer_cnpj' => '12345678000195',
+                    'issuer_legal_name' => 'FORNECEDOR TESTE LTDA',
+                    'recipient_cnpj' => '91967067000155',
+                    'recipient_legal_name' => 'BAKOF PLASTICOS LTDA',
+                    'error' => null,
+                    'source' => 'ai',
+                ];
+            }
+        };
+
+        $service = new PdfExtractionService($parser, null, $ai);
+
+        $result = $service->extract('missing-recipient.pdf');
+
+        $this->assertSame('text+ai', $result['source']);
+        $this->assertSame('12345', $result['invoice_number']);
+        $this->assertSame('91967067000155', $result['recipient_cnpj']);
+    }
+
     public function test_it_uses_ocr_when_pdf_has_no_searchable_text(): void
     {
         BusinessUnit::factory()->create([

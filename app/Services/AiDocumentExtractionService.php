@@ -134,6 +134,8 @@ Regras:
 - issuer_legal_name = razao social do emitente/fornecedor da nota.
 - recipient_legal_name = razao social do destinatario/tomador, quando visivel.
 - Em faturas de agua, energia, telefone, internet ou servicos publicos, recipient_legal_name/recipient_cnpj = cliente, pagador, usuario, titular ou unidade consumidora que recebe a cobranca.
+- Quando houver matriz/filial, unidade, endereco de entrega, tomador, destinatario ou cliente BAKOF, escolha como recipient_cnpj o CNPJ da filial/unidade que recebeu a nota/cobranca.
+- Nao use o CNPJ do emitente/fornecedor como recipient_cnpj.
 - issuer_cnpj e recipient_cnpj devem sair apenas com digitos.
 - invoice_number deve sair apenas com digitos, sem serie, sem protocolo e sem codigo de verificacao.
 - invoice_access_key deve sair apenas com os 44 digitos da chave, quando existir.

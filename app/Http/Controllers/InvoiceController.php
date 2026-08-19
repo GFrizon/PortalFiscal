@@ -14,6 +14,7 @@ use App\Mail\InvoicePendingResolvedMail;
 use App\Models\BusinessUnit;
 use App\Models\Invoice;
 use App\Models\User;
+use App\Services\BusinessUnitIdentificationService;
 use App\Services\InvoiceAlertService;
 use App\Services\InvoiceHistoryService;
 use App\Services\InvoiceService;
@@ -208,7 +209,8 @@ class InvoiceController extends Controller
         PdfStorageService $pdfStorageService,
         PurchaseOrderService $purchaseOrderService,
         InvoiceHistoryService $historyService,
-        InvoiceAlertService $alertService
+        InvoiceAlertService $alertService,
+        BusinessUnitIdentificationService $businessUnitIdentificationService
     ): RedirectResponse|JsonResponse {
         $isDraft = $request->isDraftIntent();
         $uploadedFile = $request->file('pdf');
@@ -238,13 +240,7 @@ class InvoiceController extends Controller
             $this->ensurePurchaseOrderCanBeSubmitted($precheckedPurchaseOrder, $issuerCnpj, 'enviar para conferencia');
         }
 
-        $businessUnit = null;
-
-        if ($extracted['recipient_cnpj']) {
-            $businessUnit = BusinessUnit::query()
-                ->where('cnpj', $extracted['recipient_cnpj'])
-                ->first();
-        }
+        $businessUnit = $businessUnitIdentificationService->identify($extracted);
 
         $storedPdf = $pdfStorageService->store($uploadedFile, $businessUnit);
 
@@ -371,14 +367,15 @@ class InvoiceController extends Controller
         PurchaseOrderService $purchaseOrderService,
         PdfExtractionService $pdfExtractionService,
         InvoiceAlertService $alertService,
-        InvoiceHistoryService $historyService
+        InvoiceHistoryService $historyService,
+        BusinessUnitIdentificationService $businessUnitIdentificationService
     ): RedirectResponse|JsonResponse {
         $this->authorize('update', $invoice);
 
         $refreshedExtraction = null;
 
         if ($invoice->status === InvoiceStatus::Draft && ! $request->isDraftIntent()) {
-            $refreshedExtraction = $this->refreshInvoiceExtractionFromStoredPdf($invoice, $pdfExtractionService);
+            $refreshedExtraction = $this->refreshInvoiceExtractionFromStoredPdf($invoice, $pdfExtractionService, $businessUnitIdentificationService);
             $invoice->refresh();
         }
 
@@ -545,7 +542,11 @@ class InvoiceController extends Controller
         }
     }
 
-    private function refreshInvoiceExtractionFromStoredPdf(Invoice $invoice, PdfExtractionService $pdfExtractionService): ?array
+    private function refreshInvoiceExtractionFromStoredPdf(
+        Invoice $invoice,
+        PdfExtractionService $pdfExtractionService,
+        BusinessUnitIdentificationService $businessUnitIdentificationService
+    ): ?array
     {
         if (blank($invoice->pdf_path) || ! Storage::disk('local')->exists($invoice->pdf_path)) {
             return null;
@@ -553,13 +554,7 @@ class InvoiceController extends Controller
 
         $extracted = $pdfExtractionService->extract(Storage::disk('local')->path($invoice->pdf_path));
         $recipientCnpj = $extracted['recipient_cnpj'] ?? null;
-        $businessUnit = null;
-
-        if ($recipientCnpj) {
-            $businessUnit = BusinessUnit::query()
-                ->where('cnpj', $recipientCnpj)
-                ->first();
-        }
+        $businessUnit = $businessUnitIdentificationService->identify($extracted);
 
         $invoice->forceFill([
             'business_unit_id' => $businessUnit?->id ?? $invoice->business_unit_id,

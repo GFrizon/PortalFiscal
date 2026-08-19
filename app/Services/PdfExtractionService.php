@@ -110,6 +110,7 @@ class PdfExtractionService
 
         return blank($result['invoice_number'] ?? null)
             || blank($result['issuer_cnpj'] ?? null)
+            || (blank($result['recipient_cnpj'] ?? null) && blank($result['recipient_legal_name'] ?? null))
             || $this->looksSuspiciousLegalName($result['issuer_legal_name'] ?? null)
             || $this->looksSuspiciousLegalName($result['recipient_legal_name'] ?? null);
     }

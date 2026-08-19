@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Enums\AlertType;
-use App\Models\BusinessUnit;
 use App\Models\Invoice;
+use App\Services\BusinessUnitIdentificationService;
 use App\Services\PdfExtractionService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +17,7 @@ class IdentifyInvoiceUnitsCommand extends Command
 
     protected $description = 'Reprocess stored PDFs and identify invoice business units.';
 
-    public function handle(PdfExtractionService $pdfExtractionService): int
+    public function handle(PdfExtractionService $pdfExtractionService, BusinessUnitIdentificationService $businessUnitIdentificationService): int
     {
         $dryRun = (bool) $this->option('dry-run');
         $checked = 0;
@@ -28,7 +28,7 @@ class IdentifyInvoiceUnitsCommand extends Command
             ->whereNotNull('pdf_path')
             ->orderBy('id');
 
-        $query->chunkById(50, function ($invoices) use ($pdfExtractionService, $dryRun, &$checked, &$identified): void {
+        $query->chunkById(50, function ($invoices) use ($pdfExtractionService, $businessUnitIdentificationService, $dryRun, &$checked, &$identified): void {
             foreach ($invoices as $invoice) {
                 $checked++;
 
@@ -48,21 +48,17 @@ class IdentifyInvoiceUnitsCommand extends Command
                     'recipient_legal_name' => $invoice->recipient_legal_name ?: ($extracted['recipient_legal_name'] ?? null),
                 ];
 
-                if (! $recipientCnpj) {
+                $businessUnit = $businessUnitIdentificationService->identify($extracted);
+
+                if (! $businessUnit) {
                     if (! $dryRun && array_filter($updates, fn ($value): bool => filled($value))) {
                         $invoice->forceFill($updates)->save();
                     }
 
-                    $this->line("Still unidentified {$invoice->protocol}");
-                    continue;
-                }
-
-                $businessUnit = BusinessUnit::query()
-                    ->where('cnpj', $recipientCnpj)
-                    ->first();
-
-                if (! $businessUnit) {
-                    $this->line("No registered unit for {$invoice->protocol}: {$recipientCnpj}");
+                    $this->line($recipientCnpj
+                        ? "No registered unit for {$invoice->protocol}: {$recipientCnpj}"
+                        : "Still unidentified {$invoice->protocol}"
+                    );
                     continue;
                 }
 
