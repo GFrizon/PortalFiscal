@@ -70,7 +70,7 @@
             </div>
             <div class="d-flex justify-content-between align-items-center">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="remember" value="1" id="remember">
+                    <input class="form-check-input" type="checkbox" name="remember" value="1" id="remember" checked>
                     <label class="form-check-label" for="remember">Manter conectado</label>
                 </div>
                 <a href="{{ route('password.request') }}" class="small">Recuperar senha</a>
