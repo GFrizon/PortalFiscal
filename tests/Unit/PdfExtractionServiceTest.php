@@ -342,6 +342,50 @@ class PdfExtractionServiceTest extends TestCase
         $this->assertNull($result['invoice_access_key']);
     }
 
+    public function test_it_extracts_nfse_number_from_national_label_with_next_line_value(): void
+    {
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "Data Competencia\n".
+            "17/04/2026\n".
+            "Numero NFS-e Nacional\n".
+            "71\n".
+            "Data de Emissao\n".
+            "17/04/2026 08:35\n".
+            "Numero DPS / Serie DPS\n".
+            "71 / 10\n".
+            "NOTA FISCAL DE SERVICOS ELETRONICA - NFS-e"
+        );
+
+        $this->assertSame('71', $result['invoice_number']);
+    }
+
+    public function test_it_extracts_nfse_number_from_glued_danfse_heading(): void
+    {
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "DATACIENTIFICACAO IDENTIFICACAOEASSINATURA N NFS-e/CHAVENFS-e\n".
+            "87/43187052226788382000153000000000008726083062852848\n".
+            "DANFSev2.0\n".
+            "DocumentoAuxiliardaNFS-e\n".
+            "CHAVEDEACESSODANFS-e\n".
+            "43187052226788382000153000000000008726083062852848\n".
+            "N UMERODANFS-e\n".
+            "87\n".
+            "COMPET ENCIA DANFS-e\n".
+            "05/08/2026\n".
+            "PRESTADOR /FORNECEDOR CNPJ/CPF/NIF\n".
+            "26.788.382/0001-53\n".
+            "Nome/NomeEmpresarial\n".
+            "FSTECNOLOGIADESISTEMASLTDA"
+        );
+
+        $this->assertSame('87', $result['invoice_number']);
+        $this->assertSame('FSTECNOLOGIADESISTEMASLTDA', $result['issuer_legal_name']);
+    }
+
     public function test_it_prefers_nfse_number_over_verification_code(): void
     {
         $service = new PdfExtractionService(new Parser());

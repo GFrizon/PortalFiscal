@@ -215,6 +215,10 @@ class PdfExtractionService
             return true;
         }
 
+        if (preg_match('/documento\s*auxiliar|danfs?e/iu', (string) $name)) {
+            return true;
+        }
+
         if ($this->looksLikeDocumentNumberWithoutLetters((string) $name) || preg_match('/\d{6,}/', $normalized)) {
             return true;
         }
@@ -229,6 +233,7 @@ class PdfExtractionService
             'DOCUMENTO AUXILIAR',
             'NOTA FISCAL ELETRONICA',
             'DANFE',
+            'DANFSE',
             'DACTE',
             'RESERVADO AO FISCO',
         ];
@@ -621,7 +626,32 @@ class PdfExtractionService
             for ($position = $index - 1; $position >= max(0, $index - 8); $position--) {
                 $candidate = $lines[$position] ?? '';
 
-                if (! preg_match('/^nome\s*\/\s*nome\s+empresarial$/iu', $candidate)) {
+                $normalizedCandidate = $this->normalizeReadableText($candidate);
+
+                if (
+                    ! preg_match('/^nome\s*\/\s*nome\s+empresarial$/iu', $candidate)
+                    && ! str_contains($normalizedCandidate, 'NOME NOMEEMPRESARIAL')
+                    && ! str_contains($normalizedCandidate, 'NOME NOME EMPRESARIAL')
+                ) {
+                    continue;
+                }
+
+                $name = $lines[$position + 1] ?? null;
+
+                if ($name && ($cleaned = $this->cleanLegalNameCandidate($name))) {
+                    return $cleaned;
+                }
+            }
+
+            for ($position = $index + 1; $position <= min(count($lines) - 2, $index + 8); $position++) {
+                $candidate = $lines[$position] ?? '';
+                $normalizedCandidate = $this->normalizeReadableText($candidate);
+
+                if (
+                    ! preg_match('/^nome\s*\/\s*nome\s+empresarial$/iu', $candidate)
+                    && ! str_contains($normalizedCandidate, 'NOME NOMEEMPRESARIAL')
+                    && ! str_contains($normalizedCandidate, 'NOME NOME EMPRESARIAL')
+                ) {
                     continue;
                 }
 
@@ -649,6 +679,7 @@ class PdfExtractionService
     {
         $candidate = trim(preg_replace('/\s+/', ' ', $candidate) ?? $candidate);
         $candidate = preg_replace('/^(?:EMITENTE|REMETENTE|DESTINATARIO|DESTINATARIO\s*\/\s*REMETENTE|TOMADOR|EXPEDIDOR|RECEBEDOR|TRANSPORTADOR|NOME\s*\/?\s*RAZAO\s+SOCIAL|RAZAO\s+SOCIAL|NOME)\s*[:\-]?\s*/iu', '', $candidate) ?? $candidate;
+        $candidate = preg_replace('/^\d{2}\.?\d{3}\.?\d{3}\s*/u', '', $candidate) ?? $candidate;
         $candidate = trim($candidate, " \t\n\r\0\x0B:-|");
 
         if ($candidate === '') {
@@ -662,6 +693,7 @@ class PdfExtractionService
             || preg_match('/^\d+$/', $normalized)
             || preg_match('/^\d?\s*:?\s*(?:entrada|sa[íi]da)$/iu', $candidate)
             || preg_match('/nota\s+fiscal\s+eletr/iu', $candidate)
+            || preg_match('/documento\s*auxiliar|danfs?e/iu', $candidate)
             || strlen(preg_replace('/\D/', '', $candidate) ?? '') >= 20
             || $this->looksLikeDocumentNumberWithoutLetters($candidate)
         ) {
@@ -694,6 +726,7 @@ class PdfExtractionService
             'NUMERO',
             'SERIE',
             'DANFE',
+            'DANFSE',
             'DACTE',
             'DOCUMENTO AUXILIAR',
             'NOTA FISCAL ELETRONICA',
@@ -786,6 +819,7 @@ class PdfExtractionService
         }
 
         $patterns = [
+            '/\bNUMERO\s+NFS\s*E\s+NACIONAL\s+(\d{1,12})\b/i',
             '/\bNUMERO\s+DA\s+NFS\s*E\b.{0,160}?\bCOMPETENCIA\s+DA\s+NFS\s*E\b.{0,160}?(\d{1,12})\s+\d{2}\s+\d{2}\s+\d{4}\b/i',
             '/\bNUMERO\s+DA\s+NFS\s*E\s*[:\-]?\s*(\d[\d\s\.]{0,18})\b/i',
             '/\bNUMERO\s+NFS\s*E\s*[:\-]?\s*(\d[\d\s\.]{0,18})\b/i',
@@ -826,13 +860,35 @@ class PdfExtractionService
         $text = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text) ?: $text;
         $text = preg_replace('/[^A-Z0-9]+/i', ' ', $text) ?? $text;
         $text = preg_replace([
+            '/\bN\s+UMERODANFS\b/i',
+            '/\bN\s+UMERODANFSE\b/i',
+            '/\bN\s+UMERODADPS\b/i',
             '/\bN\s+UMERO\b/i',
+            '/\bNUMERODANFS\b/i',
+            '/\bNUMERODANFSE\b/i',
+            '/\bNUMERONFS\b/i',
+            '/\bCOMPET\s+ENCIADANFS\b/i',
+            '/\bCOMPET\s+ENCIA\s+DANFS\b/i',
+            '/\bCOMPETENCIADANFS\b/i',
+            '/\bDATAEHORADAEMISS\s+AODANFS\b/i',
+            '/\bDATAEHORADAEMISSAODANFS\b/i',
             '/\bCOMPET\s+ENCIA\b/i',
             '/\bEMISS\s+AO\b/i',
             '/\bC\s+ODIGO\b/i',
             '/\bINSCRIC\s+AO\b/i',
         ], [
+            'NUMERO DA NFS',
+            'NUMERO DA NFS E',
+            'NUMERO DA DPS',
             'NUMERO',
+            'NUMERO DA NFS',
+            'NUMERO DA NFS E',
+            'NUMERO NFS',
+            'COMPETENCIA DA NFS',
+            'COMPETENCIA DA NFS',
+            'COMPETENCIA DA NFS',
+            'DATA E HORA DA EMISSAO DA NFS',
+            'DATA E HORA DA EMISSAO DA NFS',
             'COMPETENCIA',
             'EMISSAO',
             'CODIGO',
