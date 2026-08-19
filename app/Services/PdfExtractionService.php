@@ -65,6 +65,8 @@ class PdfExtractionService
         $recipientCnpj = $this->identifyRecipientCnpj($cnpjs, $text);
         $accessKey = $this->extractAccessKey($text);
         $issuerCnpj = $this->identifyIssuerCnpj($cnpjs, $recipientCnpj, $accessKey, $text);
+        $issuerLegalName = $this->sanitizeExtractedLegalName($this->extractLegalNameNearCnpj($text, $issuerCnpj))
+            ?? $this->sanitizeExtractedLegalName($this->extractIssuerLegalNameFromReceiptLine($text));
 
         return [
             'success' => true,
@@ -74,7 +76,7 @@ class PdfExtractionService
             'recipient_cnpj' => $recipientCnpj,
             'invoice_number' => $this->extractInvoiceNumber($text, $accessKey),
             'invoice_access_key' => $accessKey,
-            'issuer_legal_name' => $this->sanitizeExtractedLegalName($this->extractLegalNameNearCnpj($text, $issuerCnpj)),
+            'issuer_legal_name' => $issuerLegalName,
             'recipient_legal_name' => $this->sanitizeExtractedLegalName($this->extractLegalNameNearCnpj($text, $recipientCnpj)),
             'error' => null,
             'source' => $source,
@@ -205,6 +207,14 @@ class PdfExtractionService
             return true;
         }
 
+        if (preg_match('/nota\s+fiscal\s+eletr/iu', (string) $name)) {
+            return true;
+        }
+
+        if (preg_match('/natureza\s+da\s+opera/iu', (string) $name)) {
+            return true;
+        }
+
         if ($this->looksLikeDocumentNumberWithoutLetters((string) $name) || preg_match('/\d{6,}/', $normalized)) {
             return true;
         }
@@ -217,6 +227,7 @@ class PdfExtractionService
             'ORDEM DE COMPRA',
             'PEDIDO',
             'DOCUMENTO AUXILIAR',
+            'NOTA FISCAL ELETRONICA',
             'DANFE',
             'DACTE',
             'RESERVADO AO FISCO',
@@ -285,9 +296,10 @@ class PdfExtractionService
         $normalizedText = str_replace(["\u{00A0}", "\u{2007}", "\u{202F}"], ' ', $text);
 
         preg_match_all('/(?<!\d)(\d{2}\s*\.\s*\d{3}\s*\.\s*\d{3}\s*[\.\/]\s*\d{4}\s*-\s*\d{2})(?!\d)/u', $normalizedText, $formattedMatches);
+        preg_match_all('/(?<!\d)(\d{2}\s*\.\s*\d{3}\s*\.\s*\d{3}\s*[\.\/]\s*\d{4}\s*-\s*\d{2})(?=\d{3,})/u', $normalizedText, $gluedFormattedMatches);
         preg_match_all('/(?<!\d)(\d{14})(?!\d)/u', $normalizedText, $plainMatches);
 
-        return collect(array_merge($formattedMatches[0] ?? [], $plainMatches[0] ?? []))
+        return collect(array_merge($formattedMatches[0] ?? [], $gluedFormattedMatches[0] ?? [], $plainMatches[0] ?? []))
             ->map(fn (string $cnpj) => $this->normalizeCnpj($cnpj))
             ->filter(fn (string $cnpj) => $this->isValidCnpj($cnpj))
             ->unique()
@@ -351,13 +363,35 @@ class PdfExtractionService
                 continue;
             }
 
-            $section = implode("\n", array_slice($lines, $index, 28));
-            $matchedUnits = $units->filter(function (BusinessUnit $unit) use ($section): bool {
-                return str_contains($this->normalizeCnpj($section), $this->normalizeCnpj((string) $unit->cnpj));
-            });
+            $candidates = collect();
 
-            if ($matchedUnits->count() === 1) {
-                return $matchedUnits->first();
+            foreach (range(max(0, $index - 12), min(count($lines) - 1, $index + 28)) as $lineIndex) {
+                $lineCnpjs = $this->extractCnpjs($lines[$lineIndex]);
+
+                foreach ($lineCnpjs as $cnpj) {
+                    $unit = $units->first(fn (BusinessUnit $unit): bool => $this->normalizeCnpj((string) $unit->cnpj) === $cnpj);
+
+                    if (! $unit) {
+                        continue;
+                    }
+
+                    $candidates->push([
+                        'unit' => $unit,
+                        'distance' => abs($lineIndex - $index),
+                        'is_after_heading' => $lineIndex >= $index,
+                    ]);
+                }
+            }
+
+            $preferred = $candidates
+                ->sortBy([
+                    ['is_after_heading', 'desc'],
+                    ['distance', 'asc'],
+                ])
+                ->first();
+
+            if ($preferred) {
+                return $preferred['unit'];
             }
         }
 
@@ -536,13 +570,26 @@ class PdfExtractionService
                 return $sameLineName;
             }
 
-            foreach ([1, 2, 3, 4, 5, 6, 7, 8] as $distance) {
+            $previousNames = [];
+
+            foreach ([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as $distance) {
                 $previous = $lines[$index - $distance] ?? null;
                 $name = $previous ? $this->cleanLegalNameCandidate($previous) : null;
 
                 if ($name) {
-                    return $name;
+                    $previousNames[] = $name;
                 }
+            }
+
+            $companyName = collect($previousNames)
+                ->first(fn (string $name): bool => preg_match('/\b(?:LTDA|S\/A|S\.A|SA|EIRELI|EPP|ME)\b/iu', $name) === 1);
+
+            if ($companyName) {
+                return $companyName;
+            }
+
+            if ($previousNames !== []) {
+                return $previousNames[0];
             }
 
             foreach ([1, 2, 3, 4, 5] as $distance) {
@@ -589,6 +636,15 @@ class PdfExtractionService
         return null;
     }
 
+    private function extractIssuerLegalNameFromReceiptLine(string $text): ?string
+    {
+        if (! preg_match('/RECEBEMOS\s+DE\s+(.+?)\s+OS\s+PRODUTOS/isu', $text, $match)) {
+            return null;
+        }
+
+        return $this->cleanLegalNameCandidate((string) $match[1]);
+    }
+
     private function cleanLegalNameCandidate(string $candidate): ?string
     {
         $candidate = trim(preg_replace('/\s+/', ' ', $candidate) ?? $candidate);
@@ -604,6 +660,9 @@ class PdfExtractionService
         if (
             strlen($normalized) < 6
             || preg_match('/^\d+$/', $normalized)
+            || preg_match('/^\d?\s*:?\s*(?:entrada|sa[íi]da)$/iu', $candidate)
+            || preg_match('/nota\s+fiscal\s+eletr/iu', $candidate)
+            || strlen(preg_replace('/\D/', '', $candidate) ?? '') >= 20
             || $this->looksLikeDocumentNumberWithoutLetters($candidate)
         ) {
             return null;
@@ -628,13 +687,19 @@ class PdfExtractionService
             'FONE',
             'TELEFONE',
             'CHAVE DE ACESSO',
+            'CONSULTA DE AUTENTICIDADE',
             'PROTOCOLO',
             'DATA',
+            'NATUREZA DA OPERACAO',
             'NUMERO',
             'SERIE',
             'DANFE',
             'DACTE',
             'DOCUMENTO AUXILIAR',
+            'NOTA FISCAL ELETRONICA',
+            'FAZENDA',
+            'SEFAZ',
+            'WWW',
             'ENTRADA',
             'SAIDA',
             'ORDEM DE COMPRA',

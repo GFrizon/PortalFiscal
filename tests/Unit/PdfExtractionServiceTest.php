@@ -173,6 +173,43 @@ class PdfExtractionServiceTest extends TestCase
         $this->assertSame('43260887958674000181558900684543221163137974', $result['invoice_access_key']);
     }
 
+    public function test_it_reads_nfe_when_issuer_cnpj_is_glued_to_following_digits(): void
+    {
+        BusinessUnit::factory()->create([
+            'name' => 'BAKOF RS',
+            'legal_name' => 'BAKOF PLASTICOS LTDA',
+            'cnpj' => '91967067000155',
+        ]);
+
+        $service = new PdfExtractionService(new Parser());
+
+        $result = $service->extractFromText(
+            "RECEBEMOS DE MERCADO LIVRE BRASIL LTDA OS PRODUTOS CONSTANTES DA NOTA FISCAL INDICADA AO LADO\n".
+            "MERCADO LIVRE BRASIL LTDA\n".
+            "DANFE Documento Auxiliar da Nota Fiscal Eletronica\n".
+            "1: Saida\n".
+            "www.nfe.fazenda.gov.br/portal ou no site da Sefaz Autorizadora\n".
+            "CHAVE DE ACESSO\n".
+            "3126 0803 0073 3100 1032 5500 1147 1730 0712 3457 3597\n".
+            "NATUREZA DA OPERACAO\n".
+            "INSCRICAO ESTADUAL INSC. ESTADUAL DO SUBST. TRIBUTARIO CNPJ\n".
+            "0038450760305 03.007.331/0010-329000095870\n".
+            "DATA DA EMISSAO\n".
+            "C.N.P.J / C.P.F.\n".
+            "NOME/RAZAO SOCIAL\n".
+            "BAKOF PLASTICOS LTDA EM RECUPERACAO JUDICIAL 91.967.067/0001-55\n".
+            "DESTINATARIO / REMETENTE\n".
+            "DADOS ADICIONAIS\n".
+            "Enviado diretamente do deposito temporario - operador logistico: EBAZAR.COM.BR LTDA, Cnpj: 03007331012077"
+        );
+
+        $this->assertContains('03007331001032', $result['cnpjs']);
+        $this->assertSame('03007331001032', $result['issuer_cnpj']);
+        $this->assertSame('91967067000155', $result['recipient_cnpj']);
+        $this->assertSame('147173007', $result['invoice_number']);
+        $this->assertSame('MERCADO LIVRE BRASIL LTDA', $result['issuer_legal_name']);
+    }
+
     public function test_it_extracts_cte_number_from_valid_access_key(): void
     {
         $service = new PdfExtractionService(new Parser());
