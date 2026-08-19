@@ -4,12 +4,16 @@ namespace Tests\Unit;
 
 use App\Services\AiDocumentExtractionService;
 use App\Services\PdfExtractionService;
+use App\Models\BusinessUnit;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use ReflectionClass;
 use Tests\TestCase;
 
 class AiDocumentExtractionServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_pdf_extraction_service_resolved_by_container_has_openai_fallback(): void
     {
         $service = app(PdfExtractionService::class);
@@ -22,6 +26,13 @@ class AiDocumentExtractionServiceTest extends TestCase
 
     public function test_it_reads_json_from_responses_api_output_content(): void
     {
+        BusinessUnit::factory()->create([
+            'name' => 'BAKOF RS',
+            'legal_name' => 'BAKOF PLASTICOS LTDA',
+            'cnpj' => '91967067000155',
+            'internal_code' => 'RS',
+        ]);
+
         config([
             'services.openai.key' => 'test-key',
             'services.openai.model' => 'gpt-4o-mini',
@@ -63,8 +74,12 @@ class AiDocumentExtractionServiceTest extends TestCase
         $this->assertSame('91967067000155', $result['recipient_cnpj']);
 
         Http::assertSent(function ($request): bool {
+            $prompt = (string) data_get($request->data(), 'input.0.content.1.text');
+
             return $request->url() === 'https://api.openai.com/v1/responses'
-                && data_get($request->data(), 'input.0.content.0.detail') === 'high';
+                && data_get($request->data(), 'input.0.content.0.detail') === 'high'
+                && str_contains($prompt, 'BAKOF RS')
+                && str_contains($prompt, '91967067000155');
         });
     }
 }

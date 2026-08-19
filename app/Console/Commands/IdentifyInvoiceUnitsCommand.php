@@ -59,6 +59,16 @@ class IdentifyInvoiceUnitsCommand extends Command
                         ? "No registered unit for {$invoice->protocol}: {$recipientCnpj}"
                         : "Still unidentified {$invoice->protocol}"
                     );
+
+                    if ($this->getOutput()->isVerbose()) {
+                        $this->line('  source: '.($extracted['source'] ?? '-'));
+                        $this->line('  error: '.($extracted['error'] ?? '-'));
+                        $this->line('  issuer_cnpj: '.($extracted['issuer_cnpj'] ?? '-'));
+                        $this->line('  recipient_cnpj: '.($extracted['recipient_cnpj'] ?? '-'));
+                        $this->line('  recipient_name: '.($extracted['recipient_legal_name'] ?? '-'));
+                        $this->line('  cnpjs: '.implode(', ', (array) ($extracted['cnpjs'] ?? [])));
+                    }
+
                     continue;
                 }
 

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\BusinessUnit;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -125,7 +126,9 @@ class AiDocumentExtractionService
 
     private function prompt(): string
     {
-        return <<<'TEXT'
+        $businessUnits = $this->businessUnitsPromptBlock();
+
+        return <<<TEXT
 Leia o PDF fiscal anexado e extraia somente os campos solicitados.
 
 Regras:
@@ -136,11 +139,43 @@ Regras:
 - Em faturas de agua, energia, telefone, internet ou servicos publicos, recipient_legal_name/recipient_cnpj = cliente, pagador, usuario, titular ou unidade consumidora que recebe a cobranca.
 - Quando houver matriz/filial, unidade, endereco de entrega, tomador, destinatario ou cliente BAKOF, escolha como recipient_cnpj o CNPJ da filial/unidade que recebeu a nota/cobranca.
 - Nao use o CNPJ do emitente/fornecedor como recipient_cnpj.
+- Se o destinatario/tomador/cliente bater com uma das unidades cadastradas abaixo por nome, filial, endereco ou CNPJ, retorne o CNPJ e a razao social dessa unidade cadastrada.
 - issuer_cnpj e recipient_cnpj devem sair apenas com digitos.
 - invoice_number deve sair apenas com digitos, sem serie, sem protocolo e sem codigo de verificacao.
 - invoice_access_key deve sair apenas com os 44 digitos da chave, quando existir.
 - Nao confunda CNPJ, protocolo, pedido, OC, entrada, serie, duplicata ou codigo de verificacao com o numero da nota.
+
+Unidades BAKOF cadastradas:
+{$businessUnits}
 TEXT;
+    }
+
+    private function businessUnitsPromptBlock(): string
+    {
+        try {
+            $units = BusinessUnit::query()
+                ->orderBy('name')
+                ->get(['name', 'legal_name', 'cnpj', 'internal_code']);
+        } catch (Throwable) {
+            return '- Nenhuma unidade cadastrada disponivel.';
+        }
+
+        if ($units->isEmpty()) {
+            return '- Nenhuma unidade cadastrada disponivel.';
+        }
+
+        return $units
+            ->map(function (BusinessUnit $unit): string {
+                $parts = array_filter([
+                    'nome: '.$unit->name,
+                    $unit->legal_name ? 'razao social: '.$unit->legal_name : null,
+                    $unit->cnpj ? 'cnpj: '.$unit->cnpj : null,
+                    $unit->internal_code ? 'codigo interno: '.$unit->internal_code : null,
+                ]);
+
+                return '- '.implode('; ', $parts);
+            })
+            ->implode("\n");
     }
 
     private function schema(): array
