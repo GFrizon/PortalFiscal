@@ -52,6 +52,16 @@ class NavigationAuditTest extends TestCase
         }
     }
 
+    public function test_authenticated_user_can_refresh_csrf_token(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->getJson(route('csrf-token.refresh'))
+            ->assertOk()
+            ->assertJsonStructure(['token']);
+    }
+
     public function test_fiscal_can_access_invoice_navigation_pages(): void
     {
         $fiscal = User::factory()->fiscal()->create();

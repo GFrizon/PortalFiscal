@@ -30,6 +30,7 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware(['auth', 'active_user'])->group(function (): void {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::get('csrf-token', fn () => response()->json(['token' => csrf_token()]))->name('csrf-token.refresh');
     Route::get('alterar-senha', [PasswordChangeController::class, 'edit'])->name('password.change');
     Route::post('alterar-senha', [PasswordChangeController::class, 'update'])->name('password.update');
 

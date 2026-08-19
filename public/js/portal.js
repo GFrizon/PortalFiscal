@@ -22,6 +22,47 @@
     initPwaInstall();
     initAutoFilterForms();
 
+    function getCsrfToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    }
+
+    function setCsrfToken(token) {
+        if (! token) {
+            return;
+        }
+
+        document.querySelector('meta[name="csrf-token"]')?.setAttribute('content', token);
+        document.querySelectorAll('input[name="_token"]').forEach((input) => {
+            input.value = token;
+        });
+    }
+
+    async function refreshCsrfToken() {
+        const url = document.querySelector('meta[name="csrf-token-url"]')?.getAttribute('content');
+
+        if (! url) {
+            return null;
+        }
+
+        const response = await fetch(url, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
+
+        if (! response.ok) {
+            return null;
+        }
+
+        const payload = await response.json().catch(() => ({}));
+        setCsrfToken(payload.token);
+
+        return payload.token || null;
+    }
+
     window.addEventListener('pageshow', () => {
         isPageTransitioning = false;
         body.classList.remove('is-navigating');
@@ -486,29 +527,46 @@
         const method = (
             submitter?.hasAttribute('formmethod') ? submitter.formMethod : (form.method || 'POST')
         ).toUpperCase();
-        const formData = new FormData(form);
 
-        if (submitter?.name) {
-            formData.append(submitter.name, submitter.value);
-        }
+        const createFormData = () => {
+            const formData = new FormData(form);
+
+            if (submitter?.name) {
+                formData.append(submitter.name, submitter.value);
+            }
+
+            return formData;
+        };
+
+        const sendRequest = () => fetch(action, {
+            method,
+            body: createFormData(),
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': getCsrfToken(),
+            },
+        });
 
         try {
-            const response = await fetch(action, {
-                method,
-                body: formData,
-                credentials: 'same-origin',
-                headers: {
-                    Accept: 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            });
+            let response = await sendRequest();
+
+            if (response.status === 419 && await refreshCsrfToken()) {
+                response = await sendRequest();
+            }
+
             const payload = await response.json().catch(() => ({}));
 
             await waitForMinimumFeedbackTime(startedAt, 650);
 
             if (! response.ok) {
                 const validationMessage = Object.values(payload.errors || {}).flat()[0];
-                throw new Error(validationMessage || payload.message || 'Nao foi possivel concluir. Tente novamente.');
+                const sessionMessage = response.status === 419
+                    ? 'Sua sessao expirou. Atualize a pagina e tente novamente.'
+                    : 'Nao foi possivel concluir. Tente novamente.';
+
+                throw new Error(validationMessage || payload.message || sessionMessage);
             }
 
             const successMessage = submitter?.dataset.submitSuccessMessage || form.dataset.submitSuccessMessage || payload.message || 'Salvo com sucesso. Abrindo...';
@@ -1167,17 +1225,22 @@
     }
 
     async function saveAnnotations(url, strokes) {
-        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-        const response = await fetch(url, {
+        const sendRequest = () => fetch(url, {
             method: 'PUT',
             credentials: 'same-origin',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrf,
+                'X-CSRF-TOKEN': getCsrfToken(),
             },
             body: JSON.stringify({ strokes }),
         });
+
+        let response = await sendRequest();
+
+        if (response.status === 419 && await refreshCsrfToken()) {
+            response = await sendRequest();
+        }
 
         if (! response.ok) {
             throw new Error('Annotation save failed');

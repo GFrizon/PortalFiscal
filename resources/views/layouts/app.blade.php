@@ -8,6 +8,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="csrf-token-url" content="{{ route('csrf-token.refresh') }}">
     <title>@yield('title', 'Portal de Notas Fiscais - BAKOF')</title>
     <link rel="icon" href="{{ asset('favicon.svg') }}?v=portal-fiscal-20260729" type="image/svg+xml">
     <link rel="icon" href="{{ asset('favicon-32.png') }}?v=portal-fiscal-20260729" sizes="32x32" type="image/png">
