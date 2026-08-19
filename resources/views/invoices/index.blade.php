@@ -76,7 +76,7 @@
                     </option>
                 @endforeach
             </select>
-            <a class="btn btn-outline-secondary btn-sm" href="{{ $selectedUnitId !== '' ? route('invoices.index', ['business_unit_id' => $selectedUnitId]) : route('invoices.index') }}">
+            <a class="btn btn-outline-secondary btn-sm invoice-filter-reset" href="{{ $selectedUnitId !== '' ? route('invoices.index', ['business_unit_id' => $selectedUnitId]) : route('invoices.index') }}" title="Limpar filtros" aria-label="Limpar filtros">
                 <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
             </a>
         </form>
